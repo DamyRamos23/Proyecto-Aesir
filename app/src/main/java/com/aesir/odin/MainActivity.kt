@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.aesir.odin.di.AppContainer
 import com.aesir.odin.ui.navigation.OdinNavGraph
+import com.aesir.odin.ui.theme.ColorNocheOscura
 import com.aesir.odin.ui.theme.ODINTheme
 
 class MainActivity : ComponentActivity() {
@@ -23,7 +24,7 @@ class MainActivity : ComponentActivity() {
                 val appContainer = remember { AppContainer(applicationContext) }
                 val navController = rememberNavController()
 
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                Scaffold(modifier = Modifier.fillMaxSize(), containerColor = ColorNocheOscura) { innerPadding ->
                     OdinNavGraph.construirGrafo(
                         nav = navController,
                         appContainer = appContainer,
