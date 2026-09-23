@@ -20,6 +20,7 @@ import androidx.navigation.NavHostController
 import com.aesir.odin.di.AppContainer
 import com.aesir.odin.domain.model.Tema
 import com.aesir.odin.ui.components.HandPaintedTitle
+import com.aesir.odin.ui.navigation.OdinNavGraph
 import com.aesir.odin.ui.theme.ColorNocheOscura
 
 /**
@@ -35,9 +36,11 @@ fun TemaIntroScreen(
     appContainer: AppContainer
 ) {
     var tema by remember { mutableStateOf<Tema?>(null) }
+    var leccionId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(temaId) {
         tema = appContainer.roadmapRepository.obtenerTema(temaId)
+        leccionId = appContainer.leccionRepository.obtenerLeccionesPorTema(temaId).firstOrNull()?.id
     }
 
     Column(
@@ -55,11 +58,22 @@ fun TemaIntroScreen(
             text = tema?.descripcion ?: "",
             color = Color.White.copy(alpha = 0.85f)
         )
+        
+        if (leccionId != null) {
+            Button(
+                onClick = { navController.navigate(OdinNavGraph.leccion(leccionId!!)) },
+                modifier = Modifier.padding(top = 32.dp)
+            ) {
+                Text("Iniciar lección")
+            }
+        }
+
         Button(
             onClick = { navController.popBackStack() },
-            modifier = Modifier.padding(top = 24.dp)
+            modifier = Modifier.padding(top = 16.dp)
         ) {
             Text("Volver al roadmap")
         }
     }
 }
+

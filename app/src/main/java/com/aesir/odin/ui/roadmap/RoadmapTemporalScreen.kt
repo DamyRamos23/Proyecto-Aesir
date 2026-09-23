@@ -80,7 +80,7 @@ fun RoadmapTemporalScreen(
 @Composable
 private fun TarjetaTema(tema: Tema, onClick: () -> Unit) {
     val (color, estado) = when {
-        tema.leccionCompletada -> ColorNodoCompletado to "Completado ✓"
+        tema.completado -> ColorNodoCompletado to "Completado ✓"
         tema.desbloqueado -> ColorNodoDesbloqueado to "Iniciar lección"
         else -> ColorNodoBloqueado to "Bloqueado 🔒"
     }

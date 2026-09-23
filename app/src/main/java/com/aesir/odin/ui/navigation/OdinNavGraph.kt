@@ -13,6 +13,7 @@ import com.aesir.odin.di.AppContainer
 import com.aesir.odin.ui.leccion.LeccionInteractivaScreen
 import com.aesir.odin.ui.leccion.LeccionInteractivaViewModel
 import com.aesir.odin.ui.leccion.LeccionScreen
+import com.aesir.odin.ui.leccion.ResumenLeccionPlaceholder
 import com.aesir.odin.ui.leccion.ResumenLeccionScreen
 import com.aesir.odin.ui.mundos.MundosScreen
 import com.aesir.odin.ui.preguntaflash.PreguntaFlashScreen
@@ -84,7 +85,7 @@ object OdinNavGraph {
 
         val volverAlRoadmap: () -> Unit = {
             nav.popBackStack(
-                rutaRoadmap,
+                "$rutaRoadmap/{$argMundoId}",
                 inclusive = false
             )
         }
@@ -161,7 +162,7 @@ object OdinNavGraph {
             // -------------------------
 
             composable(rutaResumenLeccion) {
-                ResumenLeccionScreen(nav)
+                ResumenLeccionPlaceholder(nav)
             }
 
             // -------------------------

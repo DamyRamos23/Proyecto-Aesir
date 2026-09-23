@@ -6,6 +6,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.aesir.odin.data.local.converter.Converters
 import com.aesir.odin.data.local.entity.EjercicioEntity
 import com.aesir.odin.data.local.entity.LeccionEntity
+import com.aesir.odin.data.local.entity.MundoEntity
 import com.aesir.odin.data.local.entity.TemaEntity
 
 /**
@@ -16,13 +17,20 @@ object DatosIniciales {
 
     private const val MUNDO_1 = "mundo_1"
 
+    val mundos = listOf(
+        MundoEntity(MUNDO_1, "Fundamentos", "Conceptos básicos de la Ingeniería de Software", 1, desbloqueado = true)
+    )
+
     val temas = listOf(
-        TemaEntity("tema_1", MUNDO_1, "¿Qué es la Ingeniería de Software?", 1,
-            desbloqueado = true, introduccionVista = false, leccionCompletada = false),
-        TemaEntity("tema_2", MUNDO_1, "Ciclo de vida del software", 2,
-            desbloqueado = false, introduccionVista = false, leccionCompletada = false),
-        TemaEntity("tema_3", MUNDO_1, "Ingeniería de requerimientos", 3,
-            desbloqueado = false, introduccionVista = false, leccionCompletada = false)
+        TemaEntity("tema_1", MUNDO_1, "¿Qué es la Ingeniería de Software?",
+            "Introducción a los conceptos fundamentales de la disciplina.", 1,
+            desbloqueado = true, introduccionVista = false, completado = false),
+        TemaEntity("tema_2", MUNDO_1, "Ciclo de vida del software",
+            "Modelos de proceso y metodologías de desarrollo.", 2,
+            desbloqueado = false, introduccionVista = false, completado = false),
+        TemaEntity("tema_3", MUNDO_1, "Ingeniería de requerimientos",
+            "Técnicas para la obtención y especificación de requerimientos.", 3,
+            desbloqueado = false, introduccionVista = false, completado = false)
     )
 
     val lecciones = listOf(
@@ -109,15 +117,25 @@ object DatosIniciales {
 
     fun insertar(db: SupportSQLiteDatabase) {
         val converters = Converters()
+        mundos.forEach { mundo ->
+            db.insert("mundos", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
+                put("id", mundo.id)
+                put("nombre", mundo.nombre)
+                put("descripcion", mundo.descripcion)
+                put("orden", mundo.orden)
+                put("desbloqueado", mundo.desbloqueado)
+            })
+        }
         temas.forEach { tema ->
             db.insert("temas", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
                 put("id", tema.id)
                 put("mundoId", tema.mundoId)
                 put("nombre", tema.nombre)
+                put("descripcion", tema.descripcion)
                 put("orden", tema.orden)
                 put("desbloqueado", tema.desbloqueado)
                 put("introduccionVista", tema.introduccionVista)
-                put("leccionCompletada", tema.leccionCompletada)
+                put("completado", tema.completado)
             })
         }
         lecciones.forEach { leccion ->

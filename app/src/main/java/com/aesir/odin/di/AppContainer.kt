@@ -2,12 +2,23 @@ package com.aesir.odin.di
 
 import android.content.Context
 import com.aesir.odin.data.local.OdinDatabase
+import com.aesir.odin.data.repository.HistorialRepositoryImpl
+import com.aesir.odin.data.repository.LeccionRepositoryImpl
 import com.aesir.odin.data.repository.RoadmapRepositoryImpl
+import com.aesir.odin.domain.repository.HistorialRepository
+import com.aesir.odin.domain.repository.LeccionRepository
 import com.aesir.odin.domain.repository.RoadmapRepository
+import com.aesir.odin.domain.usecase.leccion.FinalizarLeccionUseCase
+import com.aesir.odin.domain.usecase.leccion.ObtenerLeccionUseCase
+import com.aesir.odin.domain.usecase.leccion.RegistrarErrorLeccionUseCase
+import com.aesir.odin.domain.usecase.leccion.RegistrarLeccionCompletadaUseCase
+import com.aesir.odin.domain.usecase.leccion.ValidarRespuestaEjercicioUseCase
+import com.aesir.odin.domain.usecase.roadmap.DesbloquearSiguienteTemaUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerMundosUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerTemasPorMundoUseCase
 import com.aesir.odin.domain.usecase.roadmap.ValidarAccesoNivelUseCase
 import com.aesir.odin.domain.usecase.roadmap.ValidarAccesoTemaUseCase
+import com.aesir.odin.domain.usecase.shared.ValidarRespuestaUseCase
 
 /**
  * Contenedor manual de dependencias (no hay Hilt configurado en el
@@ -23,8 +34,26 @@ class AppContainer(context: Context) {
     val roadmapRepository: RoadmapRepository =
         RoadmapRepositoryImpl(database.mundoDao(), database.temaDao())
 
+    val leccionRepository: LeccionRepository =
+        LeccionRepositoryImpl(database.leccionDao(), database.ejercicioDao())
+
+    private val historialRepository: HistorialRepository =
+        HistorialRepositoryImpl(database.historialErrorDao())
+
     val obtenerMundosUseCase = ObtenerMundosUseCase(roadmapRepository)
     val obtenerTemasPorMundoUseCase = ObtenerTemasPorMundoUseCase(roadmapRepository)
     val validarAccesoNivelUseCase = ValidarAccesoNivelUseCase(roadmapRepository)
     val validarAccesoTemaUseCase = ValidarAccesoTemaUseCase(roadmapRepository)
+
+    val obtenerLeccionUseCase = ObtenerLeccionUseCase(leccionRepository)
+    val validarRespuestaEjercicioUseCase =
+        ValidarRespuestaEjercicioUseCase(ValidarRespuestaUseCase())
+    val registrarErrorLeccionUseCase = RegistrarErrorLeccionUseCase(historialRepository)
+    private val registrarLeccionCompletadaUseCase =
+        RegistrarLeccionCompletadaUseCase(roadmapRepository)
+    private val desbloquearSiguienteTemaUseCase =
+        DesbloquearSiguienteTemaUseCase(roadmapRepository)
+    val finalizarLeccionUseCase = FinalizarLeccionUseCase(
+        leccionRepository, registrarLeccionCompletadaUseCase, desbloquearSiguienteTemaUseCase
+    )
 }

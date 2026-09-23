@@ -19,6 +19,6 @@ fun LeccionScreen(navController: NavHostController) {
  * Destino de rutaResumenLeccion. Mismo caso que LeccionScreen.
  */
 @Composable
-fun ResumenLeccionScreen(navController: NavHostController) {
+fun ResumenLeccionPlaceholder(navController: NavHostController) {
     PantallaProximamente(navController, "Resumen de la lección")
 }

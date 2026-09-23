@@ -8,8 +8,9 @@ data class TemaEntity(
     @PrimaryKey val id: String,
     val mundoId: String,
     val nombre: String,
+    val descripcion: String,
     val orden: Int,
     val desbloqueado: Boolean,
     val introduccionVista: Boolean,
-    val leccionCompletada: Boolean
+    val completado: Boolean
 )
