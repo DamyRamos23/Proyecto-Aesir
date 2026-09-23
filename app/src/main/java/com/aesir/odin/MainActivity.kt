@@ -7,10 +7,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
+import com.aesir.odin.di.AppContainer
+import com.aesir.odin.ui.navigation.OdinNavGraph
+import com.aesir.odin.ui.theme.ColorNocheOscura
 import com.aesir.odin.ui.theme.ODINTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,29 +21,17 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ODINTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
+                val appContainer = remember { AppContainer(applicationContext) }
+                val navController = rememberNavController()
+
+                Scaffold(modifier = Modifier.fillMaxSize(), containerColor = ColorNocheOscura) { innerPadding ->
+                    OdinNavGraph.construirGrafo(
+                        nav = navController,
+                        appContainer = appContainer,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    ODINTheme {
-        Greeting("Android")
     }
 }
