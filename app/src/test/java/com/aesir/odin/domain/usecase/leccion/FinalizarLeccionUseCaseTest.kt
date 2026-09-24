@@ -11,7 +11,17 @@ import org.junit.Test
 class FinalizarLeccionUseCaseTest {
 
     private val leccionRepo = FakeLeccionRepository(
-        listOf(Leccion("l1", "t1", "Lección 1", 1, emptyList(), completada = false))
+        listOf(
+            Leccion(
+                id = "l1",
+                temaId = "t1",
+                titulo = "Lección 1",
+                introduccion = "Introducción",
+                orden = 1,
+                ejercicios = emptyList(),
+                completada = false
+            )
+        )
     )
     private val roadmapRepo = FakeRoadmapRepository(
         listOf(
@@ -52,7 +62,7 @@ class FinalizarLeccionUseCaseTest {
     fun `al aprobar marca la leccion y el tema como completados`() = runBlocking {
         finalizar("l1", totalEjercicios = 5, errores = 2)
         assertTrue(leccionRepo.lecciones.getValue("l1").completada)
-        assertTrue(roadmapRepo.temas.getValue("t1").leccionCompletada)
+        assertTrue(roadmapRepo.temas.getValue("t1").completado)
     }
 
     @Test
