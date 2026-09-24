@@ -241,7 +241,9 @@ object OdinNavGraph {
                                 total
                             )
                         ) {
-                            popUpTo(rutaRoadmap)
+                            popUpTo("$rutaRoadmap/{$argMundoId}") {
+                                inclusive = false
+                            }
                         }
                     },
 

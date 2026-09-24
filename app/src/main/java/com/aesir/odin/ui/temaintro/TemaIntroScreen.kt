@@ -86,7 +86,7 @@ fun TemaIntroScreen(
                     Button(
                         onClick = { 
                             viewModel.onComenzarLeccionPulsado { leccionId ->
-                                navController.navigate(OdinNavGraph.rutaLeccionIntroCon(leccionId))
+                                navController.navigate(OdinNavGraph.leccion(leccionId))
                             }
                         },
                         colors = ButtonDefaults.buttonColors(
