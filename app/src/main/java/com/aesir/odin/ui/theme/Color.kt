@@ -27,3 +27,10 @@ val ColorNodoCompletado = Color(0xFFE8C97A)
 val ColorNodoDesbloqueado = Color(0xFFB23B3B)
 val ColorNodoBloqueado = Color(0xFF3A3F4B)
 val ColorFondoNodo = Color(0xFF10131A)
+
+// Retroalimentación de respuestas en lecciones y preguntas flash
+val ColorTextoClaro = Color(0xFFF2EEE6)
+val ColorTextoTenue = Color(0xFF9AA0AC)
+val ColorRespuestaCorrecta = Color(0xFF4CAF7A)
+val ColorRespuestaIncorrecta = Color(0xFFD9534F)
+val ColorRespuestaIncompleta = Color(0xFFE0A33A)

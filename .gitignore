@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Documentos del equipo (Drive), no forman parte del código
+/Docs/
