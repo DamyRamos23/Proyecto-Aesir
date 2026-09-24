@@ -196,9 +196,9 @@ object OdinNavGraph {
                         ?.getString(argLeccionId)
                         .orEmpty()
 
-                com.aesir.odin.ui.leccion.LeccionIntroScreen(
+                TemaIntroScreen(
                     navController = nav,
-                    leccionId = leccionId,
+                    temaId = leccionId,
                     appContainer = appContainer
                 )
             }
