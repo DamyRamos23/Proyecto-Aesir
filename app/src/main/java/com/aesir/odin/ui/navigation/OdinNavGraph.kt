@@ -39,6 +39,7 @@ object OdinNavGraph {
     private const val argTemaId = "temaId"
 
     // Rutas para lecciones interactivas
+    const val rutaLeccionIntro = "leccionIntro"
     private const val rutaLeccionInteractiva = "leccionInteractiva"
     private const val rutaResumenInteractivo = "resumenInteractivo"
 
@@ -58,6 +59,10 @@ object OdinNavGraph {
     /** Ruta concreta de una lección interactiva. */
     fun leccion(leccionId: String) =
         "$rutaLeccionInteractiva/$leccionId"
+
+    /** Ruta concreta de la intro de lección. */
+    fun rutaLeccionIntroCon(leccionId: String) =
+        "$rutaLeccionIntro/$leccionId"
 
     /** Ruta concreta del resumen de una lección interactiva. */
     fun resumenLeccion(
@@ -171,6 +176,31 @@ object OdinNavGraph {
 
             composable(rutaPreguntaFlash) {
                 PreguntaFlashScreen(nav)
+            }
+
+            // -------------------------
+            // Introducción de lección
+            // -------------------------
+
+            composable(
+                route = "$rutaLeccionIntro/{$argLeccionId}",
+                arguments = listOf(
+                    navArgument(argLeccionId) {
+                        type = NavType.StringType
+                    }
+                )
+            ) { entrada ->
+
+                val leccionId =
+                    entrada.arguments
+                        ?.getString(argLeccionId)
+                        .orEmpty()
+
+                com.aesir.odin.ui.leccion.LeccionIntroScreen(
+                    navController = nav,
+                    leccionId = leccionId,
+                    appContainer = appContainer
+                )
             }
 
             // -------------------------

@@ -27,7 +27,7 @@ import com.aesir.odin.data.local.entity.TemaEntity
         ResultadoLeccionEntity::class,
         HistorialErrorEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -62,9 +62,7 @@ abstract class OdinDatabase : RoomDatabase() {
                             }
                         }
                     )
-                    .fallbackToDestructiveMigration(
-                        dropAllTables = true
-                    )
+                    .fallbackToDestructiveMigration()
                     .build()
                     .also {
                         INSTANCE = it

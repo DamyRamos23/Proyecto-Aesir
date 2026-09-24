@@ -8,6 +8,7 @@ data class LeccionEntity(
     @PrimaryKey val id: String,
     val temaId: String,
     val titulo: String,
+    val introduccion: String,
     val orden: Int,
     val completada: Boolean
 )

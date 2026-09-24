@@ -17,8 +17,10 @@ import com.aesir.odin.domain.usecase.roadmap.DesbloquearSiguienteTemaUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerMundosUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerTemasPorMundoUseCase
 import com.aesir.odin.domain.usecase.roadmap.ValidarAccesoNivelUseCase
-import com.aesir.odin.domain.usecase.roadmap.ValidarAccesoTemaUseCase
+import com.aesir.odin.domain.usecase.roadmap.ObtenerIntroduccionTemaUseCase
+import com.aesir.odin.domain.usecase.roadmap.RegistrarIntroduccionVistaUseCase
 import com.aesir.odin.domain.usecase.shared.ValidarRespuestaUseCase
+import com.aesir.odin.domain.usecase.roadmap.ValidarAccesoTemaUseCase
 
 /**
  * Contenedor manual de dependencias (no hay Hilt configurado en el
@@ -44,6 +46,8 @@ class AppContainer(context: Context) {
     val obtenerTemasPorMundoUseCase = ObtenerTemasPorMundoUseCase(roadmapRepository)
     val validarAccesoNivelUseCase = ValidarAccesoNivelUseCase(roadmapRepository)
     val validarAccesoTemaUseCase = ValidarAccesoTemaUseCase(roadmapRepository)
+    val obtenerIntroduccionTemaUseCase = ObtenerIntroduccionTemaUseCase(roadmapRepository)
+    val registrarIntroduccionVistaUseCase = RegistrarIntroduccionVistaUseCase(roadmapRepository)
 
     val obtenerLeccionUseCase = ObtenerLeccionUseCase(leccionRepository)
     val validarRespuestaEjercicioUseCase =

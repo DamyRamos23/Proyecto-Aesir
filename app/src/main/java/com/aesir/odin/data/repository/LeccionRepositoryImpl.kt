@@ -44,6 +44,7 @@ private fun LeccionEntity.toDomain(ejercicios: List<EjercicioEntity>) = Leccion(
     id = id,
     temaId = temaId,
     titulo = titulo,
+    introduccion = introduccion,
     orden = orden,
     ejercicios = ejercicios.map { it.toDomain() },
     completada = completada

@@ -1,7 +1,11 @@
 package com.aesir.odin.ui.temaintro
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.aesir.odin.domain.repository.LeccionRepository
 import com.aesir.odin.domain.usecase.roadmap.ObtenerIntroduccionTemaUseCase
 import com.aesir.odin.domain.usecase.roadmap.RegistrarIntroduccionVistaUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +21,8 @@ sealed interface TemaIntroUiState {
 
 class TemaIntroViewModel(
     private val obtenerIntroduccionTemaUseCase: ObtenerIntroduccionTemaUseCase,
-    private val registrarIntroduccionVistaUseCase: RegistrarIntroduccionVistaUseCase
+    private val registrarIntroduccionVistaUseCase: RegistrarIntroduccionVistaUseCase,
+    private val leccionRepository: LeccionRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<TemaIntroUiState>(TemaIntroUiState.Cargando)
@@ -38,6 +43,18 @@ class TemaIntroViewModel(
         }
     }
 
+    fun onComenzarLeccionPulsado(onNavegarLeccion: (String) -> Unit) {
+        val temaId = temaIdActual ?: return
+        viewModelScope.launch {
+            registrarIntroduccionVistaUseCase(temaId)
+            // Obtener la primera lección del tema
+            val primeraLeccion = leccionRepository.obtenerLeccionesPorTema(temaId).firstOrNull()
+            if (primeraLeccion != null) {
+                onNavegarLeccion(primeraLeccion.id)
+            }
+        }
+    }
+
     fun onCerrarPulsado(onVolverAtras: () -> Unit) {
         val temaId = temaIdActual ?: return
         viewModelScope.launch {
@@ -46,7 +63,19 @@ class TemaIntroViewModel(
         }
     }
 
-    fun onOmitirPulsado(onVolverAtras: () -> Unit) {
-        onVolverAtras()
+    companion object {
+        fun factory(
+            obtenerIntroduccionTemaUseCase: ObtenerIntroduccionTemaUseCase,
+            registrarIntroduccionVistaUseCase: RegistrarIntroduccionVistaUseCase,
+            leccionRepository: LeccionRepository
+        ): ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                TemaIntroViewModel(
+                    obtenerIntroduccionTemaUseCase,
+                    registrarIntroduccionVistaUseCase,
+                    leccionRepository
+                )
+            }
+        }
     }
 }
