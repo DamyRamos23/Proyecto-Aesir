@@ -66,10 +66,11 @@ object OdinNavGraph {
 
     /** Ruta concreta del resumen de una lección interactiva. */
     fun resumenLeccion(
+        leccionId: String,
         puntaje: Int,
         errores: Int,
         total: Int
-    ) = "$rutaResumenInteractivo/$puntaje/$errores/$total"
+    ) = "$rutaResumenInteractivo/$leccionId/$puntaje/$errores/$total"
 
     private fun argumentoMundoId(): NamedNavArgument =
         navArgument(argMundoId) {
@@ -236,6 +237,7 @@ object OdinNavGraph {
 
                         nav.navigate(
                             resumenLeccion(
+                                leccionId,
                                 resultado.puntaje,
                                 resultado.erroresCometidos,
                                 total
@@ -258,8 +260,11 @@ object OdinNavGraph {
             // -------------------------
 
             composable(
-                route = "$rutaResumenInteractivo/{$argPuntaje}/{$argErrores}/{$argTotal}",
+                route = "$rutaResumenInteractivo/{$argLeccionId}/{$argPuntaje}/{$argErrores}/{$argTotal}",
                 arguments = listOf(
+                    navArgument(argLeccionId) {
+                        type = NavType.StringType
+                    },
                     navArgument(argPuntaje) {
                         type = NavType.IntType
                     },
@@ -275,10 +280,20 @@ object OdinNavGraph {
                 val args = entrada.arguments
 
                 ResumenLeccionScreen(
+                    leccionId = args?.getString(argLeccionId).orEmpty(),
                     puntaje = args?.getInt(argPuntaje) ?: 0,
                     errores = args?.getInt(argErrores) ?: 0,
                     totalEjercicios = args?.getInt(argTotal) ?: 0,
-                    onVolverRoadmap = volverAlRoadmap
+                    appContainer = appContainer,
+                    onVolverRoadmap = volverAlRoadmap,
+                    onAbrirTema = { temaId ->
+                        // Abre la introducción del siguiente tema dejando el roadmap debajo.
+                        nav.navigate(rutaIntroTemaCon(temaId)) {
+                            popUpTo("$rutaRoadmap/{$argMundoId}") {
+                                inclusive = false
+                            }
+                        }
+                    }
                 )
             }
         }
