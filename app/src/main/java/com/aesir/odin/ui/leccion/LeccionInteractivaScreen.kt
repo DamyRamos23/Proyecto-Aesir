@@ -148,10 +148,32 @@ private fun ContenidoLeccion(
     onContinuar: () -> Unit,
     onSalir: () -> Unit
 ) {
-    // La selección se reinicia al cambiar de ejercicio.
+    // Permutación aleatoria de los índices de las opciones, estable por ejercicio.
+    // `permutacion[posVisual]` = índice original en ejercicio.opciones
+    val permutacion = remember(ejercicio.id) {
+        ejercicio.opciones.indices.shuffled()
+    }
+    // Mapa inverso: índice original → posición visual
+    val posicionDe = remember(ejercicio.id) {
+        IntArray(permutacion.size).also { arr ->
+            permutacion.forEachIndexed { posVisual, original -> arr[original] = posVisual }
+        }
+    }
+
+    // La selección almacena índices ORIGINALES para que la validación funcione sin cambios.
     var seleccion by remember(ejercicio.id) { mutableStateOf(emptySet<Int>()) }
     val respondido = ultimoResultado != null
     val esUltimo = numeroEjercicio == totalEjercicios
+
+    // Adapta el ResultadoRespuesta para que las opcionesCorrectas usen posiciones visuales.
+    val resultadoVisual = remember(ultimoResultado, permutacion) {
+        ultimoResultado?.let { res ->
+            ResultadoRespuesta(
+                estado = res.estado,
+                opcionesCorrectas = res.opcionesCorrectas.map { posicionDe[it] }
+            )
+        }
+    }
 
     Column(Modifier.fillMaxSize().padding(horizontal = 14.dp)) {
         BotonVolver("Salir", onClick = onSalir)
@@ -222,20 +244,21 @@ private fun ContenidoLeccion(
                     }
                     DivisorOrnamental(estilo.metal, estilo.acento, Modifier.padding(vertical = 12.dp))
 
-                    ejercicio.opciones.forEachIndexed { indice, opcion ->
+                    permutacion.forEachIndexed { posVisual, indiceOriginal ->
+                        val opcion = ejercicio.opciones[indiceOriginal]
                         OpcionRunica(
-                            letra = ('A' + indice).toString(),
+                            letra = ('A' + posVisual).toString(),
                             texto = opcion,
                             multiple = ejercicio.esSeleccionMultiple,
-                            seleccionada = indice in seleccion,
-                            estado = estadoOpcion(indice, seleccion, ultimoResultado),
+                            seleccionada = indiceOriginal in seleccion,
+                            estado = estadoOpcion(posVisual, seleccion.map { posicionDe[it] }.toSet(), resultadoVisual),
                             respondido = respondido,
                             estilo = estilo,
                             onClick = {
                                 seleccion = when {
-                                    ejercicio.esSeleccionMultiple && indice in seleccion -> seleccion - indice
-                                    ejercicio.esSeleccionMultiple -> seleccion + indice
-                                    else -> setOf(indice)
+                                    ejercicio.esSeleccionMultiple && indiceOriginal in seleccion -> seleccion - indiceOriginal
+                                    ejercicio.esSeleccionMultiple -> seleccion + indiceOriginal
+                                    else -> setOf(indiceOriginal)
                                 }
                             }
                         )
@@ -243,8 +266,8 @@ private fun ContenidoLeccion(
                     }
 
                     AnimatedVisibility(visible = ultimoResultado != null, enter = fadeIn() + expandVertically()) {
-                        if (ultimoResultado != null) {
-                            Retroalimentacion(ultimoResultado, ejercicio)
+                        if (resultadoVisual != null) {
+                            Retroalimentacion(resultadoVisual, ejercicio, permutacion)
                         }
                     }
                 }
@@ -395,7 +418,7 @@ private fun OpcionRunica(
 }
 
 @Composable
-private fun Retroalimentacion(resultado: ResultadoRespuesta, ejercicio: Ejercicio) {
+private fun Retroalimentacion(resultado: ResultadoRespuesta, ejercicio: Ejercicio, permutacion: List<Int>) {
     val (titulo, color) = when (resultado.estado) {
         EstadoRespuesta.CORRECTA -> "¡Correcto!" to OdinPaleta.Correcto
         EstadoRespuesta.INCOMPLETA -> "Te faltó alguna" to OdinPaleta.Incompleto
@@ -429,7 +452,11 @@ private fun Retroalimentacion(resultado: ResultadoRespuesta, ejercicio: Ejercici
             val explicacion = if (resultado.estado == EstadoRespuesta.CORRECTA) {
                 "Bien hecho, sigue así."
             } else {
-                val correctas = resultado.opcionesCorrectas.joinToString("\n") { "• ${ejercicio.opciones[it]}" }
+                // resultado.opcionesCorrectas aquí son posiciones visuales;
+                // usamos la permutación para obtener el índice original y el texto.
+                val correctas = resultado.opcionesCorrectas.sorted().joinToString("\n") {
+                    posVisual -> "• ${ejercicio.opciones[permutacion[posVisual]]}"
+                }
                 if (resultado.opcionesCorrectas.size > 1) "Las respuestas correctas son:\n$correctas" else "La respuesta correcta es:\n$correctas"
             }
             Text(explicacion, color = Color(0xFFCFC6B5), fontFamily = FuenteTexto, fontSize = 14.sp, lineHeight = 18.sp)
