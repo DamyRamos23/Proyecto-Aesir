@@ -8,12 +8,16 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.aesir.odin.di.AppContainer
 import com.aesir.odin.domain.model.EstadoRespuesta
 import com.aesir.odin.domain.model.Leccion
+import com.aesir.odin.domain.model.Mundo
 import com.aesir.odin.domain.model.ResultadoLeccion
 import com.aesir.odin.domain.model.ResultadoRespuesta
+import com.aesir.odin.domain.model.Tema
 import com.aesir.odin.domain.usecase.leccion.FinalizarLeccionUseCase
 import com.aesir.odin.domain.usecase.leccion.ObtenerLeccionUseCase
 import com.aesir.odin.domain.usecase.leccion.RegistrarErrorLeccionUseCase
 import com.aesir.odin.domain.usecase.leccion.ValidarRespuestaEjercicioUseCase
+import com.aesir.odin.domain.usecase.roadmap.ObtenerIntroduccionTemaUseCase
+import com.aesir.odin.domain.usecase.roadmap.ObtenerMundoUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,13 +29,24 @@ import kotlinx.coroutines.launch
  * Presenta los ejercicios en orden (RF-14), valida cada respuesta (RF-16),
  * cuenta los errores (RF-17) y termina la lección al tercer error (RF-18),
  * o la finaliza con su resultado al completar todos los ejercicios (RF-21 a RF-24).
+ *
+ * Además carga el tema y el mundo de la lección ([contexto]) solo para que la
+ * pantalla use el estilo visual del mundo; no interviene en la lógica.
  */
 class LeccionInteractivaViewModel(
     private val obtenerUseCase: ObtenerLeccionUseCase,
     private val validarUseCase: ValidarRespuestaEjercicioUseCase,
     private val registrarErrorUseCase: RegistrarErrorLeccionUseCase,
-    private val finalizarUseCase: FinalizarLeccionUseCase
+    private val finalizarUseCase: FinalizarLeccionUseCase,
+    private val obtenerTemaUseCase: ObtenerIntroduccionTemaUseCase? = null,
+    private val obtenerMundoUseCase: ObtenerMundoUseCase? = null
 ) : ViewModel() {
+
+    /** Tema y mundo a los que pertenece la lección (para el estilo visual). */
+    data class ContextoLeccion(val tema: Tema, val mundo: Mundo)
+
+    private val _contexto = MutableStateFlow<ContextoLeccion?>(null)
+    val contexto: StateFlow<ContextoLeccion?> = _contexto.asStateFlow()
 
     private val _leccion = MutableStateFlow<Leccion?>(null)
     private val _ejercicioActual = MutableStateFlow(0)
@@ -53,14 +68,28 @@ class LeccionInteractivaViewModel(
 
     fun cargarLeccion(leccionId: String) {
         viewModelScope.launch {
-            _leccion.value = obtenerUseCase(leccionId)
+            val leccion = obtenerUseCase(leccionId)
+            // El contexto se carga antes de publicar la lección para que la
+            // pantalla aparezca directamente con el estilo de su mundo.
+            cargarContexto(leccion?.temaId)
             _ejercicioActual.value = 0
             _errores.value = 0
             _ultimoResultado.value = null
             _resultadoFinal.value = null
             _leccionFallida.value = false
             finalizando = false
+            _leccion.value = leccion
         }
+    }
+
+    private suspend fun cargarContexto(temaId: String?) {
+        val obtenerTema = obtenerTemaUseCase ?: return
+        val obtenerMundo = obtenerMundoUseCase ?: return
+        if (temaId == null) return
+        _contexto.value = runCatching {
+            val tema = obtenerTema(temaId) ?: return
+            ContextoLeccion(tema, obtenerMundo(tema.mundoId))
+        }.getOrNull()
     }
 
     fun responder(opciones: List<Int>) {
@@ -106,7 +135,9 @@ class LeccionInteractivaViewModel(
                         obtenerUseCase = container.obtenerLeccionUseCase,
                         validarUseCase = container.validarRespuestaEjercicioUseCase,
                         registrarErrorUseCase = container.registrarErrorLeccionUseCase,
-                        finalizarUseCase = container.finalizarLeccionUseCase
+                        finalizarUseCase = container.finalizarLeccionUseCase,
+                        obtenerTemaUseCase = container.obtenerIntroduccionTemaUseCase,
+                        obtenerMundoUseCase = container.obtenerMundoUseCase
                     ).apply { cargarLeccion(leccionId) }
                 }
             }

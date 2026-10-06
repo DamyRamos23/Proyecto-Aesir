@@ -14,6 +14,7 @@ import com.aesir.odin.domain.usecase.leccion.RegistrarErrorLeccionUseCase
 import com.aesir.odin.domain.usecase.leccion.RegistrarLeccionCompletadaUseCase
 import com.aesir.odin.domain.usecase.leccion.ValidarRespuestaEjercicioUseCase
 import com.aesir.odin.domain.usecase.roadmap.DesbloquearSiguienteTemaUseCase
+import com.aesir.odin.domain.usecase.roadmap.ObtenerMundoUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerMundosUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerTemasPorMundoUseCase
 import com.aesir.odin.domain.usecase.roadmap.ValidarAccesoNivelUseCase
@@ -43,6 +44,7 @@ class AppContainer(context: Context) {
         HistorialRepositoryImpl(database.historialErrorDao())
 
     val obtenerMundosUseCase = ObtenerMundosUseCase(roadmapRepository)
+    val obtenerMundoUseCase = ObtenerMundoUseCase(roadmapRepository)
     val obtenerTemasPorMundoUseCase = ObtenerTemasPorMundoUseCase(roadmapRepository)
     val validarAccesoNivelUseCase = ValidarAccesoNivelUseCase(roadmapRepository)
     val validarAccesoTemaUseCase = ValidarAccesoTemaUseCase(roadmapRepository)

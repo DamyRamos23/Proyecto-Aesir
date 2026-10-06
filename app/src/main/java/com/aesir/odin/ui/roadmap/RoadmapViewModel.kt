@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.aesir.odin.domain.model.Mundo
 import com.aesir.odin.domain.model.Tema
+import com.aesir.odin.domain.usecase.roadmap.ObtenerMundoUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerTemasPorMundoUseCase
 import com.aesir.odin.domain.usecase.roadmap.ValidarAccesoNivelUseCase
 import com.aesir.odin.domain.usecase.roadmap.ValidarAccesoTemaUseCase
@@ -27,15 +29,22 @@ import kotlinx.coroutines.flow.asStateFlow
  * (que solo lista ObtenerTemasPorMundoUseCase y ValidarAccesoTemaUseCase),
  * pero el diagrama de secuencia sí exige esa validación, así que se añadió
  * ValidarAccesoNivelUseCase como tercera dependencia.
+ *
+ * ObtenerMundoUseCase se añadió para mostrar el nombre, la descripción y el
+ * estilo visual del mundo en la cabecera del escudo.
  */
 class RoadmapViewModel(
     private val obtenerTemasUseCase: ObtenerTemasPorMundoUseCase,
     private val validarAccesoTemaUseCase: ValidarAccesoTemaUseCase,
-    private val validarAccesoNivelUseCase: ValidarAccesoNivelUseCase
+    private val validarAccesoNivelUseCase: ValidarAccesoNivelUseCase,
+    private val obtenerMundoUseCase: ObtenerMundoUseCase
 ) : ViewModel() {
 
     private val _temas = MutableStateFlow<List<Tema>>(emptyList())
     val temas: StateFlow<List<Tema>> = _temas.asStateFlow()
+
+    private val _mundo = MutableStateFlow<Mundo?>(null)
+    val mundo: StateFlow<Mundo?> = _mundo.asStateFlow()
 
     private val _mensajeBloqueo = MutableStateFlow<String?>(null)
     val mensajeBloqueo: StateFlow<String?> = _mensajeBloqueo.asStateFlow()
@@ -49,6 +58,7 @@ class RoadmapViewModel(
     }
 
     suspend fun cargarRoadmap(mundoId: String) {
+        _mundo.value = obtenerMundoUseCase(mundoId)
         _temas.value = obtenerTemasUseCase(mundoId)
     }
 
@@ -68,10 +78,11 @@ class RoadmapViewModel(
         fun factory(
             obtenerTemasUseCase: ObtenerTemasPorMundoUseCase,
             validarAccesoTemaUseCase: ValidarAccesoTemaUseCase,
-            validarAccesoNivelUseCase: ValidarAccesoNivelUseCase
+            validarAccesoNivelUseCase: ValidarAccesoNivelUseCase,
+            obtenerMundoUseCase: ObtenerMundoUseCase
         ): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                RoadmapViewModel(obtenerTemasUseCase, validarAccesoTemaUseCase, validarAccesoNivelUseCase)
+                RoadmapViewModel(obtenerTemasUseCase, validarAccesoTemaUseCase, validarAccesoNivelUseCase, obtenerMundoUseCase)
             }
         }
     }
