@@ -15,6 +15,10 @@ import com.aesir.odin.domain.model.Tema
 import com.aesir.odin.ui.crucigrama.CrucigramaScreen
 import com.aesir.odin.ui.crucigrama.CrucigramaViewModel
 import com.aesir.odin.ui.crucigrama.ResultadoCrucigramaScreen
+import com.aesir.odin.ui.flashcards.FlashcardsScreen
+import com.aesir.odin.ui.flashcards.FlashcardsViewModel
+import com.aesir.odin.ui.ragnarok.RagnarokScreen
+import com.aesir.odin.ui.ragnarok.RagnarokViewModel
 import com.aesir.odin.ui.leccion.LeccionInteractivaScreen
 import com.aesir.odin.ui.leccion.LeccionInteractivaViewModel
 import com.aesir.odin.ui.leccion.LeccionScreen
@@ -41,6 +45,8 @@ object OdinNavGraph {
     const val rutaPreguntaFlash = "preguntaFlash"
     const val rutaCrucigrama = "crucigrama"
     const val rutaResultadoCrucigrama = "resultadoCrucigrama"
+    const val rutaFlashcards = "flashcards"
+    const val rutaRagnarok = "ragnarok"
 
     private const val argMundoId = "mundoId"
     private const val argTemaId = "temaId"
@@ -89,19 +95,29 @@ object OdinNavGraph {
     fun rutaResultadoCrucigramaCon(temaId: String, ordenMundo: Int, puntaje: Int, aciertos: Int, errores: Int, total: Int) =
         "$rutaResultadoCrucigrama/$temaId/$ordenMundo/$puntaje/$aciertos/$errores/$total"
 
+    /** Ruta de las flashcards de un nivel (CU-03) con los temas cuyos conceptos usa. */
+    fun rutaFlashcardsCon(temaId: String, temasIncluidos: List<String>) =
+        "$rutaFlashcards/$temaId?$argTemas=${temasIncluidos.joinToString(",")}"
+
+    /** Ruta del reto de fin de mundo (CU-08) de un mundo, por el id de su tema Ragnarök. */
+    fun rutaRagnarokCon(temaId: String) = "$rutaRagnarok/$temaId"
+
     /**
-     * A dónde lleva entrar a un nivel: la introducción del tema o, si el nivel
-     * es un crucigrama, el crucigrama con los conceptos de las dos lecciones
-     * que tiene más cerca en el árbol (ArbolHabilidades).
+     * A dónde lleva entrar a un nivel: la introducción del tema; el reto de fin
+     * de mundo si es el Ragnarök; o, si el nivel es un crucigrama o unas
+     * flashcards, la actividad con los conceptos de las dos lecciones que
+     * tiene más cerca en el árbol (ArbolHabilidades).
      */
     fun rutaNivelCon(tema: Tema, temasDelMundo: List<Tema>): String {
-        if (!tema.esCrucigrama) return rutaIntroTemaCon(tema.id)
+        if (tema.esRagnarok) return rutaRagnarokCon(tema.id)
+        if (!tema.esCrucigrama && !tema.esFlashcards) return rutaIntroTemaCon(tema.id)
         val lecciones = temasDelMundo.filter { !it.esRagnarok && !it.esMinijuego }.sortedBy { it.orden }
         val minijuegos = temasDelMundo.filter { !it.esRagnarok && it.esMinijuego }.sortedBy { it.orden }
         val k = minijuegos.indexOfFirst { it.id == tema.id }
         val cercanas = if (k < 0) lecciones.indices.toList()
         else ArbolHabilidades.leccionesCercanas(k, lecciones.size, minijuegos.size)
-        return rutaCrucigramaCon(tema.id, cercanas.map { lecciones[it].id })
+        val temas = cercanas.map { lecciones[it].id }
+        return if (tema.esFlashcards) rutaFlashcardsCon(tema.id, temas) else rutaCrucigramaCon(tema.id, temas)
     }
 
     private fun argumentoMundoId(): NamedNavArgument =
@@ -388,6 +404,73 @@ object OdinNavGraph {
                     totalPalabras = args?.getInt(argTotal) ?: 0,
                     ordenMundo = args?.getInt(argOrdenMundo) ?: 1,
                     onVolverRoadmap = volverAlRoadmap
+                )
+            }
+
+            // -------------------------
+            // Flashcards (CU-03)
+            // -------------------------
+
+            composable(
+                route = "$rutaFlashcards/{$argTemaId}?$argTemas={$argTemas}",
+                arguments = listOf(
+                    argumentoTemaId(),
+                    navArgument(argTemas) {
+                        type = NavType.StringType
+                        defaultValue = ""
+                    }
+                )
+            ) { entrada ->
+                val temaId = entrada.arguments?.getString(argTemaId).orEmpty()
+                val temas = entrada.arguments?.getString(argTemas).orEmpty()
+                    .split(",").filter { it.isNotBlank() }
+                val viewModel: FlashcardsViewModel = viewModel(factory = FlashcardsViewModel.factory(appContainer))
+
+                FlashcardsScreen(
+                    viewModel = viewModel,
+                    temaId = temaId,
+                    temasIncluidos = temas,
+                    onVolverRoadmap = volverAlRoadmap,
+                    // A5.2: la lección del tema de la carta fallada; el roadmap queda debajo.
+                    onRepasarLeccion = { temaLeccion ->
+                        nav.navigate(rutaIntroTemaCon(temaLeccion)) {
+                            popUpTo("$rutaRoadmap/{$argMundoId}") { inclusive = false }
+                        }
+                    },
+                    // MOD-01: salir antes de terminar es abandonar el nivel.
+                    onSalir = { viewModel.abandonar(volverAlRoadmap) }
+                )
+            }
+
+            // -------------------------
+            // Reto de fin de mundo (CU-08)
+            // -------------------------
+
+            composable(
+                route = "$rutaRagnarok/{$argTemaId}",
+                arguments = listOf(argumentoTemaId())
+            ) { entrada ->
+                val temaId = entrada.arguments?.getString(argTemaId).orEmpty()
+                val viewModel: RagnarokViewModel = viewModel(factory = RagnarokViewModel.factory(appContainer))
+
+                RagnarokScreen(
+                    viewModel = viewModel,
+                    temaId = temaId,
+                    onVolverRoadmap = volverAlRoadmap,
+                    // Al superar el reto se puede pasar directo al mundo que se desbloqueó.
+                    onIrAlMundo = { mundoId ->
+                        nav.navigate(rutaRoadmapCon(mundoId)) {
+                            popUpTo(rutaMundos) { inclusive = false }
+                        }
+                    },
+                    // A10.1: repasar la lección de un tema con errores.
+                    onRepasarLeccion = { temaLeccion ->
+                        nav.navigate(rutaIntroTemaCon(temaLeccion)) {
+                            popUpTo("$rutaRoadmap/{$argMundoId}") { inclusive = false }
+                        }
+                    },
+                    // MOD-01: salir antes de terminar es abandonar el nivel.
+                    onSalir = { viewModel.abandonar(volverAlRoadmap) }
                 )
             }
         }

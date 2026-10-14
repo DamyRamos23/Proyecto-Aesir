@@ -13,6 +13,8 @@ import com.aesir.odin.data.local.dao.HistorialErrorDao
 import com.aesir.odin.data.local.dao.LeccionDao
 import com.aesir.odin.data.local.dao.MundoDao
 import com.aesir.odin.data.local.dao.ResultadoCrucigramaDao
+import com.aesir.odin.data.local.dao.ResultadoFlashcardsDao
+import com.aesir.odin.data.local.dao.ResultadoRetoFinMundoDao
 import com.aesir.odin.data.local.dao.TemaDao
 import com.aesir.odin.data.local.entity.ConceptoCrucigramaEntity
 import com.aesir.odin.data.local.entity.EjercicioEntity
@@ -24,7 +26,9 @@ import com.aesir.odin.data.local.entity.MundoEntity
 import com.aesir.odin.data.local.entity.NivelSuperadoEntity
 import com.aesir.odin.data.local.entity.ReservaHidromielEntity
 import com.aesir.odin.data.local.entity.ResultadoCrucigramaEntity
+import com.aesir.odin.data.local.entity.ResultadoFlashcardsEntity
 import com.aesir.odin.data.local.entity.ResultadoLeccionEntity
+import com.aesir.odin.data.local.entity.ResultadoRetoFinMundoEntity
 import com.aesir.odin.data.local.entity.TemaEntity
 
 @Database(
@@ -40,12 +44,15 @@ import com.aesir.odin.data.local.entity.TemaEntity
         NivelSuperadoEntity::class,
         MundoDesbloqueadoEntity::class,
         ConceptoCrucigramaEntity::class,
-        ResultadoCrucigramaEntity::class
+        ResultadoCrucigramaEntity::class,
+        ResultadoFlashcardsEntity::class,
+        ResultadoRetoFinMundoEntity::class
     ],
     // v3: MOD-01 Sistema de Hidromiel (tablas nuevas y columna temas.tipo)
     // v4: CU-07 crucigrama (conceptos, resultados y columna temas.actividad)
     // v5: árbol de dos anillos (columna temas.anillo y minijuegos por mundo)
-    version = 5,
+    // v6: CU-03 flashcards y CU-08 reto de fin de mundo (tablas de resultados)
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -59,6 +66,8 @@ abstract class OdinDatabase : RoomDatabase() {
     abstract fun hidromielDao(): HidromielDao
     abstract fun conceptoCrucigramaDao(): ConceptoCrucigramaDao
     abstract fun resultadoCrucigramaDao(): ResultadoCrucigramaDao
+    abstract fun resultadoFlashcardsDao(): ResultadoFlashcardsDao
+    abstract fun resultadoRetoFinMundoDao(): ResultadoRetoFinMundoDao
 
     companion object {
         private const val NOMBRE = "odin.db"
@@ -79,6 +88,15 @@ abstract class OdinDatabase : RoomDatabase() {
                                 db: androidx.sqlite.db.SupportSQLiteDatabase
                             ) {
                                 super.onCreate(db)
+                                DatosIniciales.insertar(db)
+                            }
+
+                            // Al subir la versión, Room recrea las tablas vacías sin llamar a
+                            // onCreate: se vuelve a sembrar el contenido.
+                            override fun onDestructiveMigration(
+                                db: androidx.sqlite.db.SupportSQLiteDatabase
+                            ) {
+                                super.onDestructiveMigration(db)
                                 DatosIniciales.insertar(db)
                             }
                         }

@@ -4,15 +4,27 @@ import android.content.Context
 import com.aesir.odin.data.local.OdinDatabase
 import com.aesir.odin.data.repository.CatalogoNivelesImpl
 import com.aesir.odin.data.repository.CrucigramaRepositoryImpl
+import com.aesir.odin.data.repository.FlashcardsRepositoryImpl
 import com.aesir.odin.data.repository.HidromielRepositoryImpl
 import com.aesir.odin.data.repository.HistorialRepositoryImpl
 import com.aesir.odin.data.repository.LeccionRepositoryImpl
+import com.aesir.odin.data.repository.RetoFinMundoRepositoryImpl
 import com.aesir.odin.data.repository.RoadmapRepositoryImpl
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.repository.CrucigramaRepository
+import com.aesir.odin.domain.repository.FlashcardsRepository
 import com.aesir.odin.domain.repository.HistorialRepository
 import com.aesir.odin.domain.repository.LeccionRepository
+import com.aesir.odin.domain.repository.RetoFinMundoRepository
 import com.aesir.odin.domain.repository.RoadmapRepository
+import com.aesir.odin.domain.usecase.flashcards.FinalizarFlashcardsUseCase
+import com.aesir.odin.domain.usecase.flashcards.GenerarFlashcardsUseCase
+import com.aesir.odin.domain.usecase.flashcards.RegistrarErrorFlashcardUseCase
+import com.aesir.odin.domain.usecase.flashcards.RegistrarFlashcardsSinSuperarUseCase
+import com.aesir.odin.domain.usecase.retofinmundo.AbandonarRetoFinMundoUseCase
+import com.aesir.odin.domain.usecase.retofinmundo.FinalizarRetoFinMundoUseCase
+import com.aesir.odin.domain.usecase.retofinmundo.ObtenerRetoFinMundoUseCase
+import com.aesir.odin.domain.usecase.retofinmundo.RegistrarErrorRetoUseCase
 import com.aesir.odin.domain.usecase.crucigrama.ActualizarPuntajeUseCase
 import com.aesir.odin.domain.usecase.crucigrama.FinalizarCrucigramaUseCase
 import com.aesir.odin.domain.usecase.crucigrama.GenerarCrucigramaUseCase
@@ -85,4 +97,26 @@ class AppContainer(context: Context) {
         RegistrarLeccionCompletadaUseCase(roadmapRepository), // reutilizado de CU-05
         moduloHidromiel
     )
+
+    // CU-03 Repasar conceptos con flashcards
+    val flashcardsRepository: FlashcardsRepository =
+        FlashcardsRepositoryImpl(database.conceptoCrucigramaDao(), database.resultadoFlashcardsDao())
+    val generarFlashcardsUseCase = GenerarFlashcardsUseCase(flashcardsRepository, roadmapRepository)
+    val registrarErrorFlashcardUseCase = RegistrarErrorFlashcardUseCase(historialRepository)
+    val finalizarFlashcardsUseCase = FinalizarFlashcardsUseCase(
+        flashcardsRepository,
+        RegistrarLeccionCompletadaUseCase(roadmapRepository),
+        moduloHidromiel
+    )
+    val registrarFlashcardsSinSuperarUseCase = RegistrarFlashcardsSinSuperarUseCase(moduloHidromiel)
+
+    // CU-08 Resolver reto de fin de mundo (Ragnarök)
+    val retoFinMundoRepository: RetoFinMundoRepository =
+        RetoFinMundoRepositoryImpl(database.resultadoRetoFinMundoDao())
+    val obtenerRetoFinMundoUseCase =
+        ObtenerRetoFinMundoUseCase(roadmapRepository, leccionRepository, moduloHidromiel)
+    val registrarErrorRetoUseCase = RegistrarErrorRetoUseCase(historialRepository)
+    val finalizarRetoFinMundoUseCase =
+        FinalizarRetoFinMundoUseCase(retoFinMundoRepository, roadmapRepository, moduloHidromiel)
+    val abandonarRetoFinMundoUseCase = AbandonarRetoFinMundoUseCase(retoFinMundoRepository, moduloHidromiel)
 }

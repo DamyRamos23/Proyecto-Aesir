@@ -16,8 +16,8 @@ object DatosCrucigrama {
     /**
      * Anillo exterior (minijuegos) de cada mundo: 2 crucigramas, 2 memoramas
      * y 2 de flash cards, intercalados. Cada uno queda entre las dos lecciones
-     * que repasa (ArbolHabilidades). Memorama y flash cards se muestran como
-     * "Próximamente" hasta que se programen.
+     * que repasa (ArbolHabilidades). El memorama se muestra como "Próximamente"
+     * hasta que se programe.
      */
     fun minijuegos(mundos: List<MundoEntity>): List<TemaEntity> = mundos.flatMap { mundo ->
         MINIJUEGOS.mapIndexed { k, (actividad, nombre, descripcion) ->
@@ -40,10 +40,10 @@ object DatosCrucigrama {
     private val MINIJUEGOS = listOf(
         Triple("CRUCIGRAMA", "Crucigrama I", "Resuelve un crucigrama con los conceptos de las lecciones cercanas."),
         Triple("MEMORAMA", "Memorama I", "Encuentra los pares de concepto y definición."),
-        Triple("FLASHCARDS", "Flash cards I", "Repasa los conceptos con tarjetas de pregunta y respuesta."),
+        Triple("FLASHCARDS", "Flash cards I", "Lee la descripción de cada tarjeta y elige el concepto al que corresponde."),
         Triple("CRUCIGRAMA", "Crucigrama II", "Resuelve un crucigrama con los conceptos de las lecciones cercanas."),
         Triple("MEMORAMA", "Memorama II", "Encuentra los pares de concepto y definición."),
-        Triple("FLASHCARDS", "Flash cards II", "Repasa los conceptos con tarjetas de pregunta y respuesta.")
+        Triple("FLASHCARDS", "Flash cards II", "Lee la descripción de cada tarjeta y elige el concepto al que corresponde.")
     )
 
     private val banco: Map<String, List<Pair<String, String>>> = mapOf(

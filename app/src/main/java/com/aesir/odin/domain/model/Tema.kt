@@ -25,5 +25,6 @@ data class Tema(
     val actividad: Actividad = Actividad.LECCION
 ) {
     val esCrucigrama: Boolean get() = actividad == Actividad.CRUCIGRAMA
+    val esFlashcards: Boolean get() = actividad == Actividad.FLASHCARDS
     val esMinijuego: Boolean get() = anillo == ArbolHabilidades.ANILLO_MINIJUEGOS
 }

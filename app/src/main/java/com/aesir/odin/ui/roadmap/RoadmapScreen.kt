@@ -711,6 +711,7 @@ private fun PanelTema(
                         tema.esRagnarok -> "Enfrentar"
                         acceso.estado == EstadoNivel.DISPONIBLE && acceso.costo > 0 -> "Entrar · ${acceso.costo}"
                         tema.esCrucigrama -> "Resolver crucigrama"
+                        tema.esFlashcards -> "Repasar flashcards"
                         tema.introduccionVista -> "Continuar tema"
                         else -> "Comenzar tema"
                     },
