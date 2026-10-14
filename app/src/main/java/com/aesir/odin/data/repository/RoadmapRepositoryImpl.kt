@@ -4,6 +4,7 @@ import com.aesir.odin.data.local.dao.MundoDao
 import com.aesir.odin.data.local.dao.TemaDao
 import com.aesir.odin.data.local.entity.MundoEntity
 import com.aesir.odin.data.local.entity.TemaEntity
+import com.aesir.odin.domain.model.Actividad
 import com.aesir.odin.domain.model.Mundo
 import com.aesir.odin.domain.model.Tema
 import com.aesir.odin.domain.repository.RoadmapRepository
@@ -62,6 +63,9 @@ class RoadmapRepositoryImpl(
         orden = orden,
         desbloqueado = desbloqueado,
         completado = completado,
-        introduccionVista = introduccionVista
+        introduccionVista = introduccionVista,
+        esRagnarok = tipo == "RAGNAROK",
+        anillo = anillo,
+        actividad = Actividad.desde(actividad)
     )
 }

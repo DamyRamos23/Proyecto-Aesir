@@ -75,6 +75,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.aesir.odin.di.AppContainer
+import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
+import com.aesir.odin.ui.components.odin.ContadorHidromiel
 import com.aesir.odin.domain.model.Mundo
 import com.aesir.odin.ui.components.odin.BotonOdin
 import com.aesir.odin.ui.components.odin.FondoMundo
@@ -107,6 +109,7 @@ fun MundosScreen(
         factory = MundosViewModel.factory(appContainer.obtenerMundosUseCase)
     )
     val mundos by viewModel.mundos.collectAsState()
+    val saldo by remember { appContainer.moduloHidromiel.observarSaldo(USUARIO_LOCAL) }.collectAsState(initial = 0)
 
     LaunchedEffect(Unit) {
         viewModel.cargarMundos()
@@ -125,10 +128,13 @@ fun MundosScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
-            Text("MUNDOS", style = estiloTitulo(36.sp))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("MUNDOS", style = estiloTitulo(36.sp), modifier = Modifier.weight(1f))
+                ContadorHidromiel(saldo = saldo)
+            }
             Spacer(Modifier.height(6.dp))
             Text(
-                "Cada mundo es un tema de Ingeniería de Software. Termina uno para abrir el siguiente.",
+                "Cada mundo es un tema de Ingeniería de Software. Supera su Ragnarök para abrir el siguiente.",
                 color = OdinPaleta.HuesoTenue,
                 fontFamily = FuenteTexto,
                 fontSize = 15.sp,
@@ -434,7 +440,7 @@ private fun PanelMundo(mundo: Mundo, anterior: Mundo?, onEntrar: () -> Unit) {
                 Icon(Icons.Filled.Lock, contentDescription = null, tint = OdinPaleta.Escarcha, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    if (anterior != null) "Se abre al terminar ${anterior.nombre}." else "Este mundo todavía está bloqueado.",
+                    if (anterior != null) "Se abre al superar el Ragnarök de ${anterior.nombre}." else "Este mundo todavía está bloqueado.",
                     color = OdinPaleta.Escarcha,
                     fontFamily = FuenteTexto,
                     fontSize = 15.sp

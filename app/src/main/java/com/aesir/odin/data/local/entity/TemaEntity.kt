@@ -12,5 +12,11 @@ data class TemaEntity(
     val orden: Int,
     val desbloqueado: Boolean,
     val introduccionVista: Boolean,
-    val completado: Boolean
+    val completado: Boolean,
+    /** TipoNivel del MOD-01: "NORMAL" o "RAGNAROK". */
+    val tipo: String = "NORMAL",
+    /** Actividad del nivel: "LECCION" o "CRUCIGRAMA" (CU-07). */
+    val actividad: String = "LECCION",
+    /** Anillo del árbol de habilidades: 1 = lecciones, 2 = minijuegos, 0 = Ragnarök (centro). */
+    val anillo: Int = 1
 )

@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.activity.compose.BackHandler
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -91,6 +92,10 @@ fun LeccionInteractivaScreen(
     val ultimoResultado by viewModel.ultimoResultado.collectAsState()
     val resultadoFinal by viewModel.resultadoFinal.collectAsState()
     val leccionFallida by viewModel.leccionFallida.collectAsState()
+    var confirmarSalida by remember { mutableStateOf(false) }
+
+    // Salir antes de terminar es abandonar el nivel (MOD-01): se pregunta primero.
+    BackHandler(enabled = resultadoFinal == null && !leccionFallida) { confirmarSalida = true }
 
     LaunchedEffect(resultadoFinal) {
         val resultado = resultadoFinal ?: return@LaunchedEffect
@@ -123,12 +128,21 @@ fun LeccionInteractivaScreen(
                 ultimoResultado = ultimoResultado,
                 onComprobar = viewModel::responder,
                 onContinuar = viewModel::siguienteEjercicio,
-                onSalir = onSalir
+                onSalir = { confirmarSalida = true }
             )
         }
 
         if (leccionFallida) {
             DialogoLeccionFallida(estilo = estilo, onVolverRoadmap = onLeccionFallida)
+        } else if (confirmarSalida) {
+            DialogoSalir(
+                estilo = estilo,
+                onQuedarse = { confirmarSalida = false },
+                onSalir = {
+                    confirmarSalida = false
+                    onSalir()
+                }
+            )
         }
     }
 }
@@ -476,7 +490,7 @@ private fun DialogoLeccionFallida(estilo: EstiloMundo, onVolverRoadmap: () -> Un
         text = {
             Text(
                 "Cometiste ${RegistrarErrorLeccionUseCase.LIMITE_ERRORES} errores, así que la lección " +
-                    "terminó sin recompensa.\n\nTe sugerimos repasar la introducción del tema y " +
+                    "terminó sin recompensa. Si pagaste entrada de hidromiel, se perdió.\n\nTe sugerimos repasar la introducción del tema y " +
                     "practicar con preguntas flash antes de volver a intentarlo.",
                 fontFamily = FuenteTexto
             )
@@ -484,6 +498,34 @@ private fun DialogoLeccionFallida(estilo: EstiloMundo, onVolverRoadmap: () -> Un
         confirmButton = {
             TextButton(onClick = onVolverRoadmap) {
                 Text("Volver al roadmap", color = estilo.acento, fontFamily = FuenteTitulo)
+            }
+        }
+    )
+}
+
+/** Salir antes de terminar cuenta como abandonar el nivel (MOD-01). */
+@Composable
+private fun DialogoSalir(estilo: EstiloMundo, onQuedarse: () -> Unit, onSalir: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onQuedarse,
+        containerColor = OdinPaleta.HollinAlto,
+        titleContentColor = OdinPaleta.Hueso,
+        textContentColor = OdinPaleta.Hueso,
+        title = { Text("¿Abandonar la lección?", fontFamily = FuenteTitulo) },
+        text = {
+            Text(
+                "Si sales ahora, el nivel cuenta como abandonado: si pagaste entrada de hidromiel, se pierde.",
+                fontFamily = FuenteTexto
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onQuedarse) {
+                Text("Seguir jugando", color = estilo.acento, fontFamily = FuenteTitulo)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onSalir) {
+                Text("Abandonar", color = OdinPaleta.Incorrecto, fontFamily = FuenteTitulo)
             }
         }
     )

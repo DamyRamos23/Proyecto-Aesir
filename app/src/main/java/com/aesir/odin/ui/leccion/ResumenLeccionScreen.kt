@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -61,6 +62,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aesir.odin.di.AppContainer
+import com.aesir.odin.domain.hidromiel.EstadoNivel
+import com.aesir.odin.domain.hidromiel.ResultadoAcceso
 import com.aesir.odin.domain.model.Tema
 import com.aesir.odin.ui.components.odin.BotonOdin
 import com.aesir.odin.ui.components.odin.FondoMundo
@@ -96,7 +99,7 @@ fun ResumenLeccionScreen(
     totalEjercicios: Int,
     appContainer: AppContainer,
     onVolverRoadmap: () -> Unit,
-    onAbrirTema: (temaId: String) -> Unit,
+    onAbrirTema: (tema: Tema, temasDelMundo: List<Tema>) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val viewModel: ResumenLeccionViewModel = viewModel(
@@ -104,6 +107,8 @@ fun ResumenLeccionScreen(
     )
     val contexto by viewModel.contexto.collectAsState()
     val fallo by viewModel.fallo.collectAsState()
+    val saldo by viewModel.saldo.collectAsState()
+    val mensaje by viewModel.mensaje.collectAsState()
     val ctx = contexto
 
     if (ctx == null && !fallo) {
@@ -114,17 +119,43 @@ fun ResumenLeccionScreen(
     }
 
     val estilo = EstilosMundo.porOrden(ctx?.mundo?.orden ?: 1)
+
+    mensaje?.let { texto ->
+        AlertDialog(
+            onDismissRequest = viewModel::limpiarMensaje,
+            containerColor = OdinPaleta.HollinAlto,
+            titleContentColor = OdinPaleta.Hueso,
+            textContentColor = OdinPaleta.Hueso,
+            title = { Text("No puedes entrar", fontFamily = FuenteTitulo) },
+            text = { Text(texto, fontFamily = FuenteTexto) },
+            confirmButton = {
+                TextButton(onClick = viewModel::limpiarMensaje) {
+                    Text("Entendido", color = estilo.acento, fontFamily = FuenteTitulo)
+                }
+            }
+        )
+    }
+
     ResumenAnimado(
         estilo = estilo,
         tema = ctx?.tema,
         temas = ctx?.temas.orEmpty(),
         siguiente = ctx?.siguiente,
+        accesoSiguiente = ctx?.accesoSiguiente,
+        ragnarokDisponible = ctx?.ragnarokDisponible == true,
+        saldo = saldo,
         nombreMundo = ctx?.mundo?.nombre ?: "",
         puntaje = puntaje,
         errores = errores,
         totalEjercicios = totalEjercicios,
         onVolverRoadmap = onVolverRoadmap,
-        onAbrirTema = onAbrirTema,
+        // MOD-01: el siguiente tema también cobra su entrada antes de abrirse.
+        onAbrirTema = { temaId ->
+            viewModel.abrirTema(temaId) { id ->
+                val temas = ctx?.temas.orEmpty()
+                temas.firstOrNull { it.id == id }?.let { onAbrirTema(it, temas) }
+            }
+        },
         modifier = modifier
     )
 }
@@ -138,6 +169,9 @@ private fun ResumenAnimado(
     tema: Tema?,
     temas: List<Tema>,
     siguiente: Tema?,
+    accesoSiguiente: ResultadoAcceso?,
+    ragnarokDisponible: Boolean,
+    saldo: Int,
     nombreMundo: String,
     puntaje: Int,
     errores: Int,
@@ -165,7 +199,9 @@ private fun ResumenAnimado(
 
     val runa = estilo.runaDeTema(tema?.orden ?: 1)
     val aciertos = (totalEjercicios - errores).coerceAtLeast(0)
-    val siguienteDisponible = siguiente != null && siguiente.desbloqueado
+    val siguienteDisponible = siguiente != null && accesoSiguiente != null
+    val costoSiguiente = accesoSiguiente?.takeIf { it.estado == EstadoNivel.DISPONIBLE }?.costo ?: 0
+    val faltaSiguiente = (costoSiguiente - saldo).coerceAtLeast(0)
 
     FondoMundo(
         estilo = estilo,
@@ -217,7 +253,7 @@ private fun ResumenAnimado(
             // Runas del mundo: la del tema actual se enciende con el destello
             if (temas.isNotEmpty()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 8.dp)) {
-                    temas.sortedBy { it.orden }.forEach { t2 ->
+                    temas.filter { it.anillo == tema?.anillo }.sortedBy { it.orden }.forEach { t2 ->
                         val esActual = t2.id == tema?.id
                         val encendida = if (esActual) titulo > .3f else t2.completado
                         SelloRunico(
@@ -246,12 +282,27 @@ private fun ResumenAnimado(
             // Tema desbloqueado o mundo completado
             Box(Modifier.graphicsLayer { alpha = tarjeta; translationX = (1f - tarjeta) * -80f }) {
                 when {
+                    tema?.esRagnarok == true -> TarjetaDesbloqueo(
+                        estilo = estilo,
+                        runa = runa,
+                        etiqueta = "MUNDO CONQUISTADO",
+                        texto = "Sobreviviste al Ragnarök de $nombreMundo. El siguiente mundo te espera.",
+                        onClick = null
+                    )
                     siguienteDisponible && siguiente != null -> TarjetaDesbloqueo(
                         estilo = estilo,
                         runa = estilo.runaDeTema(siguiente.orden),
-                        etiqueta = "NUEVO TEMA DESBLOQUEADO",
-                        texto = "Tema ${siguiente.orden}: ${siguiente.nombre}",
-                        onClick = if (botones > .9f) ({ onAbrirTema(siguiente.id) }) else null
+                        etiqueta = if (costoSiguiente > 0) "NUEVO NIVEL DISPONIBLE" else "NUEVO TEMA DESBLOQUEADO",
+                        texto = (if (siguiente.esMinijuego) siguiente.nombre else "Tema ${siguiente.orden}: ${siguiente.nombre}") +
+                            if (costoSiguiente > 0) " · Entrada: $costoSiguiente de hidromiel" else "",
+                        onClick = if (botones > .9f && faltaSiguiente == 0) ({ onAbrirTema(siguiente.id) }) else null
+                    )
+                    ragnarokDisponible -> TarjetaDesbloqueo(
+                        estilo = estilo,
+                        runa = runa,
+                        etiqueta = "EL RAGNARÖK DESPERTÓ",
+                        texto = "Vuelve al escudo de $nombreMundo para enfrentarlo.",
+                        onClick = null
                     )
                     siguiente == null && tema != null -> TarjetaDesbloqueo(
                         estilo = estilo,
@@ -270,12 +321,22 @@ private fun ResumenAnimado(
                 Modifier.graphicsLayer { alpha = botones; translationY = (1f - botones) * 30f },
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (siguienteDisponible && siguiente != null) {
+                if (siguienteDisponible && siguiente != null && tema?.esRagnarok != true) {
+                    if (faltaSiguiente > 0) {
+                        Text(
+                            "Te faltan $faltaSiguiente de hidromiel para entrar al siguiente tema.",
+                            color = OdinPaleta.Incorrecto,
+                            fontFamily = FuenteTexto,
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
                     BotonOdin(
-                        texto = "Siguiente tema",
+                        texto = if (costoSiguiente > 0) "Siguiente · $costoSiguiente" else "Siguiente tema",
                         onClick = { onAbrirTema(siguiente.id) },
                         acento = estilo.acento,
-                        habilitado = botones > .9f,
+                        habilitado = botones > .9f && faltaSiguiente == 0,
                         iconoFinal = Icons.AutoMirrored.Filled.ArrowForward,
                         modifier = Modifier.fillMaxWidth()
                     )

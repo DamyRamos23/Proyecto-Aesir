@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.aesir.odin.di.AppContainer
+import com.aesir.odin.domain.hidromiel.ResultadoNivel
 import com.aesir.odin.domain.model.EstadoRespuesta
 import com.aesir.odin.domain.model.Leccion
 import com.aesir.odin.domain.model.Mundo
@@ -15,6 +16,7 @@ import com.aesir.odin.domain.model.Tema
 import com.aesir.odin.domain.usecase.leccion.FinalizarLeccionUseCase
 import com.aesir.odin.domain.usecase.leccion.ObtenerLeccionUseCase
 import com.aesir.odin.domain.usecase.leccion.RegistrarErrorLeccionUseCase
+import com.aesir.odin.domain.usecase.leccion.RegistrarNivelSinSuperarUseCase
 import com.aesir.odin.domain.usecase.leccion.ValidarRespuestaEjercicioUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerIntroduccionTemaUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerMundoUseCase
@@ -30,6 +32,10 @@ import kotlinx.coroutines.launch
  * cuenta los errores (RF-17) y termina la lección al tercer error (RF-18),
  * o la finaliza con su resultado al completar todos los ejercicios (RF-21 a RF-24).
  *
+ * Al terminar avisa al MOD-01 (Sistema de Hidromiel): superada, con
+ * FinalizarLeccionUseCase; con el límite de errores (NO_SUPERADO) o al salir
+ * antes de terminar (ABANDONADO), con RegistrarNivelSinSuperarUseCase.
+ *
  * Además carga el tema y el mundo de la lección ([contexto]) solo para que la
  * pantalla use el estilo visual del mundo; no interviene en la lógica.
  */
@@ -38,6 +44,7 @@ class LeccionInteractivaViewModel(
     private val validarUseCase: ValidarRespuestaEjercicioUseCase,
     private val registrarErrorUseCase: RegistrarErrorLeccionUseCase,
     private val finalizarUseCase: FinalizarLeccionUseCase,
+    private val registrarSinSuperarUseCase: RegistrarNivelSinSuperarUseCase? = null,
     private val obtenerTemaUseCase: ObtenerIntroduccionTemaUseCase? = null,
     private val obtenerMundoUseCase: ObtenerMundoUseCase? = null
 ) : ViewModel() {
@@ -66,6 +73,9 @@ class LeccionInteractivaViewModel(
 
     private var finalizando = false
 
+    /** Evita avisar dos veces al MOD-01 por el mismo intento. */
+    private var nivelReportado = false
+
     fun cargarLeccion(leccionId: String) {
         viewModelScope.launch {
             val leccion = obtenerUseCase(leccionId)
@@ -78,6 +88,7 @@ class LeccionInteractivaViewModel(
             _resultadoFinal.value = null
             _leccionFallida.value = false
             finalizando = false
+            nivelReportado = false
             _leccion.value = leccion
         }
     }
@@ -104,9 +115,11 @@ class LeccionInteractivaViewModel(
             val errores = _errores.value + 1
             _errores.value = errores
             // Se interrumpe de inmediato, sin esperar a que termine de guardarse el error.
-            if (errores >= RegistrarErrorLeccionUseCase.LIMITE_ERRORES) _leccionFallida.value = true
+            val fallida = errores >= RegistrarErrorLeccionUseCase.LIMITE_ERRORES
+            if (fallida) _leccionFallida.value = true
             viewModelScope.launch {
                 registrarErrorUseCase(leccion.id, ejercicio.id, errores)
+                if (fallida) reportarSinSuperar(ResultadoNivel.NO_SUPERADO)
             }
         }
     }
@@ -121,10 +134,33 @@ class LeccionInteractivaViewModel(
             _ejercicioActual.value = siguiente
         } else if (!finalizando) {
             finalizando = true
+            nivelReportado = true
             viewModelScope.launch {
                 _resultadoFinal.value = finalizarUseCase(leccion.id, leccion.ejercicios.size, _errores.value)
             }
         }
+    }
+
+    /**
+     * El alumno sale de la lección. Si no la había terminado, la entrada se
+     * pierde (ABANDONADO). Se espera a que el módulo registre el abandono
+     * antes de [alTerminar], para que el roadmap ya muestre el saldo correcto.
+     */
+    fun abandonar(alTerminar: () -> Unit) {
+        viewModelScope.launch {
+            if (_leccion.value != null && !_leccionFallida.value) reportarSinSuperar(ResultadoNivel.ABANDONADO)
+            alTerminar()
+        }
+    }
+
+    private suspend fun reportarSinSuperar(resultado: ResultadoNivel) {
+        val leccion = _leccion.value ?: return
+        val registrar = registrarSinSuperarUseCase ?: return
+        if (nivelReportado) return
+        nivelReportado = true
+        val total = leccion.ejercicios.size
+        val aciertos = (_ejercicioActual.value + (if (_ultimoResultado.value != null) 1 else 0) - _errores.value).coerceAtLeast(0)
+        registrar(leccion.id, resultado, if (total > 0) aciertos * 100 / total else 0)
     }
 
     companion object {
@@ -136,6 +172,7 @@ class LeccionInteractivaViewModel(
                         validarUseCase = container.validarRespuestaEjercicioUseCase,
                         registrarErrorUseCase = container.registrarErrorLeccionUseCase,
                         finalizarUseCase = container.finalizarLeccionUseCase,
+                        registrarSinSuperarUseCase = container.registrarNivelSinSuperarUseCase,
                         obtenerTemaUseCase = container.obtenerIntroduccionTemaUseCase,
                         obtenerMundoUseCase = container.obtenerMundoUseCase
                     ).apply { cargarLeccion(leccionId) }
