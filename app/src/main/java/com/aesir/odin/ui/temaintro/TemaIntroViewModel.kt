@@ -69,7 +69,8 @@ class TemaIntroViewModel(
                         ?.map { it.trim() }
                         ?.filter { it.isNotEmpty() }
                         .orEmpty(),
-                    totalTemas = obtenerTemasPorMundoUseCase(tema.mundoId).size
+                    // Solo las lecciones del anillo interior: "Tema N de 4"
+                    totalTemas = obtenerTemasPorMundoUseCase(tema.mundoId).count { !it.esRagnarok && !it.esMinijuego }
                 )
             }.getOrElse { TemaIntroUiState.Error }
         }

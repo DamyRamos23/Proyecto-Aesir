@@ -2,18 +2,27 @@ package com.aesir.odin.di
 
 import android.content.Context
 import com.aesir.odin.data.local.OdinDatabase
+import com.aesir.odin.data.repository.CatalogoNivelesImpl
+import com.aesir.odin.data.repository.CrucigramaRepositoryImpl
+import com.aesir.odin.data.repository.HidromielRepositoryImpl
 import com.aesir.odin.data.repository.HistorialRepositoryImpl
 import com.aesir.odin.data.repository.LeccionRepositoryImpl
 import com.aesir.odin.data.repository.RoadmapRepositoryImpl
+import com.aesir.odin.domain.hidromiel.ModuloHidromiel
+import com.aesir.odin.domain.repository.CrucigramaRepository
 import com.aesir.odin.domain.repository.HistorialRepository
 import com.aesir.odin.domain.repository.LeccionRepository
 import com.aesir.odin.domain.repository.RoadmapRepository
+import com.aesir.odin.domain.usecase.crucigrama.ActualizarPuntajeUseCase
+import com.aesir.odin.domain.usecase.crucigrama.FinalizarCrucigramaUseCase
+import com.aesir.odin.domain.usecase.crucigrama.GenerarCrucigramaUseCase
+import com.aesir.odin.domain.usecase.crucigrama.ValidarPalabraUseCase
 import com.aesir.odin.domain.usecase.leccion.FinalizarLeccionUseCase
 import com.aesir.odin.domain.usecase.leccion.ObtenerLeccionUseCase
 import com.aesir.odin.domain.usecase.leccion.RegistrarErrorLeccionUseCase
 import com.aesir.odin.domain.usecase.leccion.RegistrarLeccionCompletadaUseCase
+import com.aesir.odin.domain.usecase.leccion.RegistrarNivelSinSuperarUseCase
 import com.aesir.odin.domain.usecase.leccion.ValidarRespuestaEjercicioUseCase
-import com.aesir.odin.domain.usecase.roadmap.DesbloquearSiguienteTemaUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerMundoUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerMundosUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerTemasPorMundoUseCase
@@ -21,7 +30,6 @@ import com.aesir.odin.domain.usecase.roadmap.ValidarAccesoNivelUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerIntroduccionTemaUseCase
 import com.aesir.odin.domain.usecase.roadmap.RegistrarIntroduccionVistaUseCase
 import com.aesir.odin.domain.usecase.shared.ValidarRespuestaUseCase
-import com.aesir.odin.domain.usecase.roadmap.ValidarAccesoTemaUseCase
 
 /**
  * Contenedor manual de dependencias (no hay Hilt configurado en el
@@ -43,11 +51,19 @@ class AppContainer(context: Context) {
     private val historialRepository: HistorialRepository =
         HistorialRepositoryImpl(database.historialErrorDao())
 
+    /**
+     * MOD-01 Sistema de Hidromiel. Una sola instancia para toda la app: es la
+     * única que decide qué niveles se pueden jugar y cuánto hidromiel hay.
+     */
+    val moduloHidromiel = ModuloHidromiel(
+        catalogo = CatalogoNivelesImpl(database.temaDao(), database.mundoDao()),
+        repositorio = HidromielRepositoryImpl(database)
+    )
+
     val obtenerMundosUseCase = ObtenerMundosUseCase(roadmapRepository)
     val obtenerMundoUseCase = ObtenerMundoUseCase(roadmapRepository)
     val obtenerTemasPorMundoUseCase = ObtenerTemasPorMundoUseCase(roadmapRepository)
     val validarAccesoNivelUseCase = ValidarAccesoNivelUseCase(roadmapRepository)
-    val validarAccesoTemaUseCase = ValidarAccesoTemaUseCase(roadmapRepository)
     val obtenerIntroduccionTemaUseCase = ObtenerIntroduccionTemaUseCase(roadmapRepository)
     val registrarIntroduccionVistaUseCase = RegistrarIntroduccionVistaUseCase(roadmapRepository)
 
@@ -55,11 +71,18 @@ class AppContainer(context: Context) {
     val validarRespuestaEjercicioUseCase =
         ValidarRespuestaEjercicioUseCase(ValidarRespuestaUseCase())
     val registrarErrorLeccionUseCase = RegistrarErrorLeccionUseCase(historialRepository)
-    private val registrarLeccionCompletadaUseCase =
-        RegistrarLeccionCompletadaUseCase(roadmapRepository)
-    private val desbloquearSiguienteTemaUseCase =
-        DesbloquearSiguienteTemaUseCase(roadmapRepository)
-    val finalizarLeccionUseCase = FinalizarLeccionUseCase(
-        leccionRepository, registrarLeccionCompletadaUseCase, desbloquearSiguienteTemaUseCase
+    val finalizarLeccionUseCase = FinalizarLeccionUseCase(leccionRepository, moduloHidromiel)
+    val registrarNivelSinSuperarUseCase = RegistrarNivelSinSuperarUseCase(leccionRepository, moduloHidromiel)
+
+    // CU-07 Resolver crucigrama de conceptos
+    val crucigramaRepository: CrucigramaRepository =
+        CrucigramaRepositoryImpl(database.conceptoCrucigramaDao(), database.resultadoCrucigramaDao())
+    val generarCrucigramaUseCase = GenerarCrucigramaUseCase(crucigramaRepository)
+    val validarPalabraUseCase = ValidarPalabraUseCase()
+    val actualizarPuntajeUseCase = ActualizarPuntajeUseCase()
+    val finalizarCrucigramaUseCase = FinalizarCrucigramaUseCase(
+        crucigramaRepository,
+        RegistrarLeccionCompletadaUseCase(roadmapRepository), // reutilizado de CU-05
+        moduloHidromiel
     )
 }

@@ -1,20 +1,26 @@
 package com.aesir.odin.domain.usecase.leccion
 
+import com.aesir.odin.domain.hidromiel.ModuloHidromiel
+import com.aesir.odin.domain.hidromiel.NivelFinalizado
+import com.aesir.odin.domain.hidromiel.ResultadoNivel
+import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
 import com.aesir.odin.domain.model.ResultadoLeccion
 import com.aesir.odin.domain.repository.LeccionRepository
-import com.aesir.odin.domain.usecase.roadmap.DesbloquearSiguienteTemaUseCase
 
 /**
  * Calcula el puntaje (RF-21), guarda el resultado, registra la lección como
- * completada (RF-23) y actualiza el roadmap (RF-24).
+ * completada (RF-23) y avisa al MOD-01 Sistema de Hidromiel que el nivel
+ * terminó (RF-24). El módulo marca el tema como superado, otorga la
+ * recompensa y decide qué niveles se abren; ya no se desbloquea "el
+ * siguiente tema" por orden.
  *
  * El puntaje va de 0 a 100 según el porcentaje de ejercicios respondidos
  * correctamente.
  */
 class FinalizarLeccionUseCase(
     private val leccionRepository: LeccionRepository,
-    private val registrarCompletadaUseCase: RegistrarLeccionCompletadaUseCase,
-    private val desbloquearUseCase: DesbloquearSiguienteTemaUseCase,
+    private val moduloHidromiel: ModuloHidromiel,
+    private val idUsuario: String = USUARIO_LOCAL,
     private val reloj: () -> Long = System::currentTimeMillis
 ) {
     suspend operator fun invoke(leccionId: String, totalEjercicios: Int, errores: Int): ResultadoLeccion {
@@ -30,14 +36,18 @@ class FinalizarLeccionUseCase(
             fecha = reloj()
         )
         leccionRepository.guardarResultado(resultado)
+        if (aprobada) leccionRepository.marcarCompletada(leccionId)
 
-        if (aprobada) {
-            leccionRepository.marcarCompletada(leccionId)
-            val temaId = leccionRepository.obtenerLeccion(leccionId)?.temaId
-            if (temaId != null) {
-                registrarCompletadaUseCase(temaId)
-                desbloquearUseCase(temaId)
-            }
+        val temaId = leccionRepository.obtenerLeccion(leccionId)?.temaId
+        if (temaId != null) {
+            moduloHidromiel.alFinalizarNivel(
+                NivelFinalizado(
+                    idUsuario = idUsuario,
+                    idNivel = temaId,
+                    puntaje = puntaje,
+                    resultado = if (aprobada) ResultadoNivel.SUPERADO else ResultadoNivel.NO_SUPERADO
+                )
+            )
         }
         return resultado
     }

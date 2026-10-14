@@ -21,7 +21,7 @@ object DatosIniciales {
         MundoEntity("mundo_modelos_trad", "Modelos Tradicionales", "Enfoques clásicos y estructurados para organizar el proceso de desarrollo de software.", 4, desbloqueado = false)
     )
 
-    val temas = listOf(
+    private val temasNormales = listOf(
         // Mundo 1 - UML
         TemaEntity("tema_uml_1", "mundo_uml", "Diagramas de Clases", "Estructura estática del sistema: clases, atributos y métodos.", 1, desbloqueado = true, introduccionVista = false, completado = false),
         TemaEntity("tema_uml_2", "mundo_uml", "Diagramas de Secuencia", "Interacción dinámica: intercambio de mensajes en el tiempo.", 2, desbloqueado = false, introduccionVista = false, completado = false),
@@ -47,7 +47,7 @@ object DatosIniciales {
         TemaEntity("tema_mt_4", "mundo_modelos_trad", "Modelo Incremental", "Construcción por partes o incrementos funcionales.", 4, desbloqueado = false, introduccionVista = false, completado = false)
     )
 
-    val lecciones = listOf(
+    private val leccionesNormales = listOf(
         // Mundo 1 - UML
         LeccionEntity("leccion_uml_1", "tema_uml_1", "Fundamentos de Diagramas de Clases", 
             "Los Diagramas de Clases son el pilar del modelado orientado a objetos en UML. Representan la estructura estática del sistema mostrando sus clases, atributos, operaciones (métodos) y las relaciones entre los objetos.\n\nSon esenciales para traducir los requisitos al código fuente real, ya que cada clase en el diagrama suele corresponder a una clase en el código.", 1, completada = false),
@@ -89,7 +89,7 @@ object DatosIniciales {
             "El Modelo Incremental no intenta construir el sistema entero de una vez. En su lugar, el sistema se divide en incrementos (módulos funcionales), y cada uno se desarrolla, prueba y entrega al cliente.\n\nPermite al cliente obtener valor rápidamente con los primeros incrementos, aunque requiere una buena arquitectura base que soporte las futuras adiciones.", 1, completada = false)
     )
 
-    val ejercicios = listOf(
+    private val ejerciciosNormales = listOf(
         // Mundo 1 - Leccion 1
         EjercicioEntity("ej_uml_1_1", "leccion_uml_1", "¿Qué tipo de diagrama UML muestra la estructura estática del sistema?", listOf("Diagrama de Secuencia", "Diagrama de Clases", "Diagrama de Actividades", "Diagrama de Casos de Uso"), listOf(1), 1),
         EjercicioEntity("ej_uml_1_2", "leccion_uml_1", "Selecciona los elementos principales que contiene una clase en un diagrama UML:", listOf("Atributos", "Actores", "Operaciones (Métodos)", "Nodos de hardware"), listOf(0, 2), 2),
@@ -203,6 +203,55 @@ object DatosIniciales {
         EjercicioEntity("ej_mt_4_5", "leccion_mt_4", "Un riesgo del Modelo Incremental es:", listOf("El sistema puede degradarse si se añaden incrementos sin cuidar la arquitectura global", "Entregar valor demasiado rápido", "Es imposible de probar", "No usa bases de datos"), listOf(0), 5)
     )
 
+    // -----------------------------------------------------------------------
+    // Ragnarök (MOD-01): un nivel de fin de mundo por mundo. Va oculto en el
+    // centro del escudo, cuesta 3C y se abre al superar todos los temas.
+    // Su lección mezcla ejercicios de todos los temas del mundo.
+    // -----------------------------------------------------------------------
+
+    /** Ejercicios (por su orden dentro de cada lección) que se copian al Ragnarök. */
+    private val ORDENES_RAGNAROK = setOf(1, 3)
+
+    private val temasRagnarok = mundos.map { mundo ->
+        TemaEntity(
+            id = "ragnarok_${mundo.id}",
+            mundoId = mundo.id,
+            nombre = "Ragnarök",
+            descripcion = "El ocaso de ${mundo.nombre}: todo lo aprendido en este mundo, en una sola batalla.",
+            orden = 99,
+            desbloqueado = false,
+            introduccionVista = false,
+            completado = false,
+            tipo = "RAGNAROK",
+            anillo = 0
+        )
+    }
+
+    private val leccionesRagnarok = mundos.map { mundo ->
+        LeccionEntity(
+            id = "leccion_ragnarok_${mundo.id}",
+            temaId = "ragnarok_${mundo.id}",
+            titulo = "El Ocaso de ${mundo.nombre}",
+            introduccion = "Los cuernos suenan y el cielo se parte: llegó el Ragnarök de ${mundo.nombre}. " +
+                "Esta batalla reúne preguntas de todos los temas del mundo.\n\n" +
+                "Si la superas, se abrirá el siguiente mundo. Con tres errores la batalla termina y la entrada se pierde.",
+            orden = 1,
+            completada = false
+        )
+    }
+
+    private val ejerciciosRagnarok = mundos.flatMap { mundo ->
+        val temasDelMundo = temasNormales.filter { it.mundoId == mundo.id }.sortedBy { it.orden }.map { it.id }
+        val leccionesDelMundo = leccionesNormales.filter { it.temaId in temasDelMundo }.sortedBy { temasDelMundo.indexOf(it.temaId) }
+        leccionesDelMundo
+            .flatMap { leccion -> ejerciciosNormales.filter { it.leccionId == leccion.id && it.orden in ORDENES_RAGNAROK } }
+            .mapIndexed { i, ej -> ej.copy(id = "rg_${ej.id}", leccionId = "leccion_ragnarok_${mundo.id}", orden = i + 1) }
+    }
+
+    val temas = temasNormales + DatosCrucigrama.minijuegos(mundos) + temasRagnarok
+    val lecciones = leccionesNormales + leccionesRagnarok
+    val ejercicios = ejerciciosNormales + ejerciciosRagnarok
+
     fun insertar(db: SupportSQLiteDatabase) {
         val converters = Converters()
         mundos.forEach { mundo ->
@@ -224,6 +273,9 @@ object DatosIniciales {
                 put("desbloqueado", tema.desbloqueado)
                 put("introduccionVista", tema.introduccionVista)
                 put("completado", tema.completado)
+                put("tipo", tema.tipo)
+                put("actividad", tema.actividad)
+                put("anillo", tema.anillo)
             })
         }
         lecciones.forEach { leccion ->
@@ -244,6 +296,14 @@ object DatosIniciales {
                 put("opciones", converters.fromStringList(ejercicio.opciones))
                 put("respuestasCorrectas", converters.fromIntList(ejercicio.respuestasCorrectas))
                 put("orden", ejercicio.orden)
+            })
+        }
+        DatosCrucigrama.conceptos.forEach { concepto ->
+            db.insert("conceptos_crucigrama", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
+                put("id", concepto.id)
+                put("temaId", concepto.temaId)
+                put("respuesta", concepto.respuesta)
+                put("descripcion", concepto.descripcion)
             })
         }
     }
