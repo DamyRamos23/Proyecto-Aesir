@@ -170,6 +170,26 @@ fun MundosScreen(
                     )
                 }
             }
+
+            // CU-11: el reto mezcla preguntas de todos los temas ya estudiados,
+            // por eso vive aquí y no dentro de un mundo.
+            Spacer(Modifier.height(20.dp))
+            Text(
+                "Pon a prueba lo estudiado contra el reloj: dos minutos, todas las preguntas que alcances.",
+                color = OdinPaleta.HuesoTenue,
+                fontFamily = FuenteTexto,
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            )
+            Spacer(Modifier.height(10.dp))
+            BotonOdin(
+                texto = "Reto contrarreloj",
+                onClick = { navController.navigate(OdinNavGraph.rutaRetoContrareloj) },
+                acento = OdinPaleta.Oro,
+                primario = false,
+                iconoFinal = Icons.AutoMirrored.Filled.ArrowForward,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
