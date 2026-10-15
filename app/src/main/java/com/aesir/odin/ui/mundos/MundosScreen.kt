@@ -1,5 +1,13 @@
 package com.aesir.odin.ui.mundos
 
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import com.aesir.odin.domain.hidromiel.CombinacionSecreta
+import com.aesir.odin.domain.hidromiel.ModoAdmin
+import kotlinx.coroutines.delay
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -116,11 +124,25 @@ fun MundosScreen(
     }
 
     var seleccionadoId by rememberSaveable { mutableStateOf<String?>(null) }
+    // Combinación secreta del modo admin: tocar los cuatro mundos en el
+    // sentido del reloj (arriba-izq → arriba-der → abajo-der → abajo-izq),
+    // dos vueltas seguidas, sin pausas de más de 1.5 s. Lo mismo lo apaga.
+    val combinacion = remember { CombinacionSecreta(listOf(0, 1, 3, 2, 0, 1, 3, 2)) }
+    val modoAdmin by ModoAdmin.activo.collectAsState()
+    var avisoAdmin by remember { mutableStateOf<String?>(null) }
+    val vibrador = LocalHapticFeedback.current
+    LaunchedEffect(avisoAdmin) {
+        if (avisoAdmin != null) {
+            delay(2_500)
+            avisoAdmin = null
+        }
+    }
     val visibles = mundos.take(4)
     val seleccionado = visibles.firstOrNull { it.id == seleccionadoId }
         ?: visibles.firstOrNull { it.desbloqueado }
         ?: visibles.firstOrNull()
 
+    Box(Modifier.fillMaxSize()) {
     FondoMundo(estilo = null) {
         Column(
             Modifier
@@ -129,7 +151,21 @@ fun MundosScreen(
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("MUNDOS", style = estiloTitulo(36.sp), modifier = Modifier.weight(1f))
+                Text("MUNDOS", style = estiloTitulo(36.sp))
+                if (modoAdmin) {
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        "ADMIN",
+                        color = OdinPaleta.Hollin,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier
+                            .background(OdinPaleta.Brasa, RoundedCornerShape(50))
+                            .padding(horizontal = 6.dp, vertical = 3.dp)
+                    )
+                }
+                Spacer(Modifier.weight(1f))
                 ContadorHidromiel(saldo = saldo)
             }
             Spacer(Modifier.height(6.dp))
@@ -146,7 +182,16 @@ fun MundosScreen(
                 EscudoMundos(
                     mundos = visibles,
                     seleccionadoId = seleccionado?.id,
-                    onSeleccionar = { seleccionadoId = it },
+                    onSeleccionar = { id ->
+                        seleccionadoId = id
+                        val indice = visibles.indexOfFirst { it.id == id }
+                        if (indice >= 0 && combinacion.registrar(indice)) {
+                            ModoAdmin.alternar()
+                            viewModel.cargarMundos()
+                            vibrador.performHapticFeedback(HapticFeedbackType.LongPress)
+                            avisoAdmin = if (ModoAdmin.estaActivo) "ᛟ Modo admin activado: todo abierto y gratis" else "Modo admin desactivado"
+                        }
+                    },
                     modifier = Modifier
                         .widthIn(max = 440.dp)
                         .fillMaxWidth()
@@ -172,7 +217,25 @@ fun MundosScreen(
             }
         }
     }
+    // Aviso del modo admin
+    val texto = avisoAdmin
+    if (texto != null) {
+        Text(
+            texto,
+            color = OdinPaleta.Hollin,
+            fontFamily = FuenteTexto,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 15.sp,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 8.dp)
+                .background(OdinPaleta.Brasa, RoundedCornerShape(50))
+                .padding(horizontal = 16.dp, vertical = 10.dp)
+        )
+    }
+    }
 }
+
 
 // ---------------------------------------------------------------------------
 // Escudo

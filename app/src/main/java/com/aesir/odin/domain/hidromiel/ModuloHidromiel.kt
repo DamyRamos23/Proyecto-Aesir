@@ -67,7 +67,7 @@ class ModuloHidromiel(
             repositorio.enTransaccion {
                 val saldo = obtenerOCrearReserva(idUsuario).saldo
                 catalogo.nivelesDelMundo(idMundo).map { nivel ->
-                    val estado = controlAcceso.evaluar(idUsuario, nivel)
+                    val estado = evaluar(idUsuario, nivel)
                     armarResultado(idUsuario, nivel, estado, saldo)
                 }
             }
@@ -83,7 +83,7 @@ class ModuloHidromiel(
             repositorio.enTransaccion {
                 val nivel = catalogo.obtener(idNivel)
                 val reserva = obtenerOCrearReserva(idUsuario)
-                val estado = controlAcceso.evaluar(idUsuario, nivel)
+                val estado = evaluar(idUsuario, nivel)
                 val previo = armarResultado(idUsuario, nivel, estado, reserva.saldo)
 
                 if (estado != EstadoNivel.DISPONIBLE || !previo.autorizado || previo.costo == 0) {
@@ -109,6 +109,9 @@ class ModuloHidromiel(
 
     /** E5: ayudas del crucigrama. Si no alcanza, se aplica E1 y no se entrega. */
     suspend fun cobrarAyuda(idUsuario: String, tipo: TipoAyuda): ResultadoAcceso {
+        if (ModoAdmin.estaActivo) {
+            return ResultadoAcceso(tipo.name, EstadoNivel.DISPONIBLE, true, 0, 0, "Modo admin: ayuda gratuita.")
+        }
         var aviso: AvisoHidromiel? = null
         val resultado = candado.withLock {
             repositorio.enTransaccion {
@@ -143,7 +146,7 @@ class ModuloHidromiel(
             repositorio.enTransaccion {
                 val nivel = catalogo.obtener(e.idNivel)
                 val reserva = obtenerOCrearReserva(e.idUsuario)
-                val estado = controlAcceso.evaluar(e.idUsuario, nivel)
+                val estado = evaluar(e.idUsuario, nivel)
                 if (entradasPagadas[e.idUsuario] == nivel.idNivel) entradasPagadas.remove(e.idUsuario)
 
                 if (e.resultado != ResultadoNivel.SUPERADO) {
@@ -294,6 +297,19 @@ class ModuloHidromiel(
      * La diaria de ese mismo día ya va incluida en la inicial, así que la
      * primera recompensa diaria llega al día siguiente.
      */
+    /**
+     * Estado del nivel según las reglas; en modo admin todo lo que no está
+     * superado queda abierto y con entrada gratuita (incluido el Ragnarök).
+     */
+    private suspend fun evaluar(idUsuario: String, nivel: NivelInfo): EstadoNivel {
+        val estado = controlAcceso.evaluar(idUsuario, nivel)
+        return if (ModoAdmin.estaActivo && (estado == EstadoNivel.BLOQUEADO || estado == EstadoNivel.DISPONIBLE)) {
+            EstadoNivel.GRATUITO
+        } else {
+            estado
+        }
+    }
+
     private suspend fun obtenerOCrearReserva(idUsuario: String): ReservaHidromiel {
         repositorio.obtenerReserva(idUsuario)?.let { return it }
         val nueva = ReservaHidromiel(idUsuario, saldo = 0, fechaUltimaDiaria = hoy(), ahora = ahora)
@@ -322,7 +338,7 @@ class ModuloHidromiel(
                 ResultadoAcceso(nivel.idNivel, estado, false, 0, 0, motivo)
             }
         }
-        EstadoNivel.GRATUITO -> ResultadoAcceso(nivel.idNivel, estado, true, 0, 0, "Primer nivel del mundo: entrada gratuita.")
+        EstadoNivel.GRATUITO -> ResultadoAcceso(nivel.idNivel, estado, true, 0, 0, if (ModoAdmin.estaActivo) "Modo admin: entrada gratuita." else "Primer nivel del mundo: entrada gratuita.")
         EstadoNivel.SUPERADO -> ResultadoAcceso(nivel.idNivel, estado, true, 0, 0, "Ya lo superaste: repetirlo es gratis, pero no da hidromiel.")
         EstadoNivel.DISPONIBLE -> if (entradasPagadas[idUsuario] == nivel.idNivel) {
             ResultadoAcceso(nivel.idNivel, estado, true, 0, 0, "Ya pagaste la entrada de este nivel.")

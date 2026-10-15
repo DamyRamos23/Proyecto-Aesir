@@ -11,5 +11,5 @@ import com.aesir.odin.domain.repository.RoadmapRepository
 class ObtenerMundoUseCase(
     private val repository: RoadmapRepository
 ) {
-    suspend operator fun invoke(mundoId: String): Mundo = repository.obtenerMundo(mundoId)
+    suspend operator fun invoke(mundoId: String): Mundo = repository.obtenerMundo(mundoId).conModoAdmin()
 }

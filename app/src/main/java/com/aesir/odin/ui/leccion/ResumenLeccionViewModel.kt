@@ -68,7 +68,7 @@ class ResumenLeccionViewModel(
         val accesoSiguiente: ResultadoAcceso? get() = siguiente?.let { accesos[it.id] }
 
         val ragnarokDisponible: Boolean
-            get() = idRagnarok != null && accesos[idRagnarok]?.estado == EstadoNivel.DISPONIBLE
+            get() = idRagnarok != null && (accesos[idRagnarok]?.estado == EstadoNivel.DISPONIBLE || accesos[idRagnarok]?.estado == EstadoNivel.GRATUITO)
     }
 
     val saldo: StateFlow<Int> = moduloHidromiel.observarSaldo(idUsuario)

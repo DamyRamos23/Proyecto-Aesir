@@ -1,5 +1,6 @@
 package com.aesir.odin.domain.usecase.roadmap
 
+import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.model.Mundo
 import com.aesir.odin.domain.repository.RoadmapRepository
 
@@ -9,5 +10,8 @@ import com.aesir.odin.domain.repository.RoadmapRepository
 class ObtenerMundosUseCase(
     private val repository: RoadmapRepository
 ) {
-    suspend operator fun invoke(): List<Mundo> = repository.obtenerMundos()
+    suspend operator fun invoke(): List<Mundo> = repository.obtenerMundos().map { it.conModoAdmin() }
 }
+
+/** En modo admin todos los mundos se muestran desbloqueados. */
+fun Mundo.conModoAdmin(): Mundo = if (ModoAdmin.estaActivo && !desbloqueado) copy(desbloqueado = true) else this

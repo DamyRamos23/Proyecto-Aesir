@@ -77,6 +77,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.aesir.odin.di.AppContainer
 import com.aesir.odin.domain.hidromiel.EstadoNivel
+import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.hidromiel.ResultadoAcceso
 import com.aesir.odin.domain.model.Actividad
 import com.aesir.odin.domain.model.ArbolHabilidades
@@ -219,7 +220,7 @@ fun RoadmapScreen(
                 val seleccionado = temas.firstOrNull { it.id == seleccionadoId }
                     ?: ragnarok?.takeIf { it.id == seleccionadoId && accesoRagnarok?.estado != EstadoNivel.BLOQUEADO }
                     ?: temas.firstOrNull { accesos[it.id]?.estado.let { e -> e == EstadoNivel.DISPONIBLE || e == EstadoNivel.GRATUITO } }
-                    ?: ragnarok?.takeIf { accesoRagnarok?.estado == EstadoNivel.DISPONIBLE }
+                    ?: ragnarok?.takeIf { accesoRagnarok?.estado == EstadoNivel.DISPONIBLE || accesoRagnarok?.estado == EstadoNivel.GRATUITO }
                     ?: temas.lastOrNull { it.completado }
                     ?: temas.first()
 
@@ -734,7 +735,7 @@ private fun LineaEntrada(acceso: ResultadoAcceso, falta: Int) {
         Spacer(Modifier.width(8.dp))
         Text(
             when (acceso.estado) {
-                EstadoNivel.GRATUITO -> "Entrada gratuita: primer nivel del mundo."
+                EstadoNivel.GRATUITO -> if (ModoAdmin.estaActivo) "Modo admin: entrada gratuita." else "Entrada gratuita: primer nivel del mundo."
                 EstadoNivel.SUPERADO -> "Ya superado: repetirlo es gratis, pero no da hidromiel."
                 else -> when {
                     acceso.costo == 0 -> "Ya pagaste la entrada: puedes continuar."

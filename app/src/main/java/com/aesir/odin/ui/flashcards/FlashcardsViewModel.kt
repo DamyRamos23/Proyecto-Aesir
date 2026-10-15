@@ -22,6 +22,7 @@ import com.aesir.odin.domain.usecase.flashcards.RegistrarErrorFlashcardUseCase
 import com.aesir.odin.domain.usecase.flashcards.RegistrarFlashcardsSinSuperarUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerIntroduccionTemaUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerMundoUseCase
+import com.aesir.odin.domain.usecase.roadmap.ObtenerTemasPorMundoUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -43,7 +44,12 @@ data class EstadoFlashcards(
     /** Posición de la tarjeta actual dentro de [puntos]. */
     val posicionActual: Int,
     /** Retroalimentación de la última respuesta; null mientras no se responde. */
-    val respuesta: RespuestaFlashcard?
+    val respuesta: RespuestaFlashcard?,
+    /**
+     * Cuenta las cartas puestas en juego; identifica cada aparición de una
+     * carta (una fallada vuelve a salir con otro turno).
+     */
+    val turno: Int = 0
 )
 
 /** Resumen final (paso 9). */
@@ -74,6 +80,7 @@ class FlashcardsViewModel(
     private val moduloHidromiel: ModuloHidromiel,
     private val obtenerTemaUseCase: ObtenerIntroduccionTemaUseCase? = null,
     private val obtenerMundoUseCase: ObtenerMundoUseCase? = null,
+    private val obtenerTemasPorMundoUseCase: ObtenerTemasPorMundoUseCase? = null,
     private val idUsuario: String = USUARIO_LOCAL
 ) : ViewModel() {
 
@@ -86,6 +93,7 @@ class FlashcardsViewModel(
     private var respuestaActual: RespuestaFlashcard? = null
     private var finalizando = false
     private var nivelReportado = false
+    private var turno = 0
 
     private val _estado = MutableStateFlow<EstadoFlashcards?>(null)
     private val _resumen = MutableStateFlow<ResumenFlashcards?>(null)
@@ -93,6 +101,7 @@ class FlashcardsViewModel(
     private val _contexto = MutableStateFlow<Contexto?>(null)
     private val _sugerenciaRepaso = MutableStateFlow<TarjetaFlashcard?>(null)
     private val _avisoRepaso = MutableStateFlow<String?>(null)
+    private val _nombresTemas = MutableStateFlow<Map<String, String>>(emptyMap())
 
     val estado: StateFlow<EstadoFlashcards?> = _estado.asStateFlow()
     val resumen: StateFlow<ResumenFlashcards?> = _resumen.asStateFlow()
@@ -104,6 +113,9 @@ class FlashcardsViewModel(
 
     /** Motivo por el que no se pudo abrir la lección sugerida (MOD-01). */
     val avisoRepaso: StateFlow<String?> = _avisoRepaso.asStateFlow()
+
+    /** Nombre de cada tema del mundo, para mostrar de qué lección es la carta. */
+    val nombresTemas: StateFlow<Map<String, String>> = _nombresTemas.asStateFlow()
 
     val saldo: StateFlow<Int> = moduloHidromiel.observarSaldo(idUsuario)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
@@ -154,6 +166,10 @@ class FlashcardsViewModel(
             val tema = obtenerTema(temaId) ?: return
             Contexto(tema, obtenerMundo(tema.mundoId))
         }.getOrNull()
+        val mundoId = _contexto.value?.mundo?.id ?: return
+        obtenerTemasPorMundoUseCase?.let { obtener ->
+            _nombresTemas.value = runCatching { obtener(mundoId).associate { it.id to it.nombre } }.getOrDefault(emptyMap())
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -177,6 +193,7 @@ class FlashcardsViewModel(
         if (respuestaActual == null || _sugerenciaRepaso.value != null) return
         pila.continuar()
         respuestaActual = null
+        turno++
         if (pila.terminada) finalizar(pila) else publicar()
     }
 
@@ -202,6 +219,7 @@ class FlashcardsViewModel(
                 return@launch
             }
             reportarSinSuperar(tema, ResultadoNivel.NO_SUPERADO)
+            _sugerenciaRepaso.value = null
             alRepasar(tarjeta.temaId)
         }
     }
@@ -262,7 +280,8 @@ class FlashcardsViewModel(
             errores = pila.errores,
             puntos = pila.tarjetas.map { pila.estadoDe(it) },
             posicionActual = pila.tarjetas.indexOfFirst { it.id == actual?.id },
-            respuesta = respuestaActual
+            respuesta = respuestaActual,
+            turno = turno
         )
     }
 
@@ -276,7 +295,8 @@ class FlashcardsViewModel(
                     sinSuperarUseCase = container.registrarFlashcardsSinSuperarUseCase,
                     moduloHidromiel = container.moduloHidromiel,
                     obtenerTemaUseCase = container.obtenerIntroduccionTemaUseCase,
-                    obtenerMundoUseCase = container.obtenerMundoUseCase
+                    obtenerMundoUseCase = container.obtenerMundoUseCase,
+                    obtenerTemasPorMundoUseCase = container.obtenerTemasPorMundoUseCase
                 )
             }
         }

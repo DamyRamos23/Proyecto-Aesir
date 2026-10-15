@@ -1,6 +1,7 @@
 package com.aesir.odin.di
 
 import android.content.Context
+import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.data.local.OdinDatabase
 import com.aesir.odin.data.repository.CatalogoNivelesImpl
 import com.aesir.odin.data.repository.CrucigramaRepositoryImpl
@@ -53,6 +54,13 @@ import com.aesir.odin.domain.usecase.shared.ValidarRespuestaUseCase
 class AppContainer(context: Context) {
 
     private val database = OdinDatabase.getInstance(context)
+
+    init {
+        // Modo admin oculto: se conserva entre aperturas de la app.
+        val preferencias = context.getSharedPreferences("odin_preferencias", Context.MODE_PRIVATE)
+        ModoAdmin.cargar(preferencias.getBoolean("modo_admin", false))
+        ModoAdmin.alCambiar = { activo -> preferencias.edit().putBoolean("modo_admin", activo).apply() }
+    }
 
     val roadmapRepository: RoadmapRepository =
         RoadmapRepositoryImpl(database.mundoDao(), database.temaDao())
