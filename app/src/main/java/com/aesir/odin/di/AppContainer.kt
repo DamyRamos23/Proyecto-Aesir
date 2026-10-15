@@ -8,6 +8,7 @@ import com.aesir.odin.data.repository.HidromielRepositoryImpl
 import com.aesir.odin.data.repository.HistorialRepositoryImpl
 import com.aesir.odin.data.repository.LeccionRepositoryImpl
 import com.aesir.odin.data.repository.PreguntaFlashRepositoryImpl
+import com.aesir.odin.data.repository.HidromielFlashRepositoryImpl
 import com.aesir.odin.data.repository.RetoContrarrelojRepositoryImpl
 import com.aesir.odin.data.repository.RoadmapRepositoryImpl
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
@@ -15,6 +16,7 @@ import com.aesir.odin.domain.repository.CrucigramaRepository
 import com.aesir.odin.domain.repository.HistorialRepository
 import com.aesir.odin.domain.repository.LeccionRepository
 import com.aesir.odin.domain.repository.PreguntaFlashRepository
+import com.aesir.odin.domain.repository.HidromielFlashRepository
 import com.aesir.odin.domain.repository.RetoContrarrelojRepository
 import com.aesir.odin.domain.repository.RoadmapRepository
 import com.aesir.odin.domain.usecase.crucigrama.ActualizarPuntajeUseCase
@@ -27,6 +29,10 @@ import com.aesir.odin.domain.usecase.leccion.RegistrarErrorLeccionUseCase
 import com.aesir.odin.domain.usecase.leccion.RegistrarLeccionCompletadaUseCase
 import com.aesir.odin.domain.usecase.leccion.RegistrarNivelSinSuperarUseCase
 import com.aesir.odin.domain.usecase.leccion.ValidarRespuestaEjercicioUseCase
+import com.aesir.odin.domain.usecase.preguntaflash.ObtenerPreguntaFlashUseCase
+import com.aesir.odin.domain.usecase.preguntaflash.ObservarHidromielUseCase
+import com.aesir.odin.domain.usecase.preguntaflash.RegistrarTiempoAgotadoPreguntaFlashUseCase
+import com.aesir.odin.domain.usecase.preguntaflash.ValidarRespuestaPreguntaFlashUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerMundoUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerMundosUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerTemasPorMundoUseCase
@@ -94,19 +100,20 @@ class AppContainer(context: Context) {
         moduloHidromiel
     )
 
-    // CU-11 Reto Contrarreloj
+    // ---- Pregunta Flash (CU-06) ----
     private val preguntaFlashRepository: PreguntaFlashRepository =
-        PreguntaFlashRepositoryImpl(database.preguntaFlashBancoDao())
-    private val retoContrarrelojRepository: RetoContrarrelojRepository =
-        RetoContrarrelojRepositoryImpl(database.resultadoRetoDao())
+        PreguntaFlashRepositoryImpl(database.preguntaFlashDao(), database.preguntaFlashBancoDao())
 
-    val validarRespuestaUseCase = ValidarRespuestaUseCase()
-    val armarRetoContrarrelojUseCase =
-        ArmarRetoContrarrelojUseCase(roadmapRepository, preguntaFlashRepository)
-    val pagarEntradaRetoContrarrelojUseCase =
-        PagarEntradaRetoContrarrelojUseCase(moduloHidromiel)
-    val finalizarRetoContrarrelojUseCase =
-        FinalizarRetoContrarrelojUseCase(retoContrarrelojRepository, moduloHidromiel)
-    val abandonarRetoContrarrelojUseCase =
-        AbandonarRetoContrarrelojUseCase(retoContrarrelojRepository, moduloHidromiel)
+    // Los puntos de la pregunta flash son hidromiel (MOD-01).
+    private val hidromielFlashRepository: HidromielFlashRepository =
+        HidromielFlashRepositoryImpl(moduloHidromiel)
+
+    val obtenerPreguntaFlashUseCase =
+        ObtenerPreguntaFlashUseCase(roadmapRepository, preguntaFlashRepository)
+    val validarRespuestaPreguntaFlashUseCase = ValidarRespuestaPreguntaFlashUseCase(
+        preguntaFlashRepository, hidromielFlashRepository, historialRepository, ValidarRespuestaUseCase()
+    )
+    val registrarTiempoAgotadoPreguntaFlashUseCase =
+        RegistrarTiempoAgotadoPreguntaFlashUseCase(preguntaFlashRepository, hidromielFlashRepository)
+    val observarHidromielUseCase = ObservarHidromielUseCase(hidromielFlashRepository)
 }

@@ -311,7 +311,7 @@ private fun ContenidoLeccion(
     }
 }
 
-private enum class EstadoOpcion { NEUTRA, CORRECTA, INCORRECTA, FALTANTE }
+internal enum class EstadoOpcion { NEUTRA, CORRECTA, INCORRECTA, FALTANTE }
 
 private fun estadoOpcion(indice: Int, seleccion: Set<Int>, resultado: ResultadoRespuesta?): EstadoOpcion {
     if (resultado == null) return EstadoOpcion.NEUTRA
@@ -326,7 +326,7 @@ private fun estadoOpcion(indice: Int, seleccion: Set<Int>, resultado: ResultadoR
 }
 
 @Composable
-private fun OpcionRunica(
+internal fun OpcionRunica(
     letra: String,
     texto: String,
     multiple: Boolean,

@@ -227,7 +227,7 @@ class ModuloHidromiel(
         }
     }
 
-    /** E6: correcta +5; se agota el tiempo −2; incorrecta o incompleta, sin cambio. */
+    /** E6: correcta +5; incorrecta, incompleta o sin respuesta −2 (RN-01: nunca baja de 0). */
     suspend fun alResolverPreguntaFlash(e: PreguntaFlashResuelta): AvisoHidromiel =
         moverSaldo(e.idUsuario) { reserva ->
             when (e.resultado) {
@@ -238,17 +238,14 @@ class ModuloHidromiel(
                         "¡Respuesta correcta! Ganaste ${PoliticaCosto.FLASH_CORRECTA} de hidromiel."
                     )
                 }
-                ResultadoFlash.SIN_RESPUESTA -> {
-                    val real = reserva.descontarHastaCero(PoliticaCosto.FLASH_SIN_RESPUESTA, TipoMovimiento.PREGUNTA_FLASH)
+                ResultadoFlash.INCORRECTA, ResultadoFlash.INCOMPLETA, ResultadoFlash.SIN_RESPUESTA -> {
+                    val real = reserva.descontarHastaCero(PoliticaCosto.FLASH_FALLO, TipoMovimiento.PREGUNTA_FLASH)
+                    val motivo = if (e.resultado == ResultadoFlash.SIN_RESPUESTA) "Se agotó el tiempo." else "Respuesta incorrecta."
                     AvisoHidromiel(
                         TipoMovimiento.PREGUNTA_FLASH, -real, reserva.saldo,
-                        "Se agotó el tiempo. Perdiste $real de hidromiel."
+                        "$motivo Perdiste $real de hidromiel."
                     )
                 }
-                ResultadoFlash.INCORRECTA, ResultadoFlash.INCOMPLETA -> AvisoHidromiel(
-                    TipoMovimiento.PREGUNTA_FLASH, 0, reserva.saldo,
-                    "Respuesta sin acierto. Tu hidromiel no cambió."
-                )
             }
         }
 

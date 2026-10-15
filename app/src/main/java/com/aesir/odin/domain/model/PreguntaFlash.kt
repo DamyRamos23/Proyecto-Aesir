@@ -1,9 +1,8 @@
 package com.aesir.odin.domain.model
 
 /**
- * Pregunta del banco de Pregunta Flash. Es compartida entre CU-06 (Pregunta
- * Flash) y CU-11 (Reto Contrarreloj), que reutiliza ese banco.
- * Si [respuestasCorrectas] tiene más de un índice, hay que seleccionar todas.
+ * Pregunta del banco de Pregunta Flash (CU-06). Si [respuestasCorrectas] tiene
+ * más de un índice, el alumno debe seleccionar todas las opciones correctas.
  */
 data class PreguntaFlash(
     val id: String,

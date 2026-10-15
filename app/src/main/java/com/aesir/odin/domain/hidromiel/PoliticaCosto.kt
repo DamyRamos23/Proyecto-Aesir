@@ -32,7 +32,8 @@ class PoliticaCosto {
         const val AYUDA_LETRA = 5
         const val AYUDA_PALABRA = 15
         const val FLASH_CORRECTA = 5
-        const val FLASH_SIN_RESPUESTA = 2
+        /** Se descuenta al fallar una pregunta flash: incorrecta, incompleta o sin respuesta. */
+        const val FLASH_FALLO = 2
         const val ABANDONO_CONTRARRELOJ = 20
         const val ENTRADA_CONTRARRELOJ = 10
         const val CONTRARRELOJ_CORRECTA = 2

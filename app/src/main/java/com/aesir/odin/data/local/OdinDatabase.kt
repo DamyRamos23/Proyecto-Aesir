@@ -14,6 +14,8 @@ import com.aesir.odin.data.local.dao.LeccionDao
 import com.aesir.odin.data.local.dao.MundoDao
 import com.aesir.odin.data.local.dao.PreguntaFlashBancoDao
 import com.aesir.odin.data.local.dao.ResultadoCrucigramaDao
+import com.aesir.odin.data.local.dao.PreguntaFlashBancoDao
+import com.aesir.odin.data.local.dao.PreguntaFlashDao
 import com.aesir.odin.data.local.dao.ResultadoRetoDao
 import com.aesir.odin.data.local.dao.TemaDao
 import com.aesir.odin.data.local.entity.ConceptoCrucigramaEntity
@@ -27,6 +29,8 @@ import com.aesir.odin.data.local.entity.NivelSuperadoEntity
 import com.aesir.odin.data.local.entity.PreguntaFlashEntity
 import com.aesir.odin.data.local.entity.ReservaHidromielEntity
 import com.aesir.odin.data.local.entity.ResultadoCrucigramaEntity
+import com.aesir.odin.data.local.entity.PreguntaFlashAttemptEntity
+import com.aesir.odin.data.local.entity.PreguntaFlashEntity
 import com.aesir.odin.data.local.entity.ResultadoLeccionEntity
 import com.aesir.odin.data.local.entity.ResultadoRetoEntity
 import com.aesir.odin.data.local.entity.TemaEntity
@@ -46,11 +50,13 @@ import com.aesir.odin.data.local.entity.TemaEntity
         ConceptoCrucigramaEntity::class,
         ResultadoCrucigramaEntity::class,
         PreguntaFlashEntity::class,
+        PreguntaFlashAttemptEntity::class
         ResultadoRetoEntity::class
     ],
     // v3: MOD-01 Sistema de Hidromiel (tablas nuevas y columna temas.tipo)
     // v4: CU-07 crucigrama (conceptos, resultados y columna temas.actividad)
     // v5: árbol de dos anillos (columna temas.anillo y minijuegos por mundo)
+    // v6: CU-06 pregunta flash (banco de preguntas e historial de intentos)
     // v6: CU-11 reto contrarreloj (banco de preguntas flash y resultados)
     version = 6,
     exportSchema = false
@@ -67,6 +73,7 @@ abstract class OdinDatabase : RoomDatabase() {
     abstract fun conceptoCrucigramaDao(): ConceptoCrucigramaDao
     abstract fun resultadoCrucigramaDao(): ResultadoCrucigramaDao
     abstract fun preguntaFlashBancoDao(): PreguntaFlashBancoDao
+    abstract fun preguntaFlashDao(): PreguntaFlashDao
     abstract fun resultadoRetoDao(): ResultadoRetoDao
 
     companion object {
@@ -94,6 +101,15 @@ abstract class OdinDatabase : RoomDatabase() {
                                 val vacia = db.query("SELECT COUNT(*) FROM mundos").use { c ->
                                     c.moveToFirst() && c.getInt(0) == 0
                                 }
+                                db.beginTransaction()
+                                try {
+                                    if (vacia) DatosIniciales.insertar(db)
+                                    // El banco de preguntas es contenido fijo: se actualiza en cada
+                                    // apertura para que las preguntas nuevas lleguen sin borrar datos.
+                                    BancoPreguntas.insertar(db)
+                                    db.setTransactionSuccessful()
+                                } finally {
+                                    db.endTransaction()
                                 if (vacia) {
                                     db.beginTransaction()
                                     try {
