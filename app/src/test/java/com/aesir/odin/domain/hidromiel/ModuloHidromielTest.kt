@@ -278,11 +278,12 @@ class ModuloHidromielTest {
     // ---------------------------------------------------------------- E6 y RN-01
 
     @Test
-    fun `E6 pregunta flash correcta suma 5 y sin respuesta resta 2`() = runBlocking {
+    fun `E6 pregunta flash correcta suma 5 y fallar resta 2`() = runBlocking {
         assertEquals(5, modulo.alResolverPreguntaFlash(PreguntaFlashResuelta(U, ResultadoFlash.CORRECTA)).cantidad)
         assertEquals(-2, modulo.alResolverPreguntaFlash(PreguntaFlashResuelta(U, ResultadoFlash.SIN_RESPUESTA)).cantidad)
-        assertEquals(0, modulo.alResolverPreguntaFlash(PreguntaFlashResuelta(U, ResultadoFlash.INCORRECTA)).cantidad)
-        assertEquals(43, repo.saldo())
+        assertEquals(-2, modulo.alResolverPreguntaFlash(PreguntaFlashResuelta(U, ResultadoFlash.INCORRECTA)).cantidad)
+        assertEquals(-2, modulo.alResolverPreguntaFlash(PreguntaFlashResuelta(U, ResultadoFlash.INCOMPLETA)).cantidad)
+        assertEquals(39, repo.saldo())
     }
 
     @Test
