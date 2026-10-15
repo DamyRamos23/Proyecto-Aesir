@@ -3,9 +3,12 @@ package com.aesir.odin.ui.flashcards
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -364,6 +367,28 @@ private fun estadoTablilla(indice: Int, respuesta: RespuestaFlashcard?): EstadoT
 
 private val runasOpciones = listOf("ᚠ", "ᛒ", "ᚲ", "ᛗ")
 
+/** Montón al que vuela la carta y el giro con el que queda encima. */
+private enum class DestinoCarta(val punto: Offset, val giro: Float) {
+    MAZO(Offset(46.3f, 277f), -12f),
+    DOMINADAS(Offset(352.5f, 283.5f), 10f)
+}
+
+private val curvaVuelo = CubicBezierEasing(0.42f, 0f, 0.22f, 1f)
+private val curvaVolteo = CubicBezierEasing(0.3f, 0f, 0.2f, 1f)
+
+/** El montón se aplasta y rebota al recibir una carta. */
+private suspend fun Animatable<Float, AnimationVector1D>.aplastar() {
+    snapTo(0f)
+    animateTo(0.09f, tween(70))
+    animateTo(0f, spring(dampingRatio = 0.35f, stiffness = 500f))
+}
+
+/** Corre una animación de 0 a 1 (polvo, destello). */
+private suspend fun Animatable<Float, AnimationVector1D>.disparar(ms: Int) {
+    snapTo(0f)
+    animateTo(1f, tween(ms, easing = LinearEasing))
+}
+
 @Composable
 private fun Juego(
     salon: SalonMundo,
@@ -374,63 +399,68 @@ private fun Juego(
     onContinuar: () -> Unit
 ) {
     val escena = rememberCoroutineScope()
+    // 0 = en la mesa, 1 = encima del montón de destino.
+    val vuelo = remember { Animatable(0f) }
+    // 0 = cara arriba, 1 = boca abajo.
+    val boca = remember { Animatable(0f) }
+    // 0 = descripción, 1 = concepto.
     val volteo = remember { Animatable(0f) }
-    val dx = remember { Animatable(0f) }
-    val dy = remember { Animatable(0f) }
-    val escala = remember { Animatable(1f) }
-    val giro = remember { Animatable(0f) }
+    val meneo = remember { Animatable(0f) }
+    val temblor = remember { Animatable(0f) }
+    val destello = remember { Animatable(1f) }
+    val golpeMazo = remember { Animatable(0f) }
+    val golpeDominadas = remember { Animatable(0f) }
+    val polvoMazo = remember { Animatable(1f) }
+    val polvoDominadas = remember { Animatable(1f) }
+    var destino by remember { mutableStateOf(DestinoCarta.MAZO) }
     var enMazo by remember { mutableStateOf(false) }
+    var enDominadas by remember { mutableStateOf(false) }
     var dominada by remember { mutableStateOf(false) }
-    var lineas by remember { mutableStateOf(false) }
     var retro by remember { mutableStateOf(false) }
     var ocupado by remember { mutableStateOf(false) }
-    var primerTurno by remember { mutableStateOf<Int?>(null) }
+    var alMazo by remember { mutableStateOf(false) }
 
     val respuesta = estado.respuesta
     val fallo = respuesta != null && !respuesta.correcta
 
-    suspend fun irA(x: Float, y: Float, s: Float, r: Float, ms: Int, curva: androidx.compose.animation.core.Easing) = coroutineScope {
-        launch { dx.animateTo(x, tween(ms, easing = curva)) }
-        launch { dy.animateTo(y, tween(ms, easing = curva)) }
-        launch { escala.animateTo(s, tween(ms, easing = curva)) }
-        launch { giro.animateTo(r, tween(ms, easing = curva)) }
-    }
-
-    val mazo = Area.cartaMazo - Area.centroCarta
-    val pilaDominadas = Area.cartaDominadas - Area.centroCarta
-
-    // Cada carta nueva sale del mazo (la primera aparece en la mesa).
-    LaunchedEffect(estado.turno) {
+    /** Toma la carta de arriba del mazo (boca abajo) y la deja en la mesa, volteándola en el camino. */
+    suspend fun repartir(continuar: Boolean) {
+        ocupado = true
+        destino = DestinoCarta.MAZO
+        vuelo.snapTo(1f)
+        boca.snapTo(1f)
         volteo.snapTo(0f)
         enMazo = false
+        enDominadas = false
         dominada = false
-        lineas = false
-        retro = false
+        alMazo = false
+        if (continuar) onContinuar()
+        escena.launch { vuelo.animateTo(0f, spring(dampingRatio = 0.78f, stiffness = 120f)) }
+        escena.launch {
+            delay(200)
+            boca.animateTo(0f, tween(450, easing = FastOutSlowInEasing))
+        }
+        delay(520)
+        ocupado = false
+    }
+
+    // Al aparecer: si hay una respuesta pendiente deja la mesa como quedó; si no, reparte.
+    LaunchedEffect(Unit) {
         val r = estado.respuesta
-        if (r != null) {
-            // Se volvió a mostrar la pantalla con una respuesta pendiente: dejar la mesa como quedó.
-            if (r.correcta) {
+        when {
+            r == null -> repartir(continuar = false)
+            r.correcta -> {
                 volteo.snapTo(1f)
                 dominada = true
-            } else {
-                dx.snapTo(mazo.x); dy.snapTo(mazo.y); escala.snapTo(Area.ESCALA_MONTON); giro.snapTo(-15f)
-                enMazo = true
+                retro = true
             }
-            retro = true
-            primerTurno = estado.turno
-            return@LaunchedEffect
-        }
-        if (primerTurno == null) {
-            primerTurno = estado.turno
-            dx.snapTo(0f); dy.snapTo(0f); escala.snapTo(1f); giro.snapTo(0f)
-        } else {
-            dx.snapTo(mazo.x); dy.snapTo(mazo.y); escala.snapTo(Area.ESCALA_MONTON * 0.9f); giro.snapTo(-10f)
-            val muelle = spring<Float>(dampingRatio = 0.82f, stiffness = Spring.StiffnessMediumLow)
-            coroutineScope {
-                launch { dx.animateTo(0f, muelle) }
-                launch { dy.animateTo(0f, muelle) }
-                launch { escala.animateTo(1f, muelle) }
-                launch { giro.animateTo(0f, muelle) }
+            else -> {
+                destino = DestinoCarta.MAZO
+                vuelo.snapTo(1f)
+                boca.snapTo(1f)
+                enMazo = true
+                alMazo = true
+                retro = true
             }
         }
     }
@@ -442,23 +472,50 @@ private fun Juego(
         onResponder(i)
         escena.launch {
             if (correcta) {
-                // Volteo: la carta se aplana, cambia de cara y se abre de nuevo.
-                delay(240)
-                volteo.animateTo(1f, tween(500, easing = FastOutSlowInEasing))
+                // Se levanta y se voltea para revelar el concepto, con un destello dorado.
+                delay(180)
+                launch { volteo.animateTo(1f, tween(700, easing = curvaVolteo)) }
+                delay(260)
+                launch { destello.disparar(950) }
+                delay(380)
                 dominada = true
                 retro = true
                 ocupado = false
             } else {
-                // La opción se marca, la carta se levanta y sale volando al mazo.
-                delay(600)
-                irA(0f, 0f, 1.05f, -3f, 150, FastOutSlowInEasing)
-                lineas = true
-                irA(mazo.x, mazo.y, Area.ESCALA_MONTON, -15f, 550, CubicBezierEasing(0.45f, 0f, 0.55f, 1f))
+                // La carta "dice que no", da la vuelta en el aire y cae al mazo.
+                launch {
+                    meneo.animateTo(0f, keyframes {
+                        durationMillis = 480
+                        -6f at 80
+                        5f at 190
+                        -3.5f at 290
+                        2f at 380
+                    })
+                }
+                launch {
+                    temblor.animateTo(0f, keyframes {
+                        durationMillis = 380
+                        -9f at 50
+                        8f at 120
+                        -6f at 190
+                        4f at 260
+                        -2f at 320
+                    })
+                }
+                delay(620)
+                destino = DestinoCarta.MAZO
+                launch { vuelo.animateTo(1f, tween(800, easing = curvaVuelo)) }
+                launch {
+                    delay(60)
+                    boca.animateTo(1f, tween(420, easing = FastOutSlowInEasing))
+                }
+                delay(760)
+                launch { golpeMazo.aplastar() }
+                launch { polvoMazo.disparar(550) }
                 enMazo = true
+                alMazo = true
                 retro = true
                 ocupado = false
-                delay(700)
-                lineas = false
             }
         }
     }
@@ -467,15 +524,26 @@ private fun Juego(
         val r = estado.respuesta ?: return
         if (!retro || ocupado) return
         ocupado = true
-        retro = false
         escena.launch {
             if (r.correcta) {
-                // La carta dominada vuela a su montón y la siguiente sale del mazo.
-                irA(pilaDominadas.x, pilaDominadas.y, Area.ESCALA_MONTON, 10f, 350, FastOutLinearInEasing)
+                // La carta dominada se da la vuelta en el aire y cae en su montón.
+                destino = DestinoCarta.DOMINADAS
+                retro = false
+                launch { vuelo.animateTo(1f, tween(720, easing = curvaVuelo)) }
+                launch {
+                    delay(80)
+                    boca.animateTo(1f, tween(400, easing = FastOutSlowInEasing))
+                }
+                delay(690)
+                launch { golpeDominadas.aplastar() }
+                launch { polvoDominadas.disparar(550) }
+                enDominadas = true
+                delay(140)
+            } else {
+                retro = false
+                alMazo = false
             }
-            lineas = false
-            onContinuar()
-            ocupado = false
+            repartir(continuar = true)
         }
     }
 
@@ -485,7 +553,7 @@ private fun Juego(
         else -> EstadoTarjeta.FALLADA
     }
     val cantMazo = estado.enMazo + if (enMazo) 1 else 0
-    val cantDominadas = estado.dominadas + if (dominada) 1 else 0
+    val cantDominadas = estado.dominadas + if (enDominadas) 1 else 0
 
     CabeceraSalon(salon, estado.puntos, estado.posicionActual, resuelta)
     Texto(
@@ -493,69 +561,72 @@ private fun Juego(
         195f, 67.9f, 12.5f, ColoresSalon.Crema, w = 300f, h = 22f
     )
 
-    // Montones
-    MontonSalon(salon, cantMazo, 11, Modifier.en(Area.cartaMazo.x - 3f, Area.cartaMazo.y + 4f, 76f, 108f))
+    // Montones: se aplastan un poco al recibir una carta.
+    MontonSalon(
+        salon, cantMazo, 11,
+        Modifier
+            .en(Area.cartaMazo.x - 3f, Area.cartaMazo.y + 4f, 76f, 108f)
+            .graphicsLayer {
+                val g = golpeMazo.value
+                scaleX = 1f + g
+                scaleY = 1f - g
+                transformOrigin = TransformOrigin(0.5f, 1f)
+            }
+    )
+    Polvo(polvoMazo, salon.titulo, Modifier.en(Area.cartaMazo.x, Area.cartaMazo.y + 50f, 150f, 60f))
     EtiquetaMonton("Mazo", cantMazo, salon.acento, Modifier.en(40.1f, 353.5f, 73f, 35f))
-    MontonSalon(salon, cantDominadas, 31, Modifier.en(Area.cartaDominadas.x - 3f, Area.cartaDominadas.y + 4f, 76f, 108f))
+    MontonSalon(
+        salon, cantDominadas, 31,
+        Modifier
+            .en(Area.cartaDominadas.x - 3f, Area.cartaDominadas.y + 4f, 76f, 108f)
+            .graphicsLayer {
+                val g = golpeDominadas.value
+                scaleX = 1f + g
+                scaleY = 1f - g
+                transformOrigin = TransformOrigin(0.5f, 1f)
+            }
+    )
+    Polvo(polvoDominadas, salon.titulo, Modifier.en(Area.cartaDominadas.x, Area.cartaDominadas.y + 50f, 150f, 60f))
     EtiquetaMonton("Dominadas", cantDominadas, salon.acento, Modifier.en(350f, 353.5f, 73f, 35f))
 
-    if (fallo && (lineas || enMazo)) {
-        Texto("¡Al mazo!", 231f, 126.4f, 14f, ColoresSalon.Rojo, w = 120f, h = 24f, peso = FontWeight.Bold, cinzel = true)
-    }
-    AnimatedVisibility(lineas, enter = fadeIn(tween(120)), exit = fadeOut(tween(400))) {
-        Canvas(Modifier.requiredSize(Area.ANCHO.dp, Area.ALTO.dp)) {
-            val d = density
-            for (k in 0 until 5) {
-                val a = Offset(196.4f + k * 5.8f, 180.6f + k * 22.2f) * d
-                val b = Offset(254.2f + k * 10.1f, 187.8f + k * 21.85f) * d
-                drawLine(Color(0xE6F6EEDC), a, b, 2.2f * d, cap = StrokeCap.Round)
-            }
-        }
-    }
+    // Destello dorado al acertar (detrás de la carta).
+    Destello(destello, salon.titulo, Modifier.en(Area.centroCarta.x, Area.centroCarta.y, Area.ANCHO, 420f))
 
     // Carta en juego
-    Box(
-        Modifier
-            .en(Area.centroCarta.x, Area.centroCarta.y, Area.CARTA_ANCHO, Area.CARTA_ALTO)
-            .graphicsLayer {
-                translationX = dx.value * density
-                translationY = dy.value * density
-                rotationZ = giro.value
-                val p = volteo.value
-                val ancho = max(abs(cos(p * PI.toFloat())), 0.002f)
-                val levante = 1f + 0.07f * sin(p * PI.toFloat())
-                scaleX = escala.value * ancho * levante
-                scaleY = escala.value * levante
-            }
+    CartaEnJuego(
+        vuelo = vuelo, boca = boca, volteo = volteo, meneo = meneo, destino = destino,
+        tarjeta = tarjeta, salon = salon, nombreTema = nombreTema
+    )
+
+    AnimatedVisibility(
+        visible = alMazo,
+        enter = scaleIn(spring(dampingRatio = 0.5f, stiffness = 420f), initialScale = 1.9f) + fadeIn(tween(120)),
+        exit = fadeOut(tween(150)),
+        modifier = Modifier.en(92f, 196f, 140f, 30f)
     ) {
-        val p = volteo.value
-        val elevacion = sin(p * PI.toFloat())
-        Box(
-            Modifier
-                .fillMaxSize()
-                .shadow((8f + 10f * elevacion).dp, FormaCarta(), clip = false)
-                .graphicsLayer {
-                    // se oscurece un poco al pasar de canto
-                    alpha = 1f
-                }
-        ) {
-            if (p >= 0.5f) CaraConcepto(tarjeta, salon) else CaraDescripcion(tarjeta, salon, nombreTema)
-            val sombra = 0.22f * (1f - max(abs(cos(p * PI.toFloat())), 0.002f))
-            if (sombra > 0.01f) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = sombra), FormaCarta()))
+        Box(Modifier.fillMaxSize().graphicsLayer { rotationZ = -8f }, contentAlignment = Alignment.Center) {
+            Text(
+                "¡Al mazo!", color = ColoresSalon.Rojo, fontSize = 15.sp, fontWeight = FontWeight.Bold,
+                fontFamily = FuentesMockup.cinzel(), maxLines = 1
+            )
         }
     }
 
     // Conceptos
     tarjeta.opciones.take(4).forEachIndexed { i, concepto ->
+        val estadoOpcion = estadoTablilla(i, respuesta)
         TablillaOpcion(
             salon = salon,
             runa = runasOpciones[i % 4],
             texto = concepto,
-            estado = estadoTablilla(i, respuesta),
+            estado = estadoOpcion,
             habilitada = respuesta == null && !ocupado,
-            semilla = estado.turno * 7 + i,
+            semilla = 101 + i * 7,
             y = Area.yOpciones[min(i, 3)],
-            onClick = { responder(i) }
+            onClick = { responder(i) },
+            modifier = Modifier.graphicsLayer {
+                translationX = if (estadoOpcion == EstadoTablilla.INCORRECTA) temblor.value * density else 0f
+            }
         )
     }
 
@@ -573,7 +644,7 @@ private fun Juego(
 
     AnimatedVisibility(
         visible = retro && respuesta != null,
-        enter = fadeIn(tween(250)) + slideInVertically(tween(250)) { it / 4 },
+        enter = fadeIn(tween(250)) + slideInVertically(tween(250)) { it / 4 } + scaleIn(tween(250), initialScale = 0.92f),
         exit = fadeOut(tween(150)),
         modifier = Modifier.en(195f, 714.5f, 188f, 43f)
     ) {
@@ -586,6 +657,170 @@ private fun Juego(
             ancho = 188f, alto = 43f,
             onClick = { avanzar() }
         )
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Animaciones
+// ---------------------------------------------------------------------------
+
+/**
+ * Carta en juego: vuela en arco entre la mesa y un montón, y se voltea en 3D
+ * ([volteo] descripción → concepto, [boca] cara → dorso).
+ */
+@Composable
+private fun CartaEnJuego(
+    vuelo: Animatable<Float, AnimationVector1D>,
+    boca: Animatable<Float, AnimationVector1D>,
+    volteo: Animatable<Float, AnimationVector1D>,
+    meneo: Animatable<Float, AnimationVector1D>,
+    destino: DestinoCarta,
+    tarjeta: TarjetaFlashcard,
+    salon: SalonMundo,
+    nombreTema: String?
+) {
+    val pi = PI.toFloat()
+    Box(
+        Modifier
+            .en(Area.centroCarta.x, Area.centroCarta.y, Area.CARTA_ANCHO, Area.CARTA_ALTO)
+            .graphicsLayer {
+                val t = vuelo.value
+                val fin = destino.punto - Area.centroCarta
+                // Arco: sube por encima de la mesa y baja sobre el montón.
+                val control = Offset(fin.x * 0.45f, min(fin.y, 0f) - 125f)
+                val u = 1f - t
+                val x = 2f * u * t * control.x + t * t * fin.x
+                val y = 2f * u * t * control.y + t * t * fin.y
+                val arco = sin(t.coerceIn(0f, 1f) * pi)
+                val escala = 1f + (Area.ESCALA_MONTON - 1f) * t + 0.12f * arco
+                val levante = 1f + 0.07f * sin(volteo.value * pi)
+                val pirueta = (if (destino == DestinoCarta.MAZO) -16f else 16f) * arco
+                translationX = (x + meneo.value * 1.4f) * density
+                translationY = y * density
+                scaleX = escala * levante
+                scaleY = escala * levante
+                rotationZ = destino.giro * t + pirueta + meneo.value
+            }
+            .graphicsLayer {
+                val elevacion = maxOf(
+                    sin(vuelo.value.coerceIn(0f, 1f) * pi),
+                    sin(volteo.value * pi),
+                    sin(boca.value * pi)
+                )
+                rotationY = boca.value * 180f
+                cameraDistance = 14f * density
+                shadowElevation = (8f + 16f * elevacion) * density
+                shape = FormaCarta()
+                clip = false
+            }
+    ) {
+        if (boca.value >= 0.5f) {
+            DorsoCarta(
+                salon, Area.CARTA_ANCHO, Area.CARTA_ALTO,
+                Modifier.graphicsLayer { scaleX = -1f },
+                semilla = 7, tamanoEmblema = 0.4f
+            )
+        } else {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        rotationY = volteo.value * 180f
+                        cameraDistance = 14f * density
+                    }
+            ) {
+                if (volteo.value >= 0.5f) {
+                    Box(Modifier.fillMaxSize().graphicsLayer { scaleX = -1f }) { CaraConcepto(tarjeta, salon) }
+                } else {
+                    CaraDescripcion(tarjeta, salon, nombreTema)
+                }
+                // Se oscurece un poco al pasar de canto.
+                Canvas(Modifier.fillMaxSize()) {
+                    val sombra = 0.16f * sin(volteo.value * pi)
+                    if (sombra > 0.01f) drawPath(rutaCarta(Rect(Offset.Zero, size)), Color.Black.copy(alpha = sombra))
+                }
+            }
+        }
+        Canvas(Modifier.fillMaxSize()) {
+            val sombra = 0.16f * sin(boca.value * pi)
+            if (sombra > 0.01f) drawPath(rutaCarta(Rect(Offset.Zero, size)), Color.Black.copy(alpha = sombra))
+        }
+    }
+}
+
+/** Polvito que levanta la carta al caer en un montón. */
+@Composable
+private fun Polvo(progreso: Animatable<Float, AnimationVector1D>, color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val p = progreso.value
+        if (p <= 0f || p >= 1f) return@Canvas
+        val d = density
+        val e = 1f - (1f - p) * (1f - p) * (1f - p)
+        val base = Offset(size.width / 2f, size.height / 2f)
+        for (k in 0 until 12) {
+            val lado = if (k % 2 == 0) -1f else 1f
+            val f = (k / 2) / 5f
+            val c = Offset(
+                base.x + lado * (14f + 46f * f) * e * d,
+                base.y + (-(4f + 18f * (1f - f)) * e + 10f * p * p) * d
+            )
+            val r = (2.6f - 1.2f * f) * (1f - 0.5f * p) * d
+            drawCircle(color.copy(alpha = 0.75f * (1f - p)), r, c)
+        }
+    }
+}
+
+/** Destello al acertar: un halo que se abre detrás de la carta y chispas en forma de estrella. */
+@Composable
+private fun Destello(progreso: Animatable<Float, AnimationVector1D>, color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val p = progreso.value
+        if (p <= 0f || p >= 1f) return@Canvas
+        val d = density
+        val e = 1f - (1f - p) * (1f - p) * (1f - p)
+        val c = Offset(size.width / 2f, size.height / 2f)
+        // Halo
+        val w = Area.CARTA_ANCHO * (1f + 0.3f * e) * d
+        val h = Area.CARTA_ALTO * (1f + 0.18f * e) * d
+        val radio = androidx.compose.ui.geometry.CornerRadius(30f * d)
+        for (k in 3 downTo 1) {
+            val g = k * 7f * d
+            drawRoundRect(
+                color.copy(alpha = 0.16f * (1f - p)), Offset(c.x - w / 2f - g, c.y - h / 2f - g),
+                androidx.compose.ui.geometry.Size(w + 2f * g, h + 2f * g), radio
+            )
+        }
+        drawRoundRect(
+            color.copy(alpha = 0.7f * (1f - p)), Offset(c.x - w / 2f, c.y - h / 2f),
+            androidx.compose.ui.geometry.Size(w, h), radio, style = Stroke((2f + 4f * (1f - p)) * d)
+        )
+        // Chispas
+        for (k in 0 until 20) {
+            val a = k / 20f * 2f * PI.toFloat() + if (k % 2 == 0) 0.1f else -0.06f
+            val lejos = if (k % 3 == 0) 1.35f else 1f
+            val rx = (Area.CARTA_ANCHO * 0.5f + (10f + 62f * e) * lejos) * d
+            val ry = (Area.CARTA_ALTO * 0.5f + (8f + 52f * e) * lejos) * d
+            val pos = Offset(c.x + cos(a) * rx, c.y + sin(a) * ry)
+            val r = (if (k % 3 == 0) 7f else 4.5f) * (1f - 0.55f * p) * d
+            drawPath(estrella(pos, r), Color.White.copy(alpha = 0.9f * (1f - p)))
+            drawPath(estrella(pos, r * 0.75f), color.copy(alpha = 1f - p))
+        }
+    }
+}
+
+/** Estrella de cuatro puntas. */
+private fun estrella(c: Offset, r: Float): androidx.compose.ui.graphics.Path {
+    val i = r * 0.28f
+    return androidx.compose.ui.graphics.Path().apply {
+        moveTo(c.x, c.y - r)
+        lineTo(c.x + i, c.y - i)
+        lineTo(c.x + r, c.y)
+        lineTo(c.x + i, c.y + i)
+        lineTo(c.x, c.y + r)
+        lineTo(c.x - i, c.y + i)
+        lineTo(c.x - r, c.y)
+        lineTo(c.x - i, c.y - i)
+        close()
     }
 }
 
@@ -684,7 +919,8 @@ private fun TablillaOpcion(
     habilitada: Boolean,
     semilla: Int,
     y: Float,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val apagada = estado == EstadoTablilla.APAGADA
     val tinte = when (estado) {
@@ -696,6 +932,7 @@ private fun TablillaOpcion(
     Box(
         Modifier
             .en(195.3f, y, 343f, 55f)
+            .then(modifier)
             .clickable(enabled = habilitada, interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
             .semantics { contentDescription = "Concepto: $texto" }
     ) {
