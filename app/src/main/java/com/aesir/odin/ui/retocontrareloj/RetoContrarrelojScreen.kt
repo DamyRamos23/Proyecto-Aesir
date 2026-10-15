@@ -49,9 +49,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aesir.odin.domain.model.PreguntaFlash
 import com.aesir.odin.domain.model.ResultadoReto
+import com.aesir.odin.domain.model.RetoContrareloj
 import com.aesir.odin.domain.usecase.reto.AbandonarRetoContrarrelojUseCase
 import com.aesir.odin.ui.components.odin.BotonOdin
 import com.aesir.odin.ui.components.odin.BotonVolver
+import com.aesir.odin.ui.components.odin.ContadorHidromiel
 import com.aesir.odin.ui.components.odin.DivisorOrnamental
 import com.aesir.odin.ui.components.odin.FondoMundo
 import com.aesir.odin.ui.components.odin.PanelTallado
@@ -84,6 +86,7 @@ fun RetoContrarrelojScreen(
     val tiempo by viewModel.tiempoRestanteSeg.collectAsState()
     val puntaje by viewModel.puntaje.collectAsState()
     val resultado by viewModel.resultado.collectAsState()
+    val saldo by viewModel.saldo.collectAsState()
 
     val estilo = EstilosMundo.porOrden(1)
     var confirmandoSalida by remember { mutableStateOf(false) }
@@ -95,6 +98,16 @@ fun RetoContrarrelojScreen(
         when (val e = estado) {
             Estado.Cargando, Estado.Guardando ->
                 CircularProgressIndicator(color = OdinPaleta.Brasa, modifier = Modifier.align(Alignment.Center))
+
+            is Estado.Listo -> PreparacionReto(
+                estilo = estilo,
+                saldo = saldo,
+                costo = viewModel.costoEntrada,
+                duracionSegundos = viewModel.duracionSegundos,
+                aviso = e.aviso,
+                onComenzar = viewModel::pagarYComenzar,
+                onSalir = onSalir
+            )
 
             Estado.EnCurso -> if (pregunta != null) {
                 ContenidoReto(
@@ -194,8 +207,8 @@ private fun ContenidoReto(
                     )
                 }
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.End) {
-                    EtiquetaPequena("PUNTAJE")
-                    Text("$puntaje", style = estiloTitulo(24.sp, color = estilo.acento))
+                    EtiquetaPequena("HIDROMIEL")
+                    Text("+$puntaje", style = estiloTitulo(24.sp, color = estilo.acento))
                 }
             }
             Spacer(Modifier.height(8.dp))
@@ -373,15 +386,15 @@ private fun ResumenReto(estilo: EstiloMundo, resultado: ResultadoReto, onSalir: 
                         textAlign = TextAlign.Center
                     )
                     DivisorOrnamental(estilo.metal, estilo.acento, Modifier.padding(vertical = 12.dp))
-                    EtiquetaPequena("PUNTAJE")
+                    EtiquetaPequena(if (resultado.abandonado) "HIDROMIEL PERDIDO" else "HIDROMIEL GANADO")
                     Text(
-                        "${resultado.puntaje}",
+                        if (resultado.abandonado) "−${resultado.penalizacion}" else "+${resultado.puntaje}",
                         style = estiloTitulo(56.sp, color = Color(0xFFFFF6E0), brillo = estilo.acento)
                     )
                     Spacer(Modifier.height(8.dp))
                     if (resultado.abandonado) {
                         Text(
-                            "Se descartó tu puntaje y se restan ${resultado.penalizacion} puntos.",
+                            "Perdiste lo ganado en el reto y se restaron ${resultado.penalizacion} de hidromiel.",
                             color = OdinPaleta.Incorrecto,
                             fontFamily = FuenteTexto,
                             fontSize = 15.sp,
@@ -411,6 +424,75 @@ private fun DatoResumen(etiqueta: String, valor: Int, estilo: EstiloMundo) {
         EtiquetaPequena(etiqueta)
         Text("$valor", style = estiloTitulo(26.sp, color = estilo.acento))
     }
+}
+
+/** Reglas del reto y pago de la entrada antes de empezar. */
+@Composable
+private fun PreparacionReto(
+    estilo: EstiloMundo,
+    saldo: Int,
+    costo: Int,
+    duracionSegundos: Int,
+    aviso: String?,
+    onComenzar: () -> Unit,
+    onSalir: () -> Unit
+) {
+    val alcanza = saldo >= costo
+    Column(Modifier.fillMaxHeight().fillMaxWidth().padding(horizontal = 14.dp, vertical = 16.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            BotonVolver("Volver", onClick = onSalir, modifier = Modifier.weight(1f))
+            ContadorHidromiel(saldo = saldo)
+        }
+        Column(
+            Modifier.weight(1f).verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.Center
+        ) {
+            PanelTallado(estilo = estilo, modifier = Modifier.fillMaxWidth(), semilla = 5) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    SelloRunico(runa = "ᛏ", estilo = estilo, tamano = 60.dp)
+                    Spacer(Modifier.height(10.dp))
+                    Text("Reto contrarreloj", style = estiloTitulo(24.sp), textAlign = TextAlign.Center)
+                    DivisorOrnamental(estilo.metal, estilo.acento, Modifier.padding(vertical = 12.dp))
+                    ReglaReto("Tienes ${formatearTiempo(duracionSegundos)} para responder preguntas de los temas que ya estudiaste.")
+                    ReglaReto("Cada respuesta correcta te da +${RetoContrareloj.PUNTOS_POR_ACIERTO} de hidromiel al terminar.")
+                    ReglaReto("Entrar cuesta $costo de hidromiel.")
+                    ReglaReto("Si abandonas pierdes lo ganado y se restan ${AbandonarRetoContrarrelojUseCase.PENALIZACION} de hidromiel.")
+                    val nota = aviso ?: if (!alcanza) "Te faltan ${costo - saldo} de hidromiel para entrar." else null
+                    if (nota != null) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            nota,
+                            color = OdinPaleta.Incorrecto,
+                            fontFamily = FuenteTexto,
+                            fontSize = 15.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
+        }
+        BotonOdin(
+            texto = "Pagar $costo y comenzar",
+            onClick = onComenzar,
+            acento = estilo.acento,
+            habilitado = alcanza,
+            iconoFinal = Icons.AutoMirrored.Filled.ArrowForward,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+@Composable
+private fun ReglaReto(texto: String) {
+    Text(
+        "᛫ $texto",
+        color = Color(0xFFE4DCCB),
+        fontFamily = FuenteTexto,
+        fontSize = 15.sp,
+        lineHeight = 21.sp,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+    )
 }
 
 /** Reto no disponible (sin temas estudiados, sin preguntas o error). */
@@ -452,8 +534,8 @@ private fun DialogoAbandonar(estilo: EstiloMundo, onConfirmar: () -> Unit, onSeg
         title = { Text("¿Abandonar el reto?", fontFamily = FuenteTitulo) },
         text = {
             Text(
-                "Si abandonas, se descarta tu puntaje y se restan " +
-                    "${AbandonarRetoContrarrelojUseCase.PENALIZACION} puntos. El tiempo sigue corriendo mientras decides.",
+                "Si abandonas, pierdes el hidromiel ganado en el reto y se restan " +
+                    "${AbandonarRetoContrarrelojUseCase.PENALIZACION} de hidromiel. El tiempo sigue corriendo mientras decides.",
                 fontFamily = FuenteTexto
             )
         },

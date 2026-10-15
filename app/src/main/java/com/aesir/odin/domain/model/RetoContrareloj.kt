@@ -1,10 +1,12 @@
 package com.aesir.odin.domain.model
 
+import com.aesir.odin.domain.hidromiel.PoliticaCosto
+
 /**
  * Reto armado para una partida de CU-11: las preguntas y el tiempo general.
  *
- * [PUNTOS_POR_ACIERTO] es un valor provisional: el CU-11 no define cuánto suma
- * cada respuesta correcta; se ajustará cuando se diseñe el modelo de gamificación.
+ * El puntaje del reto es el hidromiel que se gana: [PUNTOS_POR_ACIERTO] por
+ * cada respuesta correcta (MOD-01). Se abona solo si el reto se termina.
  */
 data class RetoContrareloj(
     val preguntas: List<PreguntaFlash>,
@@ -15,6 +17,6 @@ data class RetoContrareloj(
 
     companion object {
         const val DURACION_SEGUNDOS = 120
-        const val PUNTOS_POR_ACIERTO = 10
+        const val PUNTOS_POR_ACIERTO = PoliticaCosto.CONTRARRELOJ_CORRECTA
     }
 }

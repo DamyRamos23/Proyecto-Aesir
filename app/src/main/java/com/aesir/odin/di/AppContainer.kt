@@ -36,6 +36,7 @@ import com.aesir.odin.domain.usecase.roadmap.RegistrarIntroduccionVistaUseCase
 import com.aesir.odin.domain.usecase.reto.AbandonarRetoContrarrelojUseCase
 import com.aesir.odin.domain.usecase.reto.ArmarRetoContrarrelojUseCase
 import com.aesir.odin.domain.usecase.reto.FinalizarRetoContrarrelojUseCase
+import com.aesir.odin.domain.usecase.reto.PagarEntradaRetoContrarrelojUseCase
 import com.aesir.odin.domain.usecase.shared.ValidarRespuestaUseCase
 
 /**
@@ -102,8 +103,10 @@ class AppContainer(context: Context) {
     val validarRespuestaUseCase = ValidarRespuestaUseCase()
     val armarRetoContrarrelojUseCase =
         ArmarRetoContrarrelojUseCase(roadmapRepository, preguntaFlashRepository)
+    val pagarEntradaRetoContrarrelojUseCase =
+        PagarEntradaRetoContrarrelojUseCase(moduloHidromiel)
     val finalizarRetoContrarrelojUseCase =
-        FinalizarRetoContrarrelojUseCase(retoContrarrelojRepository)
+        FinalizarRetoContrarrelojUseCase(retoContrarrelojRepository, moduloHidromiel)
     val abandonarRetoContrarrelojUseCase =
-        AbandonarRetoContrarrelojUseCase(retoContrarrelojRepository)
+        AbandonarRetoContrarrelojUseCase(retoContrarrelojRepository, moduloHidromiel)
 }

@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.aesir.odin.di.AppContainer
+import com.aesir.odin.domain.hidromiel.PoliticaCosto
+import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
 import com.aesir.odin.domain.model.EstadoRespuesta
 import com.aesir.odin.domain.model.PreguntaFlash
 import com.aesir.odin.domain.model.RetoContrareloj
@@ -13,36 +15,46 @@ import com.aesir.odin.domain.model.ResultadoReto
 import com.aesir.odin.domain.usecase.reto.AbandonarRetoContrarrelojUseCase
 import com.aesir.odin.domain.usecase.reto.ArmarRetoContrarrelojUseCase
 import com.aesir.odin.domain.usecase.reto.FinalizarRetoContrarrelojUseCase
+import com.aesir.odin.domain.usecase.reto.PagarEntradaRetoContrarrelojUseCase
 import com.aesir.odin.domain.usecase.reto.SinPreguntasDisponiblesException
 import com.aesir.odin.domain.usecase.reto.SinTemasEstudiadosException
 import com.aesir.odin.domain.usecase.shared.ValidarRespuestaUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
  * CU-11 Resolver reto contrarreloj.
  *
- * Arma el reto, lleva un contador regresivo general (no por pregunta), valida
- * cada respuesta confirmada, suma puntaje solo si es correcta y pasa de
- * inmediato a la siguiente pregunta sin detener el contador. El reto termina
- * al agotarse el tiempo o las preguntas, o si el alumno lo abandona (E3.1).
+ * Arma el reto y espera en [Estado.Listo] a que el alumno pague la entrada
+ * (10 de hidromiel). Luego lleva un contador regresivo general (no por
+ * pregunta), valida cada respuesta confirmada, suma puntaje solo si es
+ * correcta y pasa de inmediato a la siguiente pregunta sin detener el
+ * contador. El reto termina al agotarse el tiempo o las preguntas, o si el
+ * alumno lo abandona (E3.1).
  */
 class RetoContrarrelojViewModel(
     private val armarRetoUseCase: ArmarRetoContrarrelojUseCase,
+    private val pagarEntradaUseCase: PagarEntradaRetoContrarrelojUseCase,
     private val validadorUseCase: ValidarRespuestaUseCase,
     private val finalizarRetoUseCase: FinalizarRetoContrarrelojUseCase,
-    private val abandonarRetoUseCase: AbandonarRetoContrarrelojUseCase
+    private val abandonarRetoUseCase: AbandonarRetoContrarrelojUseCase,
+    saldoHidromiel: Flow<Int>
 ) : ViewModel() {
 
     sealed interface Estado {
         data object Cargando : Estado
         data object SinTemasEstudiados : Estado
         data object SinPreguntas : Estado
+        /** Reto armado; falta pagar la entrada para empezar. [aviso]: por qué no se pudo pagar. */
+        data class Listo(val aviso: String? = null) : Estado
         data object EnCurso : Estado
         /** El reto ya terminó y se está guardando el resultado. */
         data object Guardando : Estado
@@ -68,6 +80,8 @@ class RetoContrarrelojViewModel(
     val tiempoRestanteSeg: StateFlow<Int> = _tiempoRestanteSeg.asStateFlow()
     val puntaje: StateFlow<Int> = _puntaje.asStateFlow()
     val resultado: StateFlow<ResultadoReto?> = _resultado.asStateFlow()
+    val saldo: StateFlow<Int> = saldoHidromiel.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+    val costoEntrada: Int = PoliticaCosto.ENTRADA_CONTRARRELOJ
 
     /** Duración total del reto, para dibujar la barra de tiempo. */
     var duracionSegundos: Int = RetoContrareloj.DURACION_SEGUNDOS
@@ -80,6 +94,7 @@ class RetoContrarrelojViewModel(
     private var cerrando = false
     private var temporizador: Job? = null
 
+    /** Arma el reto (sin cobrar) y deja la pantalla lista para pagar la entrada. */
     fun iniciarReto() {
         if (_estado.value == Estado.EnCurso) return
         viewModelScope.launch {
@@ -92,7 +107,12 @@ class RetoContrarrelojViewModel(
                 Result.failure(e)
             }
             armado
-                .onSuccess { nuevo -> comenzar(nuevo) }
+                .onSuccess { nuevo ->
+                    reto = nuevo
+                    duracionSegundos = nuevo.duracionSegundos
+                    _tiempoRestanteSeg.value = nuevo.duracionSegundos
+                    _estado.value = Estado.Listo()
+                }
                 .onFailure { causa ->
                     _estado.value = when (causa) {
                         is SinTemasEstudiadosException -> Estado.SinTemasEstudiados
@@ -100,6 +120,24 @@ class RetoContrarrelojViewModel(
                         else -> Estado.Error(causa.message ?: "No se pudo armar el reto")
                     }
                 }
+        }
+    }
+
+    /** Cobra la entrada y, si alcanza el hidromiel, arranca el reto. */
+    fun pagarYComenzar() {
+        val armado = reto ?: return
+        if (_estado.value !is Estado.Listo) return
+        viewModelScope.launch {
+            _estado.value = Estado.Cargando
+            val acceso = try {
+                pagarEntradaUseCase()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _estado.value = Estado.Listo(e.message ?: "No se pudo cobrar la entrada")
+                return@launch
+            }
+            if (acceso.autorizado) comenzar(armado) else _estado.value = Estado.Listo(acceso.motivo)
         }
     }
 
@@ -206,9 +244,11 @@ class RetoContrarrelojViewModel(
                 initializer {
                     RetoContrarrelojViewModel(
                         armarRetoUseCase = container.armarRetoContrarrelojUseCase,
+                        pagarEntradaUseCase = container.pagarEntradaRetoContrarrelojUseCase,
                         validadorUseCase = container.validarRespuestaUseCase,
                         finalizarRetoUseCase = container.finalizarRetoContrarrelojUseCase,
-                        abandonarRetoUseCase = container.abandonarRetoContrarrelojUseCase
+                        abandonarRetoUseCase = container.abandonarRetoContrarrelojUseCase,
+                        saldoHidromiel = container.moduloHidromiel.observarSaldo(USUARIO_LOCAL)
                     ).apply { iniciarReto() }
                 }
             }

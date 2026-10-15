@@ -34,5 +34,7 @@ class PoliticaCosto {
         const val FLASH_CORRECTA = 5
         const val FLASH_SIN_RESPUESTA = 2
         const val ABANDONO_CONTRARRELOJ = 20
+        const val ENTRADA_CONTRARRELOJ = 10
+        const val CONTRARRELOJ_CORRECTA = 2
     }
 }

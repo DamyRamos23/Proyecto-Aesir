@@ -3,6 +3,10 @@ package com.aesir.odin.ui.mundos
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -147,10 +151,22 @@ fun MundosScreen(
                     mundos = visibles,
                     seleccionadoId = seleccionado?.id,
                     onSeleccionar = { seleccionadoId = it },
+                    // CU-11: el reto mezcla preguntas de todos los temas ya
+                    // estudiados, por eso se entra desde el centro del escudo.
+                    onAbrirReto = { navController.navigate(OdinNavGraph.rutaRetoContrareloj) },
                     modifier = Modifier
                         .widthIn(max = 440.dp)
                         .fillMaxWidth()
                         .align(Alignment.CenterHorizontally)
+                )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "Toca el Valknut del centro para el reto contrarreloj.",
+                    color = OdinPaleta.HuesoTenue,
+                    fontFamily = FuenteTexto,
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
@@ -171,25 +187,6 @@ fun MundosScreen(
                 }
             }
 
-            // CU-11: el reto mezcla preguntas de todos los temas ya estudiados,
-            // por eso vive aquí y no dentro de un mundo.
-            Spacer(Modifier.height(20.dp))
-            Text(
-                "Pon a prueba lo estudiado contra el reloj: dos minutos, todas las preguntas que alcances.",
-                color = OdinPaleta.HuesoTenue,
-                fontFamily = FuenteTexto,
-                fontSize = 14.sp,
-                lineHeight = 20.sp
-            )
-            Spacer(Modifier.height(10.dp))
-            BotonOdin(
-                texto = "Reto contrarreloj",
-                onClick = { navController.navigate(OdinNavGraph.rutaRetoContrareloj) },
-                acento = OdinPaleta.Oro,
-                primario = false,
-                iconoFinal = Icons.AutoMirrored.Filled.ArrowForward,
-                modifier = Modifier.fillMaxWidth()
-            )
         }
     }
 }
@@ -207,8 +204,16 @@ private fun EscudoMundos(
     mundos: List<Mundo>,
     seleccionadoId: String?,
     onSeleccionar: (String) -> Unit,
+    onAbrirReto: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Pulso suave del anillo central para que se note que se puede tocar.
+    val brillo by rememberInfiniteTransition(label = "valknut").animateFloat(
+        initialValue = .35f,
+        targetValue = .9f,
+        animationSpec = infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "brilloValknut"
+    )
     BoxWithConstraints(modifier.aspectRatio(1f)) {
         val lado = maxWidth
         val anillo = lado * 0.08f
@@ -237,12 +242,19 @@ private fun EscudoMundos(
             )
         }
 
-        Canvas(Modifier.align(Alignment.Center).size(lado * 0.22f)) {
+        Canvas(
+            Modifier
+                .align(Alignment.Center)
+                .size(lado * 0.22f)
+                .clip(CircleShape)
+                .semantics { contentDescription = "Reto contrarreloj" }
+                .clickable(role = Role.Button, onClick = onAbrirReto)
+        ) {
             val r = size.minDimension / 2f
             drawCircle(Color.Black.copy(alpha = .6f), r * 1.08f, center + Offset(0f, 3.dp.toPx()))
             drawCircle(Brush.radialGradient(listOf(Color(0xFF2E271F), Color(0xFF12100D)), center = center, radius = r), r)
             drawCircle(OdinPaleta.Hierro, r - 1.5.dp.toPx(), style = Stroke(3.dp.toPx()))
-            drawCircle(OdinPaleta.Oro.copy(alpha = .35f), r - 7.dp.toPx(), style = Stroke(1.dp.toPx()))
+            drawCircle(OdinPaleta.Oro.copy(alpha = brillo), r - 7.dp.toPx(), style = Stroke(1.5.dp.toPx()))
             dibujarValknut(center, r * .5f, OdinPaleta.Oro, 1.6.dp.toPx())
         }
     }

@@ -252,6 +252,45 @@ class ModuloHidromiel(
             }
         }
 
+    /** Entrada al reto contrarreloj (10). Si no alcanza, se aplica E1 y no se cobra. */
+    suspend fun cobrarEntradaContrarreloj(idUsuario: String): ResultadoAcceso {
+        var aviso: AvisoHidromiel? = null
+        val resultado = candado.withLock {
+            repositorio.enTransaccion {
+                val costo = PoliticaCosto.ENTRADA_CONTRARRELOJ
+                val reserva = obtenerOCrearReserva(idUsuario)
+                if (!reserva.descontar(costo, TipoMovimiento.ENTRADA_CONTRARRELOJ)) {
+                    val falta = costo - reserva.saldo
+                    return@enTransaccion ResultadoAcceso(
+                        idNivel = ID_CONTRARRELOJ, estado = EstadoNivel.DISPONIBLE, autorizado = false,
+                        costo = costo, faltante = falta,
+                        motivo = "Te faltan $falta de hidromiel para entrar al reto."
+                    )
+                }
+                repositorio.guardarReserva(reserva)
+                aviso = AvisoHidromiel(
+                    TipoMovimiento.ENTRADA_CONTRARRELOJ, -costo, reserva.saldo,
+                    "Pagaste $costo de hidromiel para entrar al reto contrarreloj."
+                )
+                ResultadoAcceso(ID_CONTRARRELOJ, EstadoNivel.DISPONIBLE, true, costo, 0, "Entrada pagada.")
+            }
+        }
+        aviso?.let(::publicar)
+        return resultado
+    }
+
+    /** Al terminar el reto (sin abandonarlo): +2 por cada respuesta correcta. */
+    suspend fun alFinalizarContrarreloj(e: ContrarrelojFinalizado): AvisoHidromiel =
+        moverSaldo(e.idUsuario) { reserva ->
+            val ganado = PoliticaCosto.CONTRARRELOJ_CORRECTA * e.aciertos.coerceAtLeast(0)
+            if (ganado > 0) reserva.abonar(ganado, TipoMovimiento.RECOMPENSA_CONTRARRELOJ)
+            AvisoHidromiel(
+                TipoMovimiento.RECOMPENSA_CONTRARRELOJ, ganado, reserva.saldo,
+                if (ganado > 0) "¡Reto terminado! Ganaste $ganado de hidromiel."
+                else "Reto terminado sin aciertos. Tu hidromiel no cambió."
+            )
+        }
+
     /** E6: abandonar un reto contrarreloj resta 20 (RN-01: nunca baja de 0). */
     suspend fun alAbandonarContrarreloj(e: ContrarrelojAbandonado): AvisoHidromiel =
         moverSaldo(e.idUsuario) { reserva ->
@@ -355,5 +394,10 @@ class ModuloHidromiel(
 
     private fun publicar(aviso: AvisoHidromiel) {
         _avisos.tryEmit(aviso)
+    }
+
+    companion object {
+        /** Identificador del reto contrarreloj en los [ResultadoAcceso]. */
+        const val ID_CONTRARRELOJ = "CONTRARRELOJ"
     }
 }
