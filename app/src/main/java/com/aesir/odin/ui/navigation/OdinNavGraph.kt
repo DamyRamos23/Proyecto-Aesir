@@ -21,6 +21,9 @@ import com.aesir.odin.ui.leccion.LeccionScreen
 import com.aesir.odin.ui.leccion.ResumenLeccionPlaceholder
 import com.aesir.odin.ui.leccion.ResumenLeccionScreen
 import com.aesir.odin.ui.mundos.MundosScreen
+import com.aesir.odin.ui.preguntaflash.PreguntaFlashScreen
+import com.aesir.odin.ui.retocontrareloj.RetoContrarrelojScreen
+import com.aesir.odin.ui.retocontrareloj.RetoContrarrelojViewModel
 import com.aesir.odin.ui.roadmap.RoadmapScreen
 import com.aesir.odin.ui.temaintro.TemaIntroScreen
 
@@ -37,6 +40,8 @@ object OdinNavGraph {
     const val rutaIntroTema = "introTema"
     const val rutaLeccion = "leccion"
     const val rutaResumenLeccion = "resumenLeccion"
+    const val rutaPreguntaFlash = "preguntaFlash"
+    const val rutaRetoContrareloj = "retoContrareloj"
     const val rutaCrucigrama = "crucigrama"
     const val rutaResultadoCrucigrama = "resultadoCrucigrama"
 
@@ -199,6 +204,28 @@ object OdinNavGraph {
 
             composable(rutaResumenLeccion) {
                 ResumenLeccionPlaceholder(nav)
+            }
+
+            // -------------------------
+            // Pregunta flash
+            // -------------------------
+
+            composable(rutaPreguntaFlash) {
+                PreguntaFlashScreen(nav)
+            }
+
+            // -------------------------
+            // Reto contrarreloj (CU-11)
+            // -------------------------
+
+            composable(rutaRetoContrareloj) {
+                val viewModel: RetoContrarrelojViewModel =
+                    viewModel(factory = RetoContrarrelojViewModel.factory(appContainer))
+
+                RetoContrarrelojScreen(
+                    viewModel = viewModel,
+                    onSalir = { nav.popBackStack() }
+                )
             }
 
             // -------------------------

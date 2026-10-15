@@ -9,6 +9,7 @@ import com.aesir.odin.data.repository.HistorialRepositoryImpl
 import com.aesir.odin.data.repository.LeccionRepositoryImpl
 import com.aesir.odin.data.repository.PreguntaFlashRepositoryImpl
 import com.aesir.odin.data.repository.HidromielFlashRepositoryImpl
+import com.aesir.odin.data.repository.RetoContrarrelojRepositoryImpl
 import com.aesir.odin.data.repository.RoadmapRepositoryImpl
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.repository.CrucigramaRepository
@@ -16,6 +17,7 @@ import com.aesir.odin.domain.repository.HistorialRepository
 import com.aesir.odin.domain.repository.LeccionRepository
 import com.aesir.odin.domain.repository.PreguntaFlashRepository
 import com.aesir.odin.domain.repository.HidromielFlashRepository
+import com.aesir.odin.domain.repository.RetoContrarrelojRepository
 import com.aesir.odin.domain.repository.RoadmapRepository
 import com.aesir.odin.domain.usecase.crucigrama.ActualizarPuntajeUseCase
 import com.aesir.odin.domain.usecase.crucigrama.FinalizarCrucigramaUseCase
@@ -37,6 +39,10 @@ import com.aesir.odin.domain.usecase.roadmap.ObtenerTemasPorMundoUseCase
 import com.aesir.odin.domain.usecase.roadmap.ValidarAccesoNivelUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerIntroduccionTemaUseCase
 import com.aesir.odin.domain.usecase.roadmap.RegistrarIntroduccionVistaUseCase
+import com.aesir.odin.domain.usecase.reto.AbandonarRetoContrarrelojUseCase
+import com.aesir.odin.domain.usecase.reto.ArmarRetoContrarrelojUseCase
+import com.aesir.odin.domain.usecase.reto.FinalizarRetoContrarrelojUseCase
+import com.aesir.odin.domain.usecase.reto.PagarEntradaRetoContrarrelojUseCase
 import com.aesir.odin.domain.usecase.shared.ValidarRespuestaUseCase
 
 /**
