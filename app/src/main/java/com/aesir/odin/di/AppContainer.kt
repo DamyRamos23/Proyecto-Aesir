@@ -10,6 +10,7 @@ import com.aesir.odin.data.repository.HidromielRepositoryImpl
 import com.aesir.odin.data.repository.HistorialRepositoryImpl
 import com.aesir.odin.data.repository.LeccionRepositoryImpl
 import com.aesir.odin.data.repository.RetoFinMundoRepositoryImpl
+import com.aesir.odin.data.repository.RetoRepositoryImpl
 import com.aesir.odin.data.repository.RoadmapRepositoryImpl
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.repository.CrucigramaRepository
@@ -17,6 +18,7 @@ import com.aesir.odin.domain.repository.FlashcardsRepository
 import com.aesir.odin.domain.repository.HistorialRepository
 import com.aesir.odin.domain.repository.LeccionRepository
 import com.aesir.odin.domain.repository.RetoFinMundoRepository
+import com.aesir.odin.domain.repository.RetoRepository
 import com.aesir.odin.domain.repository.RoadmapRepository
 import com.aesir.odin.domain.usecase.flashcards.FinalizarFlashcardsUseCase
 import com.aesir.odin.domain.usecase.flashcards.GenerarFlashcardsUseCase
@@ -26,6 +28,12 @@ import com.aesir.odin.domain.usecase.retofinmundo.AbandonarRetoFinMundoUseCase
 import com.aesir.odin.domain.usecase.retofinmundo.FinalizarRetoFinMundoUseCase
 import com.aesir.odin.domain.usecase.retofinmundo.ObtenerRetoFinMundoUseCase
 import com.aesir.odin.domain.usecase.retofinmundo.RegistrarErrorRetoUseCase
+import com.aesir.odin.domain.usecase.retoarrastrar.AbandonarRetoUseCase
+import com.aesir.odin.domain.usecase.retoarrastrar.CalcularPuntajeRetoUseCase
+import com.aesir.odin.domain.usecase.retoarrastrar.FinalizarRetoUseCase
+import com.aesir.odin.domain.usecase.retoarrastrar.ObtenerRetoUseCase
+import com.aesir.odin.domain.usecase.retoarrastrar.ValidarColocacionUseCase
+import com.aesir.odin.domain.usecase.retoarrastrar.RegistrarErrorRetoUseCase as RegistrarErrorRetoArrastrarUseCase
 import com.aesir.odin.domain.usecase.crucigrama.ActualizarPuntajeUseCase
 import com.aesir.odin.domain.usecase.crucigrama.FinalizarCrucigramaUseCase
 import com.aesir.odin.domain.usecase.crucigrama.GenerarCrucigramaUseCase
@@ -127,4 +135,19 @@ class AppContainer(context: Context) {
     val finalizarRetoFinMundoUseCase =
         FinalizarRetoFinMundoUseCase(retoFinMundoRepository, roadmapRepository, moduloHidromiel)
     val abandonarRetoFinMundoUseCase = AbandonarRetoFinMundoUseCase(retoFinMundoRepository, moduloHidromiel)
+
+    // CU-09 Resolver reto de arrastrar y soltar
+    val retoRepository: RetoRepository =
+        RetoRepositoryImpl(database.retoDao(), database.elementoArrastrableDao(), database.posicionDestinoDao())
+    val obtenerRetoUseCase = ObtenerRetoUseCase(retoRepository)
+    val validarColocacionUseCase = ValidarColocacionUseCase()
+    val calcularPuntajeRetoUseCase = CalcularPuntajeRetoUseCase()
+    val registrarErrorRetoArrastrarUseCase = RegistrarErrorRetoArrastrarUseCase(historialRepository)
+    val finalizarRetoUseCase = FinalizarRetoUseCase(
+        retoRepository,
+        calcularPuntajeRetoUseCase,
+        RegistrarLeccionCompletadaUseCase(roadmapRepository), // reutilizado de CU-05
+        moduloHidromiel
+    )
+    val abandonarRetoUseCase = AbandonarRetoUseCase(moduloHidromiel)
 }

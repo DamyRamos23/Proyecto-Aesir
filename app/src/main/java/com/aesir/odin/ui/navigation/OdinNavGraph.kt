@@ -1,6 +1,7 @@
 package com.aesir.odin.ui.navigation
 
 import androidx.compose.runtime.Composable
+import android.net.Uri
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NamedNavArgument
@@ -19,6 +20,9 @@ import com.aesir.odin.ui.flashcards.FlashcardsScreen
 import com.aesir.odin.ui.flashcards.FlashcardsViewModel
 import com.aesir.odin.ui.ragnarok.RagnarokScreen
 import com.aesir.odin.ui.ragnarok.RagnarokViewModel
+import com.aesir.odin.ui.retoarrastrar.ResumenRetoScreen
+import com.aesir.odin.ui.retoarrastrar.RetoArrastrarScreen
+import com.aesir.odin.ui.retoarrastrar.RetoArrastrarViewModel
 import com.aesir.odin.ui.leccion.LeccionInteractivaScreen
 import com.aesir.odin.ui.leccion.LeccionInteractivaViewModel
 import com.aesir.odin.ui.leccion.LeccionScreen
@@ -47,6 +51,8 @@ object OdinNavGraph {
     const val rutaResultadoCrucigrama = "resultadoCrucigrama"
     const val rutaFlashcards = "flashcards"
     const val rutaRagnarok = "ragnarok"
+    const val rutaRetoArrastrar = "retoArrastrar"
+    const val rutaResumenReto = "resumenReto"
 
     private const val argMundoId = "mundoId"
     private const val argTemaId = "temaId"
@@ -63,6 +69,8 @@ object OdinNavGraph {
     private const val argTemas = "temas"
     private const val argAciertos = "aciertos"
     private const val argOrdenMundo = "ordenMundo"
+    private const val argIntentos = "intentos"
+    private const val argDesbloqueados = "desbloqueados"
 
     /** Ruta concreta del roadmap para un mundo determinado. */
     fun rutaRoadmapCon(mundoId: String) =
@@ -99,6 +107,14 @@ object OdinNavGraph {
     fun rutaFlashcardsCon(temaId: String, temasIncluidos: List<String>) =
         "$rutaFlashcards/$temaId?$argTemas=${temasIncluidos.joinToString(",")}"
 
+    /** Ruta del reto de arrastrar y soltar (CU-09) con las lecciones cercanas para repasar. */
+    fun rutaRetoArrastrarCon(temaId: String, temasIncluidos: List<String>) =
+        "$rutaRetoArrastrar/$temaId?$argTemas=${temasIncluidos.joinToString(",")}"
+
+    /** Resumen del reto aprobado; los nombres de los niveles abiertos van codificados. */
+    fun rutaResumenRetoCon(puntaje: Int, intentos: Int, ordenMundo: Int, desbloqueados: List<String>) =
+        "$rutaResumenReto/$puntaje/$intentos/$ordenMundo?$argDesbloqueados=${Uri.encode(desbloqueados.joinToString("|"))}"
+
     /** Ruta del reto de fin de mundo (CU-08) de un mundo, por el id de su tema Ragnarök. */
     fun rutaRagnarokCon(temaId: String) = "$rutaRagnarok/$temaId"
 
@@ -110,9 +126,17 @@ object OdinNavGraph {
      */
     fun rutaNivelCon(tema: Tema, temasDelMundo: List<Tema>): String {
         if (tema.esRagnarok) return rutaRagnarokCon(tema.id)
-        if (!tema.esCrucigrama && !tema.esFlashcards) return rutaIntroTemaCon(tema.id)
         val lecciones = temasDelMundo.filter { !it.esRagnarok && !it.esMinijuego }.sortedBy { it.orden }
-        val minijuegos = temasDelMundo.filter { !it.esRagnarok && it.esMinijuego }.sortedBy { it.orden }
+        if (tema.esArrastrar) {
+            // Tercer anillo: las lecciones más cercanas por ángulo son las que se sugiere repasar (A7.2)
+            val retos = temasDelMundo.filter { !it.esRagnarok && it.esReto }.sortedBy { it.orden }
+            val j = retos.indexOfFirst { it.id == tema.id }
+            val cercanas = if (j < 0) lecciones.indices.toList()
+            else ArbolHabilidades.leccionesCercanasAReto(j, retos.size, lecciones.size)
+            return rutaRetoArrastrarCon(tema.id, cercanas.map { lecciones[it].id })
+        }
+        if (!tema.esCrucigrama && !tema.esFlashcards) return rutaIntroTemaCon(tema.id)
+        val minijuegos = temasDelMundo.filter { !it.esRagnarok && it.anillo == ArbolHabilidades.ANILLO_MINIJUEGOS }.sortedBy { it.orden }
         val k = minijuegos.indexOfFirst { it.id == tema.id }
         val cercanas = if (k < 0) lecciones.indices.toList()
         else ArbolHabilidades.leccionesCercanas(k, lecciones.size, minijuegos.size)
@@ -439,6 +463,68 @@ object OdinNavGraph {
                     },
                     // MOD-01: salir antes de terminar es abandonar el nivel.
                     onSalir = { viewModel.abandonar(volverAlRoadmap) }
+                )
+            }
+
+            // -------------------------
+            // Reto de arrastrar y soltar (CU-09)
+            // -------------------------
+
+            composable(
+                route = "$rutaRetoArrastrar/{$argTemaId}?$argTemas={$argTemas}",
+                arguments = listOf(
+                    argumentoTemaId(),
+                    navArgument(argTemas) {
+                        type = NavType.StringType
+                        defaultValue = ""
+                    }
+                )
+            ) { entrada ->
+                val temaId = entrada.arguments?.getString(argTemaId).orEmpty()
+                val temas = entrada.arguments?.getString(argTemas).orEmpty()
+                    .split(",").filter { it.isNotBlank() }
+                val viewModel: RetoArrastrarViewModel = viewModel(factory = RetoArrastrarViewModel.factory(appContainer))
+
+                RetoArrastrarScreen(
+                    viewModel = viewModel,
+                    temaId = temaId,
+                    temasIncluidos = temas,
+                    onAprobado = { resultado, desbloqueados, ordenMundo ->
+                        nav.navigate(rutaResumenRetoCon(resultado.puntaje, resultado.intentos, ordenMundo, desbloqueados)) {
+                            popUpTo("$rutaRoadmap/{$argMundoId}") { inclusive = false }
+                        }
+                    },
+                    onVolverRoadmap = volverAlRoadmap,
+                    // A7.2: repasar la lección interactiva del tema; el roadmap queda debajo.
+                    onRepasarLeccion = { temaLeccion ->
+                        nav.navigate(rutaIntroTemaCon(temaLeccion)) {
+                            popUpTo("$rutaRoadmap/{$argMundoId}") { inclusive = false }
+                        }
+                    },
+                    // A4.1 y MOD-01: salir antes de terminar es abandonar el nivel.
+                    onSalir = { viewModel.confirmarSalida(volverAlRoadmap) }
+                )
+            }
+
+            composable(
+                route = "$rutaResumenReto/{$argPuntaje}/{$argIntentos}/{$argOrdenMundo}?$argDesbloqueados={$argDesbloqueados}",
+                arguments = listOf(
+                    navArgument(argPuntaje) { type = NavType.IntType },
+                    navArgument(argIntentos) { type = NavType.IntType },
+                    navArgument(argOrdenMundo) { type = NavType.IntType },
+                    navArgument(argDesbloqueados) {
+                        type = NavType.StringType
+                        defaultValue = ""
+                    }
+                )
+            ) { entrada ->
+                val args = entrada.arguments
+                ResumenRetoScreen(
+                    puntaje = args?.getInt(argPuntaje) ?: 0,
+                    intentos = args?.getInt(argIntentos) ?: 0,
+                    desbloqueados = args?.getString(argDesbloqueados).orEmpty().split("|").filter { it.isNotBlank() },
+                    ordenMundo = args?.getInt(argOrdenMundo) ?: 1,
+                    onVolverRoadmap = volverAlRoadmap
                 )
             }
 

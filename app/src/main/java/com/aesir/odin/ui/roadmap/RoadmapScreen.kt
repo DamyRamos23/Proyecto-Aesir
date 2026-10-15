@@ -338,6 +338,8 @@ private fun runaDe(tema: Tema, estilo: EstiloMundo): String = when (tema.activid
     Actividad.CRUCIGRAMA -> estilo.runas[4]
     Actividad.MEMORAMA -> estilo.runas[5]
     Actividad.FLASHCARDS -> estilo.runas[6]
+    Actividad.ARRASTRAR -> estilo.runas[7]
+    Actividad.POR_DEFINIR -> "?"
 }
 
 @Composable
@@ -369,13 +371,15 @@ private fun EscudoTemas(
             else -> 0f
         }
     }
-    // Dos anillos (ArbolHabilidades): lecciones adentro y minijuegos afuera
+    // Tres anillos (ArbolHabilidades): lecciones adentro, minijuegos en medio y retos afuera
     val lecciones = temas.filter { !it.esMinijuego }.sortedBy { it.orden }
-    val minijuegos = temas.filter { it.esMinijuego }.sortedBy { it.orden }
+    val minijuegos = temas.filter { it.anillo == ArbolHabilidades.ANILLO_MINIJUEGOS }.sortedBy { it.orden }
+    val retos = temas.filter { it.esReto }.sortedBy { it.orden }
     val n = lecciones.size
     val m = minijuegos.size
-    val conexiones = remember(lecciones.map { it.id }, minijuegos.map { it.id }) {
-        ArbolHabilidades.conexiones(lecciones.map { it.id }, minijuegos.map { it.id })
+    val numRetos = retos.size
+    val conexiones = remember(lecciones.map { it.id }, minijuegos.map { it.id }, retos.map { it.id }) {
+        ArbolHabilidades.conexiones(lecciones.map { it.id }, minijuegos.map { it.id }, retos.map { it.id })
     }
     val medidor = rememberTextMeasurer()
     val runasAro = remember(estilo) {
@@ -384,14 +388,25 @@ private fun EscudoTemas(
 
     BoxWithConstraints(modifier.aspectRatio(1f)) {
         val lado = maxWidth
-        val radioInterior = if (m > 0) lado * 0.2f else lado * 0.33f
-        val radioExterior = lado * 0.35f
-        val tamLeccion = if (m > 0) 48.dp else 58.dp
-        val tamMinijuego = 42.dp
+        val radioInterior = when {
+            numRetos > 0 -> lado * 0.165f
+            m > 0 -> lado * 0.2f
+            else -> lado * 0.33f
+        }
+        val radioExterior = if (numRetos > 0) lado * 0.27f else lado * 0.35f
+        val radioRetos = lado * 0.37f
+        val tamLeccion = when {
+            numRetos > 0 -> 40.dp
+            m > 0 -> 48.dp
+            else -> 58.dp
+        }
+        val tamMinijuego = if (numRetos > 0) 36.dp else 42.dp
+        val tamReto = 32.dp
         // Ángulo y radio de cada nivel, por id
         val ubicacion: Map<String, Pair<Float, Dp>> =
             lecciones.mapIndexed { i, t -> t.id to (ArbolHabilidades.anguloInterior(i, n) to radioInterior) }.toMap() +
-                minijuegos.mapIndexed { k, t -> t.id to (ArbolHabilidades.anguloExterior(k, n, m) to radioExterior) }
+                minijuegos.mapIndexed { k, t -> t.id to (ArbolHabilidades.anguloExterior(k, n, m) to radioExterior) } +
+                retos.mapIndexed { j, t -> t.id to (ArbolHabilidades.anguloRetos(j, numRetos) to radioRetos) }
 
         Canvas(Modifier.size(lado)) {
             val c = center
@@ -445,6 +460,10 @@ private fun EscudoTemas(
 
             drawCircle(estilo.metal.copy(alpha = .18f), radioInterior.toPx(), c, style = Stroke(1.dp.toPx()))
             if (m > 0) drawCircle(estilo.metal.copy(alpha = .12f), radioExterior.toPx(), c, style = Stroke(1.dp.toPx()))
+            if (numRetos > 0) drawCircle(
+                estilo.metal.copy(alpha = .1f), radioRetos.toPx(), c,
+                style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx())))
+            )
             lecciones.forEach { t -> pos[t.id]?.let { drawLine(estilo.metal.copy(alpha = .22f), c, it, 1.2.dp.toPx()) } }
 
             // Rayos del Ragnarök: de cada nivel jugable al centro
@@ -522,7 +541,11 @@ private fun EscudoTemas(
         temas.forEach { tema ->
             val (angulo, radio) = ubicacion[tema.id] ?: return@forEach
             val a = Math.toRadians(angulo.toDouble())
-            val tam = if (tema.esMinijuego) tamMinijuego else tamLeccion
+            val tam = when {
+                tema.esReto -> tamReto
+                tema.esMinijuego -> tamMinijuego
+                else -> tamLeccion
+            }
             val x = lado / 2 + radio * cos(a).toFloat()
             val y = lado / 2 + radio * sin(a).toFloat()
             NodoTema(
@@ -540,9 +563,9 @@ private fun EscudoTemas(
 }
 
 /**
- * Nodo del escudo: círculo para las lecciones y rombo para los minijuegos.
- * Sin placa de texto (con dos anillos no caben); el nombre se ve en el panel
- * de abajo al seleccionarlo.
+ * Nodo del escudo: círculo para las lecciones, rombo para los minijuegos y
+ * hexágono para los retos del tercer anillo. Sin placa de texto (con tres
+ * anillos no caben); el nombre se ve en el panel de abajo al seleccionarlo.
  */
 @Composable
 private fun NodoTema(
@@ -557,7 +580,8 @@ private fun NodoTema(
 ) {
     val estado = estadoDe(tema, acceso)
     val activo = estado == EstadoNodo.ACTUAL || estado == EstadoNodo.COMPLETADO
-    val rombo = tema.esMinijuego
+    val rombo = tema.esMinijuego && !tema.esReto
+    val hexagono = tema.esReto
     Box(
         modifier
             .size(tamNodo)
@@ -585,7 +609,20 @@ private fun NodoTema(
             val interior = Brush.radialGradient(listOf(Color(0xFF2A2622), Color(0xFF070605)), center = center - Offset(r * .2f, r * .3f), radius = r * 1.2f)
             val borde = if (activo) estilo.acento else estilo.metalOscuro
             val grosor = if (activo || seleccionado) 2.dp.toPx() else 1.dp.toPx()
-            if (rombo) {
+            if (hexagono) {
+                fun hexa(s: Float) = Path().apply {
+                    for (k in 0 until 6) {
+                        val a = Math.toRadians(60.0 * k - 90.0)
+                        val x = center.x + s * cos(a).toFloat()
+                        val y = center.y + s * sin(a).toFloat()
+                        if (k == 0) moveTo(x, y) else lineTo(x, y)
+                    }
+                    close()
+                }
+                drawPath(hexa(r), metal)
+                drawPath(hexa(r * .84f), interior)
+                drawPath(hexa(r * .84f), if (seleccionado) estilo.acento else borde, style = Stroke(grosor))
+            } else if (rombo) {
                 fun diamante(s: Float) = Path().apply {
                     moveTo(center.x, center.y - s); lineTo(center.x + s, center.y)
                     lineTo(center.x, center.y + s); lineTo(center.x - s, center.y); close()
@@ -605,7 +642,7 @@ private fun NodoTema(
             EstadoNodo.COMPLETADO -> Insignia(estilo.acento, Modifier.align(Alignment.BottomEnd)) {
                 Icon(Icons.Filled.Check, contentDescription = null, tint = OdinPaleta.Hollin, modifier = Modifier.size(11.dp))
             }
-            EstadoNodo.ACTUAL -> if (!rombo) Box(
+            EstadoNodo.ACTUAL -> if (!tema.esMinijuego) Box(
                 Modifier
                     .align(Alignment.BottomCenter)
                     .offset(y = 8.dp)
@@ -667,6 +704,7 @@ private fun PanelTema(
         Text(
             when {
                 tema.esRagnarok -> "FIN DEL MUNDO"
+                tema.esReto -> "RETO · ${tema.actividad.nombre.uppercase()}"
                 tema.esMinijuego -> "MINIJUEGO · ${tema.actividad.nombre.uppercase()}"
                 else -> "LECCIÓN ${tema.orden} DE $total"
             },
@@ -688,7 +726,8 @@ private fun PanelTema(
         Spacer(Modifier.height(14.dp))
         if (!tema.actividad.jugable) {
             Text(
-                "Próximamente: este minijuego llega en una siguiente versión.",
+                if (tema.actividad == Actividad.POR_DEFINIR) "Próximamente: este reto todavía se está forjando."
+                else "Próximamente: este minijuego llega en una siguiente versión.",
                 color = OdinPaleta.Escarcha,
                 fontFamily = FuenteTexto,
                 fontSize = 14.sp
@@ -713,6 +752,7 @@ private fun PanelTema(
                         acceso.estado == EstadoNivel.DISPONIBLE && acceso.costo > 0 -> "Entrar · ${acceso.costo}"
                         tema.esCrucigrama -> "Resolver crucigrama"
                         tema.esFlashcards -> "Repasar flashcards"
+                        tema.esArrastrar -> "Resolver reto"
                         tema.introduccionVista -> "Continuar tema"
                         else -> "Comenzar tema"
                     },

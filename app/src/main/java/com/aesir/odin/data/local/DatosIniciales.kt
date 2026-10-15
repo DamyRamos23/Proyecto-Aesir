@@ -248,7 +248,7 @@ object DatosIniciales {
             .mapIndexed { i, ej -> ej.copy(id = "rg_${ej.id}", leccionId = "leccion_ragnarok_${mundo.id}", orden = i + 1) }
     }
 
-    val temas = temasNormales + DatosCrucigrama.minijuegos(mundos) + temasRagnarok
+    val temas = temasNormales + DatosCrucigrama.minijuegos(mundos) + DatosArrastrar.niveles(mundos) + temasRagnarok
     val lecciones = leccionesNormales + leccionesRagnarok
     val ejercicios = ejerciciosNormales + ejerciciosRagnarok
 
@@ -296,6 +296,35 @@ object DatosIniciales {
                 put("opciones", converters.fromStringList(ejercicio.opciones))
                 put("respuestasCorrectas", converters.fromIntList(ejercicio.respuestasCorrectas))
                 put("orden", ejercicio.orden)
+            })
+        }
+        // CU-09 retos de arrastrar y soltar
+        DatosArrastrar.retos.forEach { reto ->
+            db.insert("retos_arrastrar", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
+                put("id", reto.id)
+                put("temaId", reto.temaId)
+                put("modalidad", reto.modalidad)
+                put("instrucciones", reto.instrucciones)
+                put("imagenDiagrama", reto.imagenDiagrama)
+                put("completado", reto.completado)
+            })
+        }
+        DatosArrastrar.elementos.forEach { elemento ->
+            db.insert("elementos_arrastrables", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
+                put("id", elemento.id)
+                put("retoId", elemento.retoId)
+                put("texto", elemento.texto)
+                put("posicionCorrectaId", elemento.posicionCorrectaId)
+            })
+        }
+        DatosArrastrar.posiciones.forEach { posicion ->
+            db.insert("posiciones_destino", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
+                put("id", posicion.id)
+                put("retoId", posicion.retoId)
+                put("orden", posicion.orden)
+                put("etiqueta", posicion.etiqueta)
+                put("x", posicion.x)
+                put("y", posicion.y)
             })
         }
         DatosCrucigrama.conceptos.forEach { concepto ->
