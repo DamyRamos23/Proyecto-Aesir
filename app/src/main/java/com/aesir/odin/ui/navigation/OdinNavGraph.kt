@@ -1,6 +1,8 @@
 package com.aesir.odin.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NamedNavArgument
@@ -15,11 +17,17 @@ import com.aesir.odin.domain.model.Tema
 import com.aesir.odin.ui.crucigrama.CrucigramaScreen
 import com.aesir.odin.ui.crucigrama.CrucigramaViewModel
 import com.aesir.odin.ui.crucigrama.ResultadoCrucigramaScreen
+import com.aesir.odin.ui.diagnostico.EvaluacionDiagnosticaScreen
+import com.aesir.odin.ui.diagnostico.EvaluacionDiagnosticaViewModel
+import com.aesir.odin.ui.diagnostico.ResultadoDiagnosticoScreen
 import com.aesir.odin.ui.leccion.LeccionInteractivaScreen
 import com.aesir.odin.ui.leccion.LeccionInteractivaViewModel
 import com.aesir.odin.ui.leccion.LeccionScreen
 import com.aesir.odin.ui.leccion.ResumenLeccionPlaceholder
 import com.aesir.odin.ui.leccion.ResumenLeccionScreen
+import com.aesir.odin.ui.memorama.MemoramaScreen
+import com.aesir.odin.ui.memorama.MemoramaViewModel
+import com.aesir.odin.ui.memorama.ResumenMemoramaScreen
 import com.aesir.odin.ui.mundos.MundosScreen
 import com.aesir.odin.ui.preguntaflash.PreguntaFlashScreen
 import com.aesir.odin.ui.roadmap.RoadmapScreen
@@ -41,6 +49,12 @@ object OdinNavGraph {
     const val rutaPreguntaFlash = "preguntaFlash"
     const val rutaCrucigrama = "crucigrama"
     const val rutaResultadoCrucigrama = "resultadoCrucigrama"
+    // CU-04 Resolver memorama de conceptos
+    const val rutaMemorama = "memorama"
+    const val rutaResumenMemorama = "resumenMemorama"
+    // CU-10 Realizar evaluación diagnóstico
+    const val rutaEvaluacionDiagnostica = "evaluacionDiagnostica"
+    const val rutaResultadoDiagnostico = "resultadoDiagnostico"
 
     private const val argMundoId = "mundoId"
     private const val argTemaId = "temaId"
@@ -89,12 +103,22 @@ object OdinNavGraph {
     fun rutaResultadoCrucigramaCon(temaId: String, ordenMundo: Int, puntaje: Int, aciertos: Int, errores: Int, total: Int) =
         "$rutaResultadoCrucigrama/$temaId/$ordenMundo/$puntaje/$aciertos/$errores/$total"
 
+    /** Ruta del memorama (CU-04) de un nivel. */
+    fun rutaMemoramaCon(mundoId: String, nivelId: String) = "$rutaMemorama/$mundoId/$nivelId"
+
+    /** Ruta de la evaluación diagnóstica (CU-10) de un mundo. */
+    fun rutaEvaluacionDiagnosticaCon(mundoId: String) = "$rutaEvaluacionDiagnostica/$mundoId"
+
+    private const val patronMemorama = "$rutaMemorama/{$argMundoId}/{$argTemaId}"
+    private const val patronEvaluacionDiagnostica = "$rutaEvaluacionDiagnostica/{$argMundoId}"
+
     /**
-     * A dónde lleva entrar a un nivel: la introducción del tema o, si el nivel
-     * es un crucigrama, el crucigrama con los conceptos de las dos lecciones
-     * que tiene más cerca en el árbol (ArbolHabilidades).
+     * A dónde lleva entrar a un nivel: la introducción del tema, el memorama
+     * (CU-04) o, si el nivel es un crucigrama, el crucigrama con los conceptos
+     * de las dos lecciones que tiene más cerca en el árbol (ArbolHabilidades).
      */
     fun rutaNivelCon(tema: Tema, temasDelMundo: List<Tema>): String {
+        if (tema.esMemorama) return rutaMemoramaCon(tema.mundoId, tema.id)
         if (!tema.esCrucigrama) return rutaIntroTemaCon(tema.id)
         val lecciones = temasDelMundo.filter { !it.esRagnarok && !it.esMinijuego }.sortedBy { it.orden }
         val minijuegos = temasDelMundo.filter { !it.esRagnarok && it.esMinijuego }.sortedBy { it.orden }
@@ -388,6 +412,94 @@ object OdinNavGraph {
                     totalPalabras = args?.getInt(argTotal) ?: 0,
                     ordenMundo = args?.getInt(argOrdenMundo) ?: 1,
                     onVolverRoadmap = volverAlRoadmap
+                )
+            }
+
+            // -------------------------
+            // Memorama (CU-04)
+            // -------------------------
+
+            composable(
+                route = patronMemorama,
+                arguments = listOf(argumentoMundoId(), argumentoTemaId())
+            ) { entrada ->
+                val mundoId = entrada.arguments?.getString(argMundoId).orEmpty()
+                val nivelId = entrada.arguments?.getString(argTemaId).orEmpty()
+                val viewModel: MemoramaViewModel = viewModel(factory = MemoramaViewModel.factory(appContainer))
+
+                MemoramaScreen(
+                    viewModel = viewModel,
+                    mundoId = mundoId,
+                    nivelId = nivelId,
+                    // El tablero se queda en la pila: el resumen observa el mismo ViewModel
+                    onFinalizado = { nav.navigate(rutaResumenMemorama) },
+                    onSalir = volverAlRoadmap
+                )
+            }
+
+            composable(rutaResumenMemorama) { entrada ->
+                val entradaMemorama = remember(entrada) { runCatching { nav.getBackStackEntry(patronMemorama) }.getOrNull() }
+                if (entradaMemorama == null) {
+                    // Sin el tablero en la pila no hay resultado que mostrar
+                    LaunchedEffect(Unit) { volverAlRoadmap() }
+                    return@composable
+                }
+                val viewModel: MemoramaViewModel = viewModel(
+                    viewModelStoreOwner = entradaMemorama,
+                    factory = MemoramaViewModel.factory(appContainer)
+                )
+                ResumenMemoramaScreen(viewModel = viewModel, onVolverRoadmap = volverAlRoadmap)
+            }
+
+            // -------------------------
+            // Evaluación diagnóstica (CU-10)
+            // -------------------------
+
+            composable(
+                route = patronEvaluacionDiagnostica,
+                arguments = listOf(argumentoMundoId())
+            ) { entrada ->
+                val mundoId = entrada.arguments?.getString(argMundoId).orEmpty()
+                val viewModel: EvaluacionDiagnosticaViewModel =
+                    viewModel(factory = EvaluacionDiagnosticaViewModel.factory(appContainer))
+                val irAlRoadmap: () -> Unit = {
+                    nav.navigate(rutaRoadmapCon(mundoId)) {
+                        popUpTo(rutaMundos) { inclusive = false }
+                    }
+                }
+
+                EvaluacionDiagnosticaScreen(
+                    viewModel = viewModel,
+                    mundoId = mundoId,
+                    // La evaluación se queda en la pila: el resultado observa el mismo ViewModel
+                    onFinalizada = { nav.navigate(rutaResultadoDiagnostico) },
+                    // A1.1: comienza desde el primer nivel disponible
+                    onOmitida = irAlRoadmap,
+                    // A6.1: regresa a la lista de mundos sin registrar nada
+                    onAbandonar = { nav.popBackStack() }
+                )
+            }
+
+            composable(rutaResultadoDiagnostico) { entrada ->
+                val entradaEvaluacion = remember(entrada) {
+                    runCatching { nav.getBackStackEntry(patronEvaluacionDiagnostica) }.getOrNull()
+                }
+                if (entradaEvaluacion == null) {
+                    LaunchedEffect(Unit) { nav.popBackStack(rutaMundos, inclusive = false) }
+                    return@composable
+                }
+                val mundoId = entradaEvaluacion.arguments?.getString(argMundoId).orEmpty()
+                val viewModel: EvaluacionDiagnosticaViewModel = viewModel(
+                    viewModelStoreOwner = entradaEvaluacion,
+                    factory = EvaluacionDiagnosticaViewModel.factory(appContainer)
+                )
+                ResultadoDiagnosticoScreen(
+                    viewModel = viewModel,
+                    onIrAlMundo = {
+                        nav.navigate(rutaRoadmapCon(mundoId)) {
+                            popUpTo(rutaMundos) { inclusive = false }
+                        }
+                    }
                 )
             }
         }

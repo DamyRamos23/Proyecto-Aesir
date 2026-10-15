@@ -120,7 +120,8 @@ fun RoadmapScreen(
             appContainer.obtenerTemasPorMundoUseCase,
             appContainer.validarAccesoNivelUseCase,
             appContainer.obtenerMundoUseCase,
-            appContainer.moduloHidromiel
+            appContainer.moduloHidromiel,
+            appContainer.validarAccesoMemoramaUseCase
         )
     )
     val temas by viewModel.temas.collectAsState()
@@ -184,7 +185,7 @@ fun RoadmapScreen(
                 TextButton(onClick = {
                     confirmarEntrada = null
                     scope.launch {
-                        if (viewModel.intentarAbrirTema(tema.id)) {
+                        if (viewModel.intentarAbrirNivel(tema)) {
                             navController.navigate(OdinNavGraph.rutaNivelCon(tema, temas))
                         }
                     }
@@ -302,7 +303,7 @@ fun RoadmapScreen(
                                 confirmarEntrada = tema to acceso
                             } else {
                                 scope.launch {
-                                    if (viewModel.intentarAbrirTema(tema.id)) {
+                                    if (viewModel.intentarAbrirNivel(tema)) {
                                         navController.navigate(OdinNavGraph.rutaNivelCon(tema, temas))
                                     }
                                 }
@@ -711,6 +712,7 @@ private fun PanelTema(
                         tema.esRagnarok -> "Enfrentar"
                         acceso.estado == EstadoNivel.DISPONIBLE && acceso.costo > 0 -> "Entrar · ${acceso.costo}"
                         tema.esCrucigrama -> "Resolver crucigrama"
+                        tema.esMemorama -> "Resolver memorama"
                         tema.introduccionVista -> "Continuar tema"
                         else -> "Comenzar tema"
                     },

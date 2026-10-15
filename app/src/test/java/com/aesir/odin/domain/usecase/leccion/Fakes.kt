@@ -56,6 +56,17 @@ class FakeRoadmapRepository(
     override suspend fun desbloquearTema(temaId: String) {
         temas[temaId]?.let { temas[temaId] = it.copy(desbloqueado = true) }
     }
+
+    // CU-04 / CU-10
+    override suspend fun mundoDesbloqueado(mundoId: String): Boolean = mundos[mundoId]?.desbloqueado == true
+    override suspend fun marcarMemoramaCompletado(nivelId: String) {
+        temas[nivelId]?.let { temas[nivelId] = it.copy(completado = true) }
+    }
+    override suspend fun marcarTemasConocidos(mundoId: String, temaIds: List<String>) {
+        temaIds.forEach { id ->
+            temas[id]?.takeIf { it.mundoId == mundoId }?.let { temas[id] = it.copy(conocido = true) }
+        }
+    }
 }
 
 fun mundo(id: String, orden: Int = 1, desbloqueado: Boolean = true, nombre: String = "Mundo $id") =

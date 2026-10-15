@@ -34,6 +34,10 @@ interface TemaDao {
     @Query("UPDATE temas SET desbloqueado = :desbloqueado WHERE id = :id")
     suspend fun actualizarDesbloqueado(id: String, desbloqueado: Boolean)
 
+    /** CU-10: tema reconocido como conocido en la evaluación diagnóstica. */
+    @Query("UPDATE temas SET conocido = :conocido WHERE id = :id")
+    suspend fun actualizarConocido(id: String, conocido: Boolean)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(temas: List<TemaEntity>)
 }

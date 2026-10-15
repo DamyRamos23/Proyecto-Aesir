@@ -4,25 +4,39 @@ import android.content.Context
 import com.aesir.odin.data.local.OdinDatabase
 import com.aesir.odin.data.repository.CatalogoNivelesImpl
 import com.aesir.odin.data.repository.CrucigramaRepositoryImpl
+import com.aesir.odin.data.repository.DiagnosticoRepositoryImpl
 import com.aesir.odin.data.repository.HidromielRepositoryImpl
 import com.aesir.odin.data.repository.HistorialRepositoryImpl
 import com.aesir.odin.data.repository.LeccionRepositoryImpl
+import com.aesir.odin.data.repository.MemoramaRepositoryImpl
 import com.aesir.odin.data.repository.RoadmapRepositoryImpl
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.repository.CrucigramaRepository
+import com.aesir.odin.domain.repository.DiagnosticoRepository
 import com.aesir.odin.domain.repository.HistorialRepository
 import com.aesir.odin.domain.repository.LeccionRepository
+import com.aesir.odin.domain.repository.MemoramaRepository
 import com.aesir.odin.domain.repository.RoadmapRepository
 import com.aesir.odin.domain.usecase.crucigrama.ActualizarPuntajeUseCase
 import com.aesir.odin.domain.usecase.crucigrama.FinalizarCrucigramaUseCase
 import com.aesir.odin.domain.usecase.crucigrama.GenerarCrucigramaUseCase
 import com.aesir.odin.domain.usecase.crucigrama.ValidarPalabraUseCase
+import com.aesir.odin.domain.usecase.diagnostico.EvaluarDiagnosticoUseCase
+import com.aesir.odin.domain.usecase.diagnostico.FinalizarDiagnosticoUseCase
+import com.aesir.odin.domain.usecase.diagnostico.ObtenerPreguntasDiagnosticoUseCase
+import com.aesir.odin.domain.usecase.diagnostico.OmitirDiagnosticoUseCase
+import com.aesir.odin.domain.usecase.diagnostico.ValidarAccesoDiagnosticoUseCase
 import com.aesir.odin.domain.usecase.leccion.FinalizarLeccionUseCase
 import com.aesir.odin.domain.usecase.leccion.ObtenerLeccionUseCase
 import com.aesir.odin.domain.usecase.leccion.RegistrarErrorLeccionUseCase
 import com.aesir.odin.domain.usecase.leccion.RegistrarLeccionCompletadaUseCase
 import com.aesir.odin.domain.usecase.leccion.RegistrarNivelSinSuperarUseCase
 import com.aesir.odin.domain.usecase.leccion.ValidarRespuestaEjercicioUseCase
+import com.aesir.odin.domain.usecase.memorama.CalcularPuntosMemoramaUseCase
+import com.aesir.odin.domain.usecase.memorama.FinalizarMemoramaUseCase
+import com.aesir.odin.domain.usecase.memorama.GenerarMemoramaUseCase
+import com.aesir.odin.domain.usecase.memorama.ValidarAccesoMemoramaUseCase
+import com.aesir.odin.domain.usecase.memorama.VerificarParejaUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerMundoUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerMundosUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerTemasPorMundoUseCase
@@ -83,6 +97,30 @@ class AppContainer(context: Context) {
     val finalizarCrucigramaUseCase = FinalizarCrucigramaUseCase(
         crucigramaRepository,
         RegistrarLeccionCompletadaUseCase(roadmapRepository), // reutilizado de CU-05
+        moduloHidromiel
+    )
+
+    // CU-04 Resolver memorama de conceptos
+    val memoramaRepository: MemoramaRepository = MemoramaRepositoryImpl(database.memoramaDao())
+    val validarAccesoMemoramaUseCase = ValidarAccesoMemoramaUseCase(roadmapRepository, memoramaRepository)
+    val generarMemoramaUseCase = GenerarMemoramaUseCase(memoramaRepository)
+    val verificarParejaUseCase = VerificarParejaUseCase()
+    val finalizarMemoramaUseCase = FinalizarMemoramaUseCase(
+        memoramaRepository,
+        roadmapRepository,
+        CalcularPuntosMemoramaUseCase(),
+        moduloHidromiel
+    )
+
+    // CU-10 Realizar evaluación diagnóstico
+    val diagnosticoRepository: DiagnosticoRepository = DiagnosticoRepositoryImpl(database.diagnosticoDao())
+    val validarAccesoDiagnosticoUseCase = ValidarAccesoDiagnosticoUseCase(roadmapRepository, diagnosticoRepository)
+    val obtenerPreguntasDiagnosticoUseCase = ObtenerPreguntasDiagnosticoUseCase(diagnosticoRepository)
+    val omitirDiagnosticoUseCase = OmitirDiagnosticoUseCase(diagnosticoRepository)
+    val finalizarDiagnosticoUseCase = FinalizarDiagnosticoUseCase(
+        EvaluarDiagnosticoUseCase(ValidarRespuestaUseCase()), // ValidarRespuestaUseCase reutilizado de CU-05/CU-06
+        diagnosticoRepository,
+        roadmapRepository,
         moduloHidromiel
     )
 }

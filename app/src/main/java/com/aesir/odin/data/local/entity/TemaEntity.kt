@@ -18,5 +18,7 @@ data class TemaEntity(
     /** Actividad del nivel: "LECCION" o "CRUCIGRAMA" (CU-07). */
     val actividad: String = "LECCION",
     /** Anillo del árbol de habilidades: 1 = lecciones, 2 = minijuegos, 0 = Ragnarök (centro). */
-    val anillo: Int = 1
+    val anillo: Int = 1,
+    /** CU-10: el alumno demostró conocer el tema en la evaluación diagnóstica. */
+    val conocido: Boolean = false
 )

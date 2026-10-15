@@ -22,8 +22,11 @@ data class Tema(
     val introduccionVista: Boolean,
     val esRagnarok: Boolean = false,
     val anillo: Int = ArbolHabilidades.ANILLO_LECCIONES,
-    val actividad: Actividad = Actividad.LECCION
+    val actividad: Actividad = Actividad.LECCION,
+    /** CU-10: reconocido como conocido por la evaluación diagnóstica. */
+    val conocido: Boolean = false
 ) {
     val esCrucigrama: Boolean get() = actividad == Actividad.CRUCIGRAMA
+    val esMemorama: Boolean get() = actividad == Actividad.MEMORAMA
     val esMinijuego: Boolean get() = anillo == ArbolHabilidades.ANILLO_MINIJUEGOS
 }

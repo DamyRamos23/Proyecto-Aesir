@@ -42,6 +42,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -93,6 +94,7 @@ import com.aesir.odin.ui.theme.EstilosMundo
 import com.aesir.odin.ui.theme.FuenteTexto
 import com.aesir.odin.ui.theme.OdinPaleta
 import kotlin.random.Random
+import kotlinx.coroutines.launch
 
 /**
  * Pantalla que lista los mundos del roadmap como un escudo dividido en
@@ -106,10 +108,14 @@ fun MundosScreen(
     appContainer: AppContainer
 ) {
     val viewModel: MundosViewModel = viewModel(
-        factory = MundosViewModel.factory(appContainer.obtenerMundosUseCase)
+        factory = MundosViewModel.factory(
+            appContainer.obtenerMundosUseCase,
+            appContainer.validarAccesoDiagnosticoUseCase
+        )
     )
     val mundos by viewModel.mundos.collectAsState()
     val saldo by remember { appContainer.moduloHidromiel.observarSaldo(USUARIO_LOCAL) }.collectAsState(initial = 0)
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         viewModel.cargarMundos()
@@ -166,7 +172,17 @@ fun MundosScreen(
                     PanelMundo(
                         mundo = mundo,
                         anterior = visibles.getOrNull(visibles.indexOfFirst { it.id == mundo.id } - 1),
-                        onEntrar = { navController.navigate(OdinNavGraph.rutaRoadmapCon(mundo.id)) }
+                        onEntrar = {
+                            // CU-10: la primera vez se presenta la evaluación diagnóstica del mundo
+                            scope.launch {
+                                val ruta = if (viewModel.intentarAbrirDiagnostico(mundo.id)) {
+                                    OdinNavGraph.rutaEvaluacionDiagnosticaCon(mundo.id)
+                                } else {
+                                    OdinNavGraph.rutaRoadmapCon(mundo.id)
+                                }
+                                navController.navigate(ruta)
+                            }
+                        }
                     )
                 }
             }

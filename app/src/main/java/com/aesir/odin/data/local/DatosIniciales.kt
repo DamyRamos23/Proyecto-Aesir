@@ -276,6 +276,7 @@ object DatosIniciales {
                 put("tipo", tema.tipo)
                 put("actividad", tema.actividad)
                 put("anillo", tema.anillo)
+                put("conocido", tema.conocido)
             })
         }
         lecciones.forEach { leccion ->
@@ -304,6 +305,26 @@ object DatosIniciales {
                 put("temaId", concepto.temaId)
                 put("respuesta", concepto.respuesta)
                 put("descripcion", concepto.descripcion)
+            })
+        }
+        // CU-04 Resolver memorama de conceptos
+        DatosMemorama.pares.forEach { par ->
+            db.insert("pares_concepto", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
+                put("id", par.id)
+                put("mundoId", par.mundoId)
+                put("concepto", par.concepto)
+                put("definicion", par.definicion)
+            })
+        }
+        // CU-10 Realizar evaluación diagnóstico
+        DatosDiagnostico.preguntas.forEach { pregunta ->
+            db.insert("preguntas_diagnostico", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
+                put("id", pregunta.id)
+                put("mundoId", pregunta.mundoId)
+                put("temaId", pregunta.temaId)
+                put("enunciado", pregunta.enunciado)
+                put("opciones", converters.fromStringList(pregunta.opciones))
+                put("respuestasCorrectas", converters.fromIntList(pregunta.respuestasCorrectas))
             })
         }
     }
