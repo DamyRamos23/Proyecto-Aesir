@@ -241,7 +241,7 @@ class PreguntaFlashViewModel(
          * Para cambiarlo, edita este valor en milisegundos (60_000L = 1 minuto,
          * 300_000L = 5 minutos).
          */
-        const val INTERVALO_MS = 60_000L
+        const val INTERVALO_MS = 300_000L
         const val TIEMPO_LIMITE_S = 10
         private const val UN_SEGUNDO_MS = 1_000L
 

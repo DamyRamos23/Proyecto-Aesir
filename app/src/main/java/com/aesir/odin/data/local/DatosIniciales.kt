@@ -7,7 +7,6 @@ import com.aesir.odin.data.local.converter.Converters
 import com.aesir.odin.data.local.entity.EjercicioEntity
 import com.aesir.odin.data.local.entity.LeccionEntity
 import com.aesir.odin.data.local.entity.MundoEntity
-import com.aesir.odin.data.local.entity.PreguntaFlashEntity
 import com.aesir.odin.data.local.entity.TemaEntity
 
 /**
@@ -253,23 +252,6 @@ object DatosIniciales {
     val lecciones = leccionesNormales + leccionesRagnarok
     val ejercicios = ejerciciosNormales + ejerciciosRagnarok
 
-    /**
-     * Banco inicial de Pregunta Flash (usado por CU-11). Provisional: se arma
-     * con los ejercicios de las lecciones normales (sin las copias del
-     * Ragnarök, para no repetir preguntas), asignando cada pregunta al tema de
-     * su lección; se puede reemplazar por un banco propio sin tocar el resto.
-     */
-    val preguntasFlash: List<PreguntaFlashEntity> = ejerciciosNormales.mapNotNull { ejercicio ->
-        val leccion = leccionesNormales.firstOrNull { it.id == ejercicio.leccionId } ?: return@mapNotNull null
-        PreguntaFlashEntity(
-            id = "pf_${ejercicio.id}",
-            temaId = leccion.temaId,
-            enunciado = ejercicio.enunciado,
-            opciones = ejercicio.opciones,
-            respuestasCorrectas = ejercicio.respuestasCorrectas
-        )
-    }
-
     fun insertar(db: SupportSQLiteDatabase) {
         val converters = Converters()
         mundos.forEach { mundo ->
@@ -322,15 +304,6 @@ object DatosIniciales {
                 put("temaId", concepto.temaId)
                 put("respuesta", concepto.respuesta)
                 put("descripcion", concepto.descripcion)
-            })
-        }
-        preguntasFlash.forEach { pregunta ->
-            db.insert("preguntas_flash", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
-                put("id", pregunta.id)
-                put("temaId", pregunta.temaId)
-                put("enunciado", pregunta.enunciado)
-                put("opciones", converters.fromStringList(pregunta.opciones))
-                put("respuestasCorrectas", converters.fromIntList(pregunta.respuestasCorrectas))
             })
         }
     }

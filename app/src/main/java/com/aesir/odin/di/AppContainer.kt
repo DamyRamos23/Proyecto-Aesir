@@ -100,6 +100,9 @@ class AppContainer(context: Context) {
         moduloHidromiel
     )
 
+    // Validador compartido por Pregunta Flash y Reto Contrarreloj.
+    val validarRespuestaUseCase = ValidarRespuestaUseCase()
+
     // ---- Pregunta Flash (CU-06) ----
     private val preguntaFlashRepository: PreguntaFlashRepository =
         PreguntaFlashRepositoryImpl(database.preguntaFlashDao(), database.preguntaFlashBancoDao())
@@ -111,9 +114,22 @@ class AppContainer(context: Context) {
     val obtenerPreguntaFlashUseCase =
         ObtenerPreguntaFlashUseCase(roadmapRepository, preguntaFlashRepository)
     val validarRespuestaPreguntaFlashUseCase = ValidarRespuestaPreguntaFlashUseCase(
-        preguntaFlashRepository, hidromielFlashRepository, historialRepository, ValidarRespuestaUseCase()
+        preguntaFlashRepository, hidromielFlashRepository, historialRepository, validarRespuestaUseCase
     )
     val registrarTiempoAgotadoPreguntaFlashUseCase =
         RegistrarTiempoAgotadoPreguntaFlashUseCase(preguntaFlashRepository, hidromielFlashRepository)
     val observarHidromielUseCase = ObservarHidromielUseCase(hidromielFlashRepository)
+
+    // ---- Reto Contrarreloj (CU-11): reutiliza el banco de Pregunta Flash ----
+    private val retoContrarrelojRepository: RetoContrarrelojRepository =
+        RetoContrarrelojRepositoryImpl(database.resultadoRetoDao())
+
+    val armarRetoContrarrelojUseCase =
+        ArmarRetoContrarrelojUseCase(roadmapRepository, preguntaFlashRepository)
+    val pagarEntradaRetoContrarrelojUseCase =
+        PagarEntradaRetoContrarrelojUseCase(moduloHidromiel)
+    val finalizarRetoContrarrelojUseCase =
+        FinalizarRetoContrarrelojUseCase(retoContrarrelojRepository, moduloHidromiel)
+    val abandonarRetoContrarrelojUseCase =
+        AbandonarRetoContrarrelojUseCase(retoContrarrelojRepository, moduloHidromiel)
 }
