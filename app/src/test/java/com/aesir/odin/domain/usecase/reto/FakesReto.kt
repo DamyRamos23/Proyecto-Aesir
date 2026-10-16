@@ -2,7 +2,7 @@ package com.aesir.odin.domain.usecase.reto
 
 import com.aesir.odin.domain.model.PreguntaFlash
 import com.aesir.odin.domain.model.PreguntaFlashAttempt
-import com.aesir.odin.domain.model.ResultadoReto
+import com.aesir.odin.domain.model.ResultadoContrarreloj
 import com.aesir.odin.domain.repository.PreguntaFlashRepository
 import com.aesir.odin.domain.repository.RetoContrarrelojRepository
 
@@ -23,9 +23,9 @@ class FakePreguntaFlashRepository(private val banco: List<PreguntaFlash>) : Preg
 }
 
 class FakeRetoContrarrelojRepository : RetoContrarrelojRepository {
-    val resultados = mutableListOf<ResultadoReto>()
+    val resultados = mutableListOf<ResultadoContrarreloj>()
 
-    override suspend fun guardarResultado(resultado: ResultadoReto) {
+    override suspend fun guardarResultado(resultado: ResultadoContrarreloj) {
         resultados += resultado
     }
 }

@@ -47,6 +47,18 @@ class RoadmapRepositoryImpl(
         temaDao.actualizarDesbloqueado(temaId, desbloqueado = true)
     }
 
+    override suspend fun mundoDesbloqueado(mundoId: String): Boolean =
+        mundoDao.estaDesbloqueado(mundoId) == true
+
+    override suspend fun marcarMemoramaCompletado(nivelId: String) {
+        temaDao.actualizarCompletado(nivelId, completado = true)
+    }
+
+    override suspend fun marcarTemasConocidos(mundoId: String, temaIds: List<String>) {
+        val delMundo = temaDao.getByMundoId(mundoId).map { it.id }.toSet()
+        temaIds.filter { it in delMundo }.forEach { temaDao.actualizarConocido(it, conocido = true) }
+    }
+
     private fun MundoEntity.aMundo() = Mundo(
         id = id,
         nombre = nombre,
@@ -66,6 +78,7 @@ class RoadmapRepositoryImpl(
         introduccionVista = introduccionVista,
         esRagnarok = tipo == "RAGNAROK",
         anillo = anillo,
-        actividad = Actividad.desde(actividad)
+        actividad = Actividad.desde(actividad),
+        conocido = conocido
     )
 }

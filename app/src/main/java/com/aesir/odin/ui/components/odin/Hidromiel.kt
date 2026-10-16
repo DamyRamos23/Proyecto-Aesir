@@ -47,6 +47,8 @@ import com.aesir.odin.ui.theme.FuenteTexto
 import com.aesir.odin.ui.theme.FuenteTitulo
 import com.aesir.odin.ui.theme.OdinPaleta
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filter
+import com.aesir.odin.domain.hidromiel.TipoMovimiento
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.onSubscription
 
@@ -127,10 +129,13 @@ fun AvisosHidromiel(
     LaunchedEffect(avisos) {
         avisos
             .onSubscription { runCatching { alSuscribir() } }
+            // Solo se anuncian las recompensas (diaria y por nivel con premio):
+            // los cobros y demás movimientos ya se ven en el contador.
+            .filter { it.tipo == TipoMovimiento.RECOMPENSA_DIARIA || (it.tipo == TipoMovimiento.RECOMPENSA_NIVEL && it.cantidad > 0) }
             .collect { aviso ->
                 actual = aviso
                 visible = true
-                delay(3400)
+                delay(2800)
                 visible = false
                 delay(350)
             }

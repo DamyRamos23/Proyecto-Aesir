@@ -6,11 +6,13 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.aesir.odin.domain.hidromiel.EstadoNivel
+import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.hidromiel.ResultadoAcceso
 import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
 import com.aesir.odin.domain.model.Mundo
 import com.aesir.odin.domain.model.Tema
+import com.aesir.odin.domain.usecase.memorama.ValidarAccesoMemoramaUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerMundoUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerTemasPorMundoUseCase
 import com.aesir.odin.domain.usecase.roadmap.ValidarAccesoNivelUseCase
@@ -18,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
 /**
@@ -38,6 +41,7 @@ class RoadmapViewModel(
     private val validarAccesoNivelUseCase: ValidarAccesoNivelUseCase,
     private val obtenerMundoUseCase: ObtenerMundoUseCase,
     private val moduloHidromiel: ModuloHidromiel,
+    private val validarAccesoMemoramaUseCase: ValidarAccesoMemoramaUseCase? = null,
     private val idUsuario: String = USUARIO_LOCAL
 ) : ViewModel() {
 
@@ -59,6 +63,14 @@ class RoadmapViewModel(
 
     private val _mensajeBloqueo = MutableStateFlow<String?>(null)
     val mensajeBloqueo: StateFlow<String?> = _mensajeBloqueo.asStateFlow()
+
+    /**
+     * El pozo de Mímir se abre como repaso al completar el mundo (superar su
+     * Ragnarök). En modo admin siempre está despierto.
+     */
+    val pozoDespierto: StateFlow<Boolean> = combine(_accesos, _ragnarok, ModoAdmin.activo) { accesos, ragnarok, admin ->
+        admin || (ragnarok != null && accesos[ragnarok.id]?.estado == EstadoNivel.SUPERADO)
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, ModoAdmin.estaActivo)
 
     private var mundoIdActual: String? = null
 
@@ -84,6 +96,26 @@ class RoadmapViewModel(
         return resultado.autorizado
     }
 
+    /**
+     * Entrada a cualquier nivel. Los memoramas pasan primero por
+     * intentarAbrirMemorama (CU-04); el resto, directo al MOD-01.
+     */
+    suspend fun intentarAbrirNivel(tema: Tema): Boolean =
+        if (tema.esMemorama) intentarAbrirMemorama(tema.mundoId, tema.id) else intentarAbrirTema(tema.id)
+
+    /**
+     * CU-04, RF-05: valida que el mundo esté desbloqueado y tenga memorama y,
+     * si es así, pide al MOD-01 que autorice (y cobre) la entrada al nivel.
+     */
+    suspend fun intentarAbrirMemorama(mundoId: String, nivelId: String): Boolean {
+        val validar = validarAccesoMemoramaUseCase
+        if (validar != null && !validar(mundoId)) {
+            _mensajeBloqueo.value = "Este memorama todavía no está disponible."
+            return false
+        }
+        return intentarAbrirTema(nivelId)
+    }
+
     fun requierePago(temaId: String): Boolean =
         _accesos.value[temaId]?.let { it.estado == EstadoNivel.DISPONIBLE && it.costo > 0 } == true
 
@@ -107,10 +139,17 @@ class RoadmapViewModel(
             obtenerTemasUseCase: ObtenerTemasPorMundoUseCase,
             validarAccesoNivelUseCase: ValidarAccesoNivelUseCase,
             obtenerMundoUseCase: ObtenerMundoUseCase,
-            moduloHidromiel: ModuloHidromiel
+            moduloHidromiel: ModuloHidromiel,
+            validarAccesoMemoramaUseCase: ValidarAccesoMemoramaUseCase? = null
         ): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                RoadmapViewModel(obtenerTemasUseCase, validarAccesoNivelUseCase, obtenerMundoUseCase, moduloHidromiel)
+                RoadmapViewModel(
+                    obtenerTemasUseCase,
+                    validarAccesoNivelUseCase,
+                    obtenerMundoUseCase,
+                    moduloHidromiel,
+                    validarAccesoMemoramaUseCase
+                )
             }
         }
     }

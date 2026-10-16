@@ -248,7 +248,7 @@ object DatosIniciales {
             .mapIndexed { i, ej -> ej.copy(id = "rg_${ej.id}", leccionId = "leccion_ragnarok_${mundo.id}", orden = i + 1) }
     }
 
-    val temas = temasNormales + DatosCrucigrama.minijuegos(mundos) + temasRagnarok
+    val temas = temasNormales + DatosCrucigrama.minijuegos(mundos) + DatosArrastrar.niveles(mundos) + temasRagnarok
     val lecciones = leccionesNormales + leccionesRagnarok
     val ejercicios = ejerciciosNormales + ejerciciosRagnarok
 
@@ -276,6 +276,7 @@ object DatosIniciales {
                 put("tipo", tema.tipo)
                 put("actividad", tema.actividad)
                 put("anillo", tema.anillo)
+                put("conocido", tema.conocido)
             })
         }
         lecciones.forEach { leccion ->
@@ -304,6 +305,55 @@ object DatosIniciales {
                 put("temaId", concepto.temaId)
                 put("respuesta", concepto.respuesta)
                 put("descripcion", concepto.descripcion)
+            })
+        }
+        // CU-04 Resolver memorama de conceptos
+        DatosMemorama.pares.forEach { par ->
+            db.insert("pares_concepto", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
+                put("id", par.id)
+                put("mundoId", par.mundoId)
+                put("concepto", par.concepto)
+                put("definicion", par.definicion)
+            })
+        }
+        // CU-09 Resolver reto de arrastrar y soltar
+        DatosArrastrar.retos.forEach { reto ->
+            db.insert("retos_arrastrar", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
+                put("id", reto.id)
+                put("temaId", reto.temaId)
+                put("modalidad", reto.modalidad)
+                put("instrucciones", reto.instrucciones)
+                put("imagenDiagrama", reto.imagenDiagrama)
+                put("completado", reto.completado)
+            })
+        }
+        DatosArrastrar.elementos.forEach { e ->
+            db.insert("elementos_arrastrables", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
+                put("id", e.id)
+                put("retoId", e.retoId)
+                put("texto", e.texto)
+                put("posicionCorrectaId", e.posicionCorrectaId)
+            })
+        }
+        DatosArrastrar.posiciones.forEach { p ->
+            db.insert("posiciones_destino", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
+                put("id", p.id)
+                put("retoId", p.retoId)
+                put("orden", p.orden)
+                put("etiqueta", p.etiqueta)
+                put("x", p.x)
+                put("y", p.y)
+            })
+        }
+        // CU-10 Realizar evaluación diagnóstico
+        DatosDiagnostico.preguntas.forEach { pregunta ->
+            db.insert("preguntas_diagnostico", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
+                put("id", pregunta.id)
+                put("mundoId", pregunta.mundoId)
+                put("temaId", pregunta.temaId)
+                put("enunciado", pregunta.enunciado)
+                put("opciones", converters.fromStringList(pregunta.opciones))
+                put("respuestasCorrectas", converters.fromIntList(pregunta.respuestasCorrectas))
             })
         }
     }

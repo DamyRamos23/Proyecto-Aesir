@@ -11,7 +11,7 @@ import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
 import com.aesir.odin.domain.model.EstadoRespuesta
 import com.aesir.odin.domain.model.PreguntaFlash
 import com.aesir.odin.domain.model.RetoContrareloj
-import com.aesir.odin.domain.model.ResultadoReto
+import com.aesir.odin.domain.model.ResultadoContrarreloj
 import com.aesir.odin.domain.usecase.reto.AbandonarRetoContrarrelojUseCase
 import com.aesir.odin.domain.usecase.reto.ArmarRetoContrarrelojUseCase
 import com.aesir.odin.domain.usecase.reto.FinalizarRetoContrarrelojUseCase
@@ -69,7 +69,7 @@ class RetoContrarrelojViewModel(
     private val _seleccionadas = MutableStateFlow<Set<Int>>(emptySet())
     private val _tiempoRestanteSeg = MutableStateFlow(RetoContrareloj.DURACION_SEGUNDOS)
     private val _puntaje = MutableStateFlow(0)
-    private val _resultado = MutableStateFlow<ResultadoReto?>(null)
+    private val _resultado = MutableStateFlow<ResultadoContrarreloj?>(null)
 
     val estado: StateFlow<Estado> = _estado.asStateFlow()
     val preguntaActual: StateFlow<PreguntaFlash?> = _preguntaActual.asStateFlow()
@@ -79,7 +79,7 @@ class RetoContrarrelojViewModel(
     val seleccionadas: StateFlow<Set<Int>> = _seleccionadas.asStateFlow()
     val tiempoRestanteSeg: StateFlow<Int> = _tiempoRestanteSeg.asStateFlow()
     val puntaje: StateFlow<Int> = _puntaje.asStateFlow()
-    val resultado: StateFlow<ResultadoReto?> = _resultado.asStateFlow()
+    val resultado: StateFlow<ResultadoContrarreloj?> = _resultado.asStateFlow()
     val saldo: StateFlow<Int> = saldoHidromiel.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
     val costoEntrada: Int = PoliticaCosto.ENTRADA_CONTRARRELOJ
 
@@ -225,7 +225,7 @@ class RetoContrarrelojViewModel(
         }
     }
 
-    private suspend fun guardar(destino: Estado, accion: suspend () -> ResultadoReto) {
+    private suspend fun guardar(destino: Estado, accion: suspend () -> ResultadoContrarreloj) {
         try {
             _resultado.value = accion()
             _estado.value = destino

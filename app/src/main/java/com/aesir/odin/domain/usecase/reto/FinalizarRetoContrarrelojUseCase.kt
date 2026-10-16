@@ -3,7 +3,7 @@ package com.aesir.odin.domain.usecase.reto
 import com.aesir.odin.domain.hidromiel.ContrarrelojFinalizado
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
-import com.aesir.odin.domain.model.ResultadoReto
+import com.aesir.odin.domain.model.ResultadoContrarreloj
 import com.aesir.odin.domain.repository.RetoContrarrelojRepository
 import java.util.UUID
 
@@ -17,8 +17,8 @@ class FinalizarRetoContrarrelojUseCase(
     private val idUsuario: String = USUARIO_LOCAL,
     private val reloj: () -> Long = System::currentTimeMillis
 ) {
-    suspend operator fun invoke(puntaje: Int, aciertos: Int, respondidas: Int): ResultadoReto {
-        val resultado = ResultadoReto(
+    suspend operator fun invoke(puntaje: Int, aciertos: Int, respondidas: Int): ResultadoContrarreloj {
+        val resultado = ResultadoContrarreloj(
             id = UUID.randomUUID().toString(),
             puntaje = puntaje,
             penalizacion = 0,

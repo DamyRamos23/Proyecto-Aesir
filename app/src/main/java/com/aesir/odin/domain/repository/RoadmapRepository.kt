@@ -21,4 +21,13 @@ interface RoadmapRepository {
     suspend fun marcarLeccionCompletada(temaId: String)
     suspend fun marcarIntroduccionVista(temaId: String)
     suspend fun desbloquearTema(temaId: String)
+
+    // CU-04 Resolver memorama de conceptos
+    suspend fun mundoDesbloqueado(mundoId: String): Boolean
+    /** Marca el nivel de memorama [nivelId] como completado (RF-17). */
+    suspend fun marcarMemoramaCompletado(nivelId: String)
+
+    // CU-10 Realizar evaluación diagnóstico
+    /** Registra como conocidos los temas demostrados en el diagnóstico (RF-87). */
+    suspend fun marcarTemasConocidos(mundoId: String, temaIds: List<String>)
 }

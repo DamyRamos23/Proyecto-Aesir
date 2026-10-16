@@ -48,7 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aesir.odin.domain.model.PreguntaFlash
-import com.aesir.odin.domain.model.ResultadoReto
+import com.aesir.odin.domain.model.ResultadoContrarreloj
 import com.aesir.odin.domain.model.RetoContrareloj
 import com.aesir.odin.domain.usecase.reto.AbandonarRetoContrarrelojUseCase
 import com.aesir.odin.ui.components.odin.BotonOdin
@@ -375,7 +375,7 @@ private fun OpcionReto(
 
 /** Pasos 9 y 10 (resultado) y E3.1 (abandono con penalización). */
 @Composable
-private fun ResumenReto(estilo: EstiloMundo, resultado: ResultadoReto, onSalir: () -> Unit) {
+private fun ResumenReto(estilo: EstiloMundo, resultado: ResultadoContrarreloj, onSalir: () -> Unit) {
     Column(Modifier.fillMaxHeight().fillMaxWidth().padding(horizontal = 14.dp, vertical = 24.dp)) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.Center) {
             PanelTallado(estilo = estilo, modifier = Modifier.fillMaxWidth(), semilla = 3) {

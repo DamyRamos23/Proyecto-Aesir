@@ -1,5 +1,8 @@
 package com.aesir.odin.ui.leccion
 
+import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
+import com.aesir.odin.ui.navigation.LocalAppContainer
+import com.aesir.odin.ui.components.odin.ContadorHidromiel
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -190,7 +193,13 @@ private fun ContenidoLeccion(
     }
 
     Column(Modifier.fillMaxSize().padding(horizontal = 14.dp)) {
-        BotonVolver("Salir", onClick = onSalir)
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            BotonVolver("Salir", onClick = onSalir)
+            Spacer(Modifier.weight(1f))
+            val contenedor = LocalAppContainer.current
+            val saldo by contenedor.moduloHidromiel.observarSaldo(USUARIO_LOCAL).collectAsState(initial = 0)
+            ContadorHidromiel(saldo = saldo, metal = estilo.metal)
+        }
 
         // Cabecera: sello del tema, mundo y título de la lección
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {

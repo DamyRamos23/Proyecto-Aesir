@@ -1,17 +1,17 @@
 package com.aesir.odin.data.repository
 
-import com.aesir.odin.data.local.dao.ResultadoRetoDao
-import com.aesir.odin.data.local.entity.ResultadoRetoEntity
-import com.aesir.odin.domain.model.ResultadoReto
+import com.aesir.odin.data.local.dao.ResultadoContrarrelojDao
+import com.aesir.odin.data.local.entity.ResultadoContrarrelojEntity
+import com.aesir.odin.domain.model.ResultadoContrarreloj
 import com.aesir.odin.domain.repository.RetoContrarrelojRepository
 
 class RetoContrarrelojRepositoryImpl(
-    private val dao: ResultadoRetoDao
+    private val dao: ResultadoContrarrelojDao
 ) : RetoContrarrelojRepository {
 
-    override suspend fun guardarResultado(resultado: ResultadoReto) {
+    override suspend fun guardarResultado(resultado: ResultadoContrarreloj) {
         dao.insertar(
-            ResultadoRetoEntity(
+            ResultadoContrarrelojEntity(
                 id = resultado.id,
                 puntaje = resultado.puntaje,
                 penalizacion = resultado.penalizacion,

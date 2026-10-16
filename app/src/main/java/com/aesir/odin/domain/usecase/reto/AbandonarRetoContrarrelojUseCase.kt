@@ -4,14 +4,14 @@ import com.aesir.odin.domain.hidromiel.ContrarrelojAbandonado
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.hidromiel.PoliticaCosto
 import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
-import com.aesir.odin.domain.model.ResultadoReto
+import com.aesir.odin.domain.model.ResultadoContrarreloj
 import com.aesir.odin.domain.repository.RetoContrarrelojRepository
 import java.util.UUID
 
 /**
  * CU-11, E3.1: el alumno abandona a mitad del reto. Se descarta lo ganado
  * (puntaje 0, la entrada no se devuelve) y el MOD-01 resta [PENALIZACION] de
- * hidromiel. [ResultadoReto.penalizacion] guarda lo que realmente se restó,
+ * hidromiel. [ResultadoContrarreloj.penalizacion] guarda lo que realmente se restó,
  * que puede ser menos si el saldo no alcanzaba (RN-01: nunca baja de 0).
  */
 class AbandonarRetoContrarrelojUseCase(
@@ -20,9 +20,9 @@ class AbandonarRetoContrarrelojUseCase(
     private val idUsuario: String = USUARIO_LOCAL,
     private val reloj: () -> Long = System::currentTimeMillis
 ) {
-    suspend operator fun invoke(): ResultadoReto {
+    suspend operator fun invoke(): ResultadoContrarreloj {
         val aviso = moduloHidromiel.alAbandonarContrarreloj(ContrarrelojAbandonado(idUsuario))
-        val resultado = ResultadoReto(
+        val resultado = ResultadoContrarreloj(
             id = UUID.randomUUID().toString(),
             puntaje = 0,
             penalizacion = -aviso.cantidad,

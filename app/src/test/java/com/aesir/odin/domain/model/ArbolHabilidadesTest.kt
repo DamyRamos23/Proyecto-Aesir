@@ -46,7 +46,10 @@ class ArbolHabilidadesTest {
     @Test
     fun `actividad desconocida se toma como leccion`() {
         assertEquals(Actividad.LECCION, Actividad.desde("OTRA"))
-        assertFalse(Actividad.MEMORAMA.jugable)
+        assertTrue(Actividad.FLASHCARDS.jugable) // CU-03
+        assertTrue(Actividad.ARRASTRAR.jugable) // CU-09
+        assertFalse(Actividad.POR_DEFINIR.jugable)
+        assertTrue(Actividad.MEMORAMA.jugable) // CU-04
         assertTrue(Actividad.CRUCIGRAMA.jugable)
     }
 }

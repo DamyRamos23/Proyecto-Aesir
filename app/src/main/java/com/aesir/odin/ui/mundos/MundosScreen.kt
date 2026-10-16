@@ -46,6 +46,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -97,6 +98,19 @@ import com.aesir.odin.ui.theme.EstilosMundo
 import com.aesir.odin.ui.theme.FuenteTexto
 import com.aesir.odin.ui.theme.OdinPaleta
 import kotlin.random.Random
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import com.aesir.odin.domain.hidromiel.CombinacionSecreta
+import com.aesir.odin.domain.hidromiel.ModoAdmin
+import com.aesir.odin.ui.components.odin.rememberTiempo
 
 /**
  * Pantalla que lista los mundos del roadmap como un escudo dividido en
@@ -110,21 +124,41 @@ fun MundosScreen(
     appContainer: AppContainer
 ) {
     val viewModel: MundosViewModel = viewModel(
-        factory = MundosViewModel.factory(appContainer.obtenerMundosUseCase)
+        factory = MundosViewModel.factory(
+            appContainer.obtenerMundosUseCase,
+            appContainer.validarAccesoDiagnosticoUseCase
+        )
     )
     val mundos by viewModel.mundos.collectAsState()
     val saldo by remember { appContainer.moduloHidromiel.observarSaldo(USUARIO_LOCAL) }.collectAsState(initial = 0)
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         viewModel.cargarMundos()
     }
 
     var seleccionadoId by rememberSaveable { mutableStateOf<String?>(null) }
+    val adminActivo by ModoAdmin.activo.collectAsState()
+    /**
+     * Combinación secreta del modo admin: tocar los cuatro mundos en el
+     * sentido del reloj (arriba-izq → arriba-der → abajo-der → abajo-izq), dos
+     * vueltas seguidas, sin pausas de más de 1.5 s. Lo mismo lo apaga.
+     */
+    val combinacion = remember { CombinacionSecreta(listOf(0, 1, 3, 2, 0, 1, 3, 2)) }
+    var avisoAdmin by remember { mutableStateOf<String?>(null) }
+    val vibrar = LocalHapticFeedback.current
+    LaunchedEffect(avisoAdmin) {
+        if (avisoAdmin != null) {
+            delay(2500)
+            avisoAdmin = null
+        }
+    }
     val visibles = mundos.take(4)
     val seleccionado = visibles.firstOrNull { it.id == seleccionadoId }
         ?: visibles.firstOrNull { it.desbloqueado }
         ?: visibles.firstOrNull()
 
+    Box(Modifier.fillMaxSize()) {
     FondoMundo(estilo = null) {
         Column(
             Modifier
@@ -133,7 +167,22 @@ fun MundosScreen(
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("MUNDOS", style = estiloTitulo(36.sp), modifier = Modifier.weight(1f))
+                Text("MUNDOS", style = estiloTitulo(36.sp))
+                if (adminActivo) {
+                    Text(
+                        "ADMIN",
+                        color = OdinPaleta.Hollin,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .clip(CircleShape)
+                            .background(OdinPaleta.Brasa)
+                            .padding(horizontal = 6.dp, vertical = 3.dp)
+                    )
+                }
+                Spacer(Modifier.weight(1f))
                 ContadorHidromiel(saldo = saldo)
             }
             Spacer(Modifier.height(6.dp))
@@ -150,7 +199,16 @@ fun MundosScreen(
                 EscudoMundos(
                     mundos = visibles,
                     seleccionadoId = seleccionado?.id,
-                    onSeleccionar = { seleccionadoId = it },
+                    onSeleccionar = { id ->
+                        seleccionadoId = id
+                        val i = visibles.indexOfFirst { it.id == id }
+                        if (i >= 0 && combinacion.registrar(i)) {
+                            ModoAdmin.alternar()
+                            viewModel.cargarMundos()
+                            vibrar.performHapticFeedback(HapticFeedbackType.LongPress)
+                            avisoAdmin = if (ModoAdmin.estaActivo) "ᛟ Modo admin activado: todo abierto y gratis" else "Modo admin desactivado"
+                        }
+                    },
                     // CU-11: el reto mezcla preguntas de todos los temas ya
                     // estudiados, por eso se entra desde el centro del escudo.
                     onAbrirReto = { navController.navigate(OdinNavGraph.rutaRetoContrareloj) },
@@ -182,12 +240,41 @@ fun MundosScreen(
                     PanelMundo(
                         mundo = mundo,
                         anterior = visibles.getOrNull(visibles.indexOfFirst { it.id == mundo.id } - 1),
-                        onEntrar = { navController.navigate(OdinNavGraph.rutaRoadmapCon(mundo.id)) }
+                        onEntrar = {
+                            // CU-10: la primera vez se presenta la evaluación diagnóstica del mundo
+                            scope.launch {
+                                val ruta = if (viewModel.intentarAbrirDiagnostico(mundo.id)) {
+                                    OdinNavGraph.rutaEvaluacionDiagnosticaCon(mundo.id)
+                                } else {
+                                    OdinNavGraph.rutaRoadmapCon(mundo.id)
+                                }
+                                navController.navigate(ruta)
+                            }
+                        }
                     )
                 }
             }
 
         }
+    }
+    AnimatedVisibility(
+        visible = avisoAdmin != null,
+        modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
+        enter = slideInVertically { -it } + fadeIn(),
+        exit = slideOutVertically { -it } + fadeOut()
+    ) {
+        Text(
+            avisoAdmin.orEmpty(),
+            color = OdinPaleta.Hollin,
+            fontFamily = FuenteTexto,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 15.sp,
+            modifier = Modifier
+                .clip(CircleShape)
+                .background(OdinPaleta.Brasa)
+                .padding(horizontal = 16.dp, vertical = 10.dp)
+        )
+    }
     }
 }
 
@@ -207,13 +294,8 @@ private fun EscudoMundos(
     onAbrirReto: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Pulso suave del anillo central para que se note que se puede tocar.
-    val brillo by rememberInfiniteTransition(label = "valknut").animateFloat(
-        initialValue = .35f,
-        targetValue = .9f,
-        animationSpec = infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "brilloValknut"
-    )
+    // Latido del nivel oculto: halo, aro que brilla y una onda que se abre
+    val tiempo = rememberTiempo()
     BoxWithConstraints(modifier.aspectRatio(1f)) {
         val lado = maxWidth
         val anillo = lado * 0.08f
@@ -245,6 +327,25 @@ private fun EscudoMundos(
         Canvas(
             Modifier
                 .align(Alignment.Center)
+                .size(lado * 0.22f * 1.6f)
+        ) {
+            val fase = (tiempo.value % 2.6f) / 2.6f
+            val tri = if (fase <= 0.5f) fase * 2f else 2f - fase * 2f
+            val r = size.minDimension / 2f / 1.6f
+            drawCircle(
+                Brush.radialGradient(
+                    0.55f to OdinPaleta.Oro.copy(alpha = 0f),
+                    0.7f to OdinPaleta.Oro.copy(alpha = 0.45f * (0.4f + 0.6f * tri)),
+                    1f to OdinPaleta.Oro.copy(alpha = 0f),
+                    center = center, radius = r * 1.45f
+                ),
+                r * 1.45f, blendMode = BlendMode.Plus
+            )
+            drawCircle(OdinPaleta.Brasa.copy(alpha = 0.8f * (1f - fase)), r * (1f + 0.45f * fase), style = Stroke(1.6.dp.toPx()))
+        }
+        Canvas(
+            Modifier
+                .align(Alignment.Center)
                 .size(lado * 0.22f)
                 .clip(CircleShape)
                 .semantics { contentDescription = "Reto contrarreloj" }
@@ -254,8 +355,11 @@ private fun EscudoMundos(
             drawCircle(Color.Black.copy(alpha = .6f), r * 1.08f, center + Offset(0f, 3.dp.toPx()))
             drawCircle(Brush.radialGradient(listOf(Color(0xFF2E271F), Color(0xFF12100D)), center = center, radius = r), r)
             drawCircle(OdinPaleta.Hierro, r - 1.5.dp.toPx(), style = Stroke(3.dp.toPx()))
-            drawCircle(OdinPaleta.Oro.copy(alpha = brillo), r - 7.dp.toPx(), style = Stroke(1.5.dp.toPx()))
+            val fase = (tiempo.value % 2.6f) / 2.6f
+            val tri = if (fase <= 0.5f) fase * 2f else 2f - fase * 2f
+            drawCircle(OdinPaleta.Brasa.copy(alpha = 0.45f + 0.55f * tri), r - 7.dp.toPx(), style = Stroke(1.8.dp.toPx()))
             dibujarValknut(center, r * .5f, OdinPaleta.Oro, 1.6.dp.toPx())
+            dibujarValknut(center, r * .5f, OdinPaleta.Brasa.copy(alpha = 0.35f * tri), 1.6.dp.toPx())
         }
     }
 }

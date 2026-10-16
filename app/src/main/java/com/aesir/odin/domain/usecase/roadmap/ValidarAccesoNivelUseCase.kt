@@ -1,5 +1,6 @@
 package com.aesir.odin.domain.usecase.roadmap
 
+import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.repository.RoadmapRepository
 
 /**
@@ -13,5 +14,5 @@ class ValidarAccesoNivelUseCase(
     private val repository: RoadmapRepository
 ) {
     suspend operator fun invoke(nivelId: String): Boolean =
-        repository.obtenerMundo(nivelId).desbloqueado
+        ModoAdmin.estaActivo || repository.obtenerMundo(nivelId).desbloqueado
 }
