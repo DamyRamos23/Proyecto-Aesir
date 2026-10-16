@@ -17,8 +17,8 @@ import com.aesir.odin.domain.model.ArbolHabilidades
  * anillo interior, conectadas en círculo, y los minijuegos en el exterior,
  * cada uno conectado a las dos lecciones que tiene más cerca.
  *
- * Los niveles cuya actividad todavía no se puede jugar (memorama y flash
- * cards) no entran al catálogo: no se cobran, no abren a nadie y no cuentan
+ * Los niveles cuya actividad todavía no se puede jugar (flash cards) no
+ * entran al catálogo: no se cobran, no abren a nadie y no cuentan
  * para el Ragnarök hasta que se programen (Actividad.jugable).
  */
 class CatalogoNivelesImpl(

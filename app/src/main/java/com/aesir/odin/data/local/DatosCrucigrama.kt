@@ -16,8 +16,8 @@ object DatosCrucigrama {
     /**
      * Anillo exterior (minijuegos) de cada mundo: 2 crucigramas, 2 memoramas
      * y 2 de flash cards, intercalados. Cada uno queda entre las dos lecciones
-     * que repasa (ArbolHabilidades). Memorama y flash cards se muestran como
-     * "Próximamente" hasta que se programen.
+     * que repasa (ArbolHabilidades). Las flash cards se muestran como
+     * "Próximamente" hasta que se programen (el memorama ya es jugable, CU-04).
      */
     fun minijuegos(mundos: List<MundoEntity>): List<TemaEntity> = mundos.flatMap { mundo ->
         MINIJUEGOS.mapIndexed { k, (actividad, nombre, descripcion) ->

@@ -21,6 +21,10 @@ interface MundoDao {
     @Query("SELECT * FROM mundos WHERE id = :id")
     suspend fun getById(id: String): MundoEntity
 
+    /** CU-04 / CU-10: null si el mundo no existe. */
+    @Query("SELECT desbloqueado FROM mundos WHERE id = :id")
+    suspend fun estaDesbloqueado(id: String): Boolean?
+
     @Query("UPDATE mundos SET desbloqueado = :desbloqueado WHERE id = :id")
     suspend fun actualizarDesbloqueado(id: String, desbloqueado: Boolean)
 

@@ -6,7 +6,7 @@ import kotlin.math.abs
 enum class Actividad(val nombre: String, val jugable: Boolean) {
     LECCION("Lección interactiva", jugable = true),
     CRUCIGRAMA("Crucigrama", jugable = true),
-    MEMORAMA("Memorama", jugable = false),
+    MEMORAMA("Memorama", jugable = true),
     FLASHCARDS("Flash cards", jugable = false);
 
     companion object {
