@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.aesir.odin.domain.hidromiel.EstadoNivel
+import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.hidromiel.ResultadoAcceso
 import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
 /**
@@ -61,6 +63,14 @@ class RoadmapViewModel(
 
     private val _mensajeBloqueo = MutableStateFlow<String?>(null)
     val mensajeBloqueo: StateFlow<String?> = _mensajeBloqueo.asStateFlow()
+
+    /**
+     * El pozo de Mímir se abre como repaso al completar el mundo (superar su
+     * Ragnarök). En modo admin siempre está despierto.
+     */
+    val pozoDespierto: StateFlow<Boolean> = combine(_accesos, _ragnarok, ModoAdmin.activo) { accesos, ragnarok, admin ->
+        admin || (ragnarok != null && accesos[ragnarok.id]?.estado == EstadoNivel.SUPERADO)
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, ModoAdmin.estaActivo)
 
     private var mundoIdActual: String? = null
 

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NamedNavArgument
 import androidx.navigation.NavHostController
@@ -29,9 +30,18 @@ import com.aesir.odin.ui.memorama.MemoramaScreen
 import com.aesir.odin.ui.memorama.MemoramaViewModel
 import com.aesir.odin.ui.memorama.ResumenMemoramaScreen
 import com.aesir.odin.ui.mundos.MundosScreen
-import com.aesir.odin.ui.preguntaflash.PreguntaFlashScreen
+import com.aesir.odin.ui.retocontrareloj.RetoContrarrelojScreen
+import com.aesir.odin.ui.retocontrareloj.RetoContrarrelojViewModel
 import com.aesir.odin.ui.roadmap.RoadmapScreen
 import com.aesir.odin.ui.temaintro.TemaIntroScreen
+import androidx.compose.runtime.CompositionLocalProvider
+import com.aesir.odin.ui.flashcards.FlashcardsScreen
+import com.aesir.odin.ui.flashcards.FlashcardsViewModel
+import com.aesir.odin.ui.ragnarok.RagnarokScreen
+import com.aesir.odin.ui.ragnarok.RagnarokViewModel
+import com.aesir.odin.ui.retoarrastrar.ResumenRetoScreen
+import com.aesir.odin.ui.retoarrastrar.RetoArrastrarScreen
+import com.aesir.odin.ui.retoarrastrar.RetoArrastrarViewModel
 
 /**
  * Grafo de navegación de ODÍN.
@@ -46,7 +56,7 @@ object OdinNavGraph {
     const val rutaIntroTema = "introTema"
     const val rutaLeccion = "leccion"
     const val rutaResumenLeccion = "resumenLeccion"
-    const val rutaPreguntaFlash = "preguntaFlash"
+    const val rutaRetoContrareloj = "retoContrareloj"
     const val rutaCrucigrama = "crucigrama"
     const val rutaResultadoCrucigrama = "resultadoCrucigrama"
     // CU-04 Resolver memorama de conceptos
@@ -71,6 +81,8 @@ object OdinNavGraph {
     private const val argTemas = "temas"
     private const val argAciertos = "aciertos"
     private const val argOrdenMundo = "ordenMundo"
+    private const val argIntentos = "intentos"
+    private const val argDesbloqueados = "desbloqueados"
 
     /** Ruta concreta del roadmap para un mundo determinado. */
     fun rutaRoadmapCon(mundoId: String) =
@@ -121,11 +133,21 @@ object OdinNavGraph {
         if (tema.esMemorama) return rutaMemoramaCon(tema.mundoId, tema.id)
         if (!tema.esCrucigrama) return rutaIntroTemaCon(tema.id)
         val lecciones = temasDelMundo.filter { !it.esRagnarok && !it.esMinijuego }.sortedBy { it.orden }
-        val minijuegos = temasDelMundo.filter { !it.esRagnarok && it.esMinijuego }.sortedBy { it.orden }
+        if (tema.esArrastrar) {
+            // Tercer anillo: las lecciones más cercanas por ángulo son las que se sugiere repasar (A7.2)
+            val retos = temasDelMundo.filter { !it.esRagnarok && it.esReto }.sortedBy { it.orden }
+            val j = retos.indexOfFirst { it.id == tema.id }
+            val cercanas = if (j < 0) lecciones.indices.toList()
+            else ArbolHabilidades.leccionesCercanasAReto(j, retos.size, lecciones.size)
+            return rutaRetoArrastrarCon(tema.id, cercanas.map { lecciones[it].id })
+        }
+        if (!tema.esCrucigrama && !tema.esFlashcards) return rutaIntroTemaCon(tema.id)
+        val minijuegos = temasDelMundo.filter { !it.esRagnarok && it.anillo == ArbolHabilidades.ANILLO_MINIJUEGOS }.sortedBy { it.orden }
         val k = minijuegos.indexOfFirst { it.id == tema.id }
         val cercanas = if (k < 0) lecciones.indices.toList()
         else ArbolHabilidades.leccionesCercanas(k, lecciones.size, minijuegos.size)
-        return rutaCrucigramaCon(tema.id, cercanas.map { lecciones[it].id })
+        val temas = cercanas.map { lecciones[it].id }
+        return if (tema.esFlashcards) rutaFlashcardsCon(tema.id, temas) else rutaCrucigramaCon(tema.id, temas)
     }
 
     private fun argumentoMundoId(): NamedNavArgument =
@@ -152,6 +174,16 @@ object OdinNavGraph {
             )
         }
 
+        /** Al superar el Ragnarök (o terminar el diagnóstico) se pasa directo al roadmap de un mundo. */
+        val irAlMundo: (String) -> Unit = { mundoId ->
+            nav.navigate(rutaRoadmapCon(mundoId)) { popUpTo(rutaMundos) { inclusive = false } }
+        }
+        /** Abre un nivel dejando el roadmap debajo (p. ej. la lección sugerida para repasar). */
+        val irDesdeRoadmap: (String) -> Unit = { ruta ->
+            nav.navigate(ruta) { popUpTo("$rutaRoadmap/{$argMundoId}") { inclusive = false } }
+        }
+
+        CompositionLocalProvider(LocalAppContainer provides appContainer) {
         NavHost(
             navController = nav,
             startDestination = rutaMundos,
@@ -228,11 +260,18 @@ object OdinNavGraph {
             }
 
             // -------------------------
-            // Pregunta flash
+            // Reto contrarreloj (CU-11)
             // -------------------------
 
-            composable(rutaPreguntaFlash) {
-                PreguntaFlashScreen(nav)
+            composable(rutaRetoContrareloj) { entrada ->
+                val viewModel: RetoContrarrelojViewModel =
+                    viewModel(factory = RetoContrarrelojViewModel.factory(appContainer))
+
+                RetoContrarrelojScreen(
+                    viewModel = viewModel,
+                    // Toques repetidos en "Volver" hacían popBackStack de más y dejaban la pantalla negra.
+                    onSalir = { if (entrada.lifecycle.currentState == Lifecycle.State.RESUMED) nav.popBackStack() }
+                )
             }
 
             // -------------------------
@@ -504,4 +543,8 @@ object OdinNavGraph {
             }
         }
     }
+}
+/** Contenedor de dependencias para las piezas que lo necesitan sin recibirlo por parámetro (p. ej. el contador de hidromiel). */
+val LocalAppContainer = androidx.compose.runtime.staticCompositionLocalOf<AppContainer> {
+    error("Falta proveer el AppContainer")
 }

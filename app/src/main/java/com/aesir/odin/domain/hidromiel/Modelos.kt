@@ -35,7 +35,9 @@ enum class TipoMovimiento {
     RECOMPENSA_DIARIA,
     AYUDA_CRUCIGRAMA,
     PREGUNTA_FLASH,
-    ABANDONO_CONTRARRELOJ
+    ABANDONO_CONTRARRELOJ,
+    ENTRADA_CONTRARRELOJ,
+    RECOMPENSA_CONTRARRELOJ
 }
 
 // ---------------------------------------------------------------------------
@@ -105,6 +107,8 @@ data class PreguntaFlashResuelta(
 )
 
 data class ContrarrelojAbandonado(val idUsuario: String)
+
+data class ContrarrelojFinalizado(val idUsuario: String, val aciertos: Int, val fallos: Int = 0)
 
 // ---------------------------------------------------------------------------
 // Registros

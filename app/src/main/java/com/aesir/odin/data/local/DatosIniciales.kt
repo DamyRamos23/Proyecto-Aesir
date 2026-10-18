@@ -248,7 +248,7 @@ object DatosIniciales {
             .mapIndexed { i, ej -> ej.copy(id = "rg_${ej.id}", leccionId = "leccion_ragnarok_${mundo.id}", orden = i + 1) }
     }
 
-    val temas = temasNormales + DatosCrucigrama.minijuegos(mundos) + temasRagnarok
+    val temas = temasNormales + DatosCrucigrama.minijuegos(mundos) + DatosArrastrar.niveles(mundos) + temasRagnarok
     val lecciones = leccionesNormales + leccionesRagnarok
     val ejercicios = ejerciciosNormales + ejerciciosRagnarok
 

@@ -67,7 +67,7 @@ class ModuloHidromiel(
             repositorio.enTransaccion {
                 val saldo = obtenerOCrearReserva(idUsuario).saldo
                 catalogo.nivelesDelMundo(idMundo).map { nivel ->
-                    val estado = controlAcceso.evaluar(idUsuario, nivel)
+                    val estado = evaluar(idUsuario, nivel)
                     armarResultado(idUsuario, nivel, estado, saldo)
                 }
             }
@@ -83,7 +83,7 @@ class ModuloHidromiel(
             repositorio.enTransaccion {
                 val nivel = catalogo.obtener(idNivel)
                 val reserva = obtenerOCrearReserva(idUsuario)
-                val estado = controlAcceso.evaluar(idUsuario, nivel)
+                val estado = evaluar(idUsuario, nivel)
                 val previo = armarResultado(idUsuario, nivel, estado, reserva.saldo)
 
                 if (estado != EstadoNivel.DISPONIBLE || !previo.autorizado || previo.costo == 0) {
@@ -109,6 +109,9 @@ class ModuloHidromiel(
 
     /** E5: ayudas del crucigrama. Si no alcanza, se aplica E1 y no se entrega. */
     suspend fun cobrarAyuda(idUsuario: String, tipo: TipoAyuda): ResultadoAcceso {
+        if (ModoAdmin.estaActivo) {
+            return ResultadoAcceso(tipo.name, EstadoNivel.DISPONIBLE, true, 0, 0, "Modo admin: ayuda gratuita.")
+        }
         var aviso: AvisoHidromiel? = null
         val resultado = candado.withLock {
             repositorio.enTransaccion {
@@ -143,7 +146,7 @@ class ModuloHidromiel(
             repositorio.enTransaccion {
                 val nivel = catalogo.obtener(e.idNivel)
                 val reserva = obtenerOCrearReserva(e.idUsuario)
-                val estado = controlAcceso.evaluar(e.idUsuario, nivel)
+                val estado = evaluar(e.idUsuario, nivel)
                 if (entradasPagadas[e.idUsuario] == nivel.idNivel) entradasPagadas.remove(e.idUsuario)
 
                 if (e.resultado != ResultadoNivel.SUPERADO) {
@@ -227,7 +230,7 @@ class ModuloHidromiel(
         }
     }
 
-    /** E6: correcta +5; se agota el tiempo −2; incorrecta o incompleta, sin cambio. */
+    /** E6: correcta +5; incorrecta, incompleta o sin respuesta −2 (RN-01: nunca baja de 0). */
     suspend fun alResolverPreguntaFlash(e: PreguntaFlashResuelta): AvisoHidromiel =
         moverSaldo(e.idUsuario) { reserva ->
             when (e.resultado) {
@@ -238,18 +241,66 @@ class ModuloHidromiel(
                         "¡Respuesta correcta! Ganaste ${PoliticaCosto.FLASH_CORRECTA} de hidromiel."
                     )
                 }
-                ResultadoFlash.SIN_RESPUESTA -> {
-                    val real = reserva.descontarHastaCero(PoliticaCosto.FLASH_SIN_RESPUESTA, TipoMovimiento.PREGUNTA_FLASH)
+                ResultadoFlash.INCORRECTA, ResultadoFlash.INCOMPLETA, ResultadoFlash.SIN_RESPUESTA -> {
+                    val real = reserva.descontarHastaCero(PoliticaCosto.FLASH_FALLO, TipoMovimiento.PREGUNTA_FLASH)
+                    val motivo = if (e.resultado == ResultadoFlash.SIN_RESPUESTA) "Se agotó el tiempo." else "Respuesta incorrecta."
                     AvisoHidromiel(
                         TipoMovimiento.PREGUNTA_FLASH, -real, reserva.saldo,
-                        "Se agotó el tiempo. Perdiste $real de hidromiel."
+                        "$motivo Perdiste $real de hidromiel."
                     )
                 }
-                ResultadoFlash.INCORRECTA, ResultadoFlash.INCOMPLETA -> AvisoHidromiel(
-                    TipoMovimiento.PREGUNTA_FLASH, 0, reserva.saldo,
-                    "Respuesta sin acierto. Tu hidromiel no cambió."
-                )
             }
+        }
+
+    /** Entrada al reto contrarreloj (10). Si no alcanza, se aplica E1 y no se cobra. En modo admin es gratis. */
+    suspend fun cobrarEntradaContrarreloj(idUsuario: String): ResultadoAcceso {
+        if (ModoAdmin.estaActivo) {
+            return ResultadoAcceso(ID_CONTRARRELOJ, EstadoNivel.DISPONIBLE, true, 0, 0, "Modo admin: entrada gratuita.")
+        }
+        var aviso: AvisoHidromiel? = null
+        val resultado = candado.withLock {
+            repositorio.enTransaccion {
+                val costo = PoliticaCosto.ENTRADA_CONTRARRELOJ
+                val reserva = obtenerOCrearReserva(idUsuario)
+                if (!reserva.descontar(costo, TipoMovimiento.ENTRADA_CONTRARRELOJ)) {
+                    val falta = costo - reserva.saldo
+                    return@enTransaccion ResultadoAcceso(
+                        idNivel = ID_CONTRARRELOJ, estado = EstadoNivel.DISPONIBLE, autorizado = false,
+                        costo = costo, faltante = falta,
+                        motivo = "Te faltan $falta de hidromiel para entrar al reto."
+                    )
+                }
+                repositorio.guardarReserva(reserva)
+                aviso = AvisoHidromiel(
+                    TipoMovimiento.ENTRADA_CONTRARRELOJ, -costo, reserva.saldo,
+                    "Pagaste $costo de hidromiel para entrar al reto contrarreloj."
+                )
+                ResultadoAcceso(ID_CONTRARRELOJ, EstadoNivel.DISPONIBLE, true, costo, 0, "Entrada pagada.")
+            }
+        }
+        aviso?.let(::publicar)
+        return resultado
+    }
+
+    /** Al terminar el reto (sin abandonarlo): +2 por cada correcta y -1 por cada incorrecta (RN-01: nunca baja de 0). */
+    suspend fun alFinalizarContrarreloj(e: ContrarrelojFinalizado): AvisoHidromiel =
+        moverSaldo(e.idUsuario) { reserva ->
+            val neto = PoliticaCosto.CONTRARRELOJ_CORRECTA * e.aciertos.coerceAtLeast(0) -
+                PoliticaCosto.CONTRARRELOJ_FALLO * e.fallos.coerceAtLeast(0)
+            val cambio = if (neto >= 0) {
+                if (neto > 0) reserva.abonar(neto, TipoMovimiento.RECOMPENSA_CONTRARRELOJ)
+                neto
+            } else {
+                -reserva.descontarHastaCero(-neto, TipoMovimiento.RECOMPENSA_CONTRARRELOJ)
+            }
+            AvisoHidromiel(
+                TipoMovimiento.RECOMPENSA_CONTRARRELOJ, cambio, reserva.saldo,
+                when {
+                    cambio > 0 -> "¡Reto terminado! Ganaste $cambio de hidromiel."
+                    cambio < 0 -> "Reto terminado. Por tus errores perdiste ${-cambio} de hidromiel."
+                    else -> "Reto terminado. Tu hidromiel no cambió."
+                }
+            )
         }
 
     /** E6: abandonar un reto contrarreloj resta 20 (RN-01: nunca baja de 0). */
@@ -294,6 +345,13 @@ class ModuloHidromiel(
      * La diaria de ese mismo día ya va incluida en la inicial, así que la
      * primera recompensa diaria llega al día siguiente.
      */
+    private suspend fun evaluar(idUsuario: String, nivel: NivelInfo): EstadoNivel {
+        val estado = controlAcceso.evaluar(idUsuario, nivel)
+        // Modo admin: todo lo que no está superado queda abierto y gratis (incluido el Ragnarök)
+        return if (ModoAdmin.estaActivo && (estado == EstadoNivel.BLOQUEADO || estado == EstadoNivel.DISPONIBLE)) EstadoNivel.GRATUITO
+        else estado
+    }
+
     private suspend fun obtenerOCrearReserva(idUsuario: String): ReservaHidromiel {
         repositorio.obtenerReserva(idUsuario)?.let { return it }
         val nueva = ReservaHidromiel(idUsuario, saldo = 0, fechaUltimaDiaria = hoy(), ahora = ahora)
@@ -322,7 +380,10 @@ class ModuloHidromiel(
                 ResultadoAcceso(nivel.idNivel, estado, false, 0, 0, motivo)
             }
         }
-        EstadoNivel.GRATUITO -> ResultadoAcceso(nivel.idNivel, estado, true, 0, 0, "Primer nivel del mundo: entrada gratuita.")
+        EstadoNivel.GRATUITO -> ResultadoAcceso(
+            nivel.idNivel, estado, true, 0, 0,
+            if (ModoAdmin.estaActivo) "Modo admin: entrada gratuita." else "Primer nivel del mundo: entrada gratuita."
+        )
         EstadoNivel.SUPERADO -> ResultadoAcceso(nivel.idNivel, estado, true, 0, 0, "Ya lo superaste: repetirlo es gratis, pero no da hidromiel.")
         EstadoNivel.DISPONIBLE -> if (entradasPagadas[idUsuario] == nivel.idNivel) {
             ResultadoAcceso(nivel.idNivel, estado, true, 0, 0, "Ya pagaste la entrada de este nivel.")
@@ -355,5 +416,10 @@ class ModuloHidromiel(
 
     private fun publicar(aviso: AvisoHidromiel) {
         _avisos.tryEmit(aviso)
+    }
+
+    companion object {
+        /** Identificador del reto contrarreloj en los [ResultadoAcceso]. */
+        const val ID_CONTRARRELOJ = "CONTRARRELOJ"
     }
 }

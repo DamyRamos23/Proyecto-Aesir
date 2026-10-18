@@ -8,7 +8,7 @@ package com.aesir.odin.domain.model
  * [desbloqueado] y [completado] se conservan por compatibilidad, pero quien
  * decide si un tema se puede jugar es el MOD-01 (ModuloHidromiel).
  * [esRagnarok] marca el nivel de fin de mundo, que va en el centro del escudo.
- * [anillo]: 1 = lecciones, 2 = minijuegos (ver ArbolHabilidades).
+ * [anillo]: 1 = lecciones, 2 = minijuegos, 3 = retos (ver ArbolHabilidades).
  * [actividad]: lo que se juega en el nivel.
  */
 data class Tema(

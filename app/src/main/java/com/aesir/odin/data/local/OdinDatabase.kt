@@ -14,14 +14,23 @@ import com.aesir.odin.data.local.dao.HistorialErrorDao
 import com.aesir.odin.data.local.dao.LeccionDao
 import com.aesir.odin.data.local.dao.MemoramaDao
 import com.aesir.odin.data.local.dao.MundoDao
+import com.aesir.odin.data.local.dao.PreguntaFlashBancoDao
+import com.aesir.odin.data.local.dao.PreguntaFlashDao
 import com.aesir.odin.data.local.dao.ResultadoCrucigramaDao
+import com.aesir.odin.data.local.dao.ResultadoContrarrelojDao
 import com.aesir.odin.data.local.dao.TemaDao
 import com.aesir.odin.data.local.entity.ConceptoCrucigramaEntity
 import com.aesir.odin.data.local.entity.EjercicioEntity
 import com.aesir.odin.data.local.entity.HistorialErrorEntity
 import com.aesir.odin.data.local.entity.LeccionEntity
 import com.aesir.odin.data.local.entity.MovimientoHidromielEntity
+import com.aesir.odin.data.local.entity.ElementoArrastrableEntity
 import com.aesir.odin.data.local.entity.MundoDesbloqueadoEntity
+import com.aesir.odin.data.local.entity.PosicionDestinoEntity
+import com.aesir.odin.data.local.entity.ResultadoFlashcardsEntity
+import com.aesir.odin.data.local.entity.ResultadoRetoEntity
+import com.aesir.odin.data.local.entity.ResultadoRetoFinMundoEntity
+import com.aesir.odin.data.local.entity.RetoArrastrarEntity
 import com.aesir.odin.data.local.entity.MundoEntity
 import com.aesir.odin.data.local.entity.NivelSuperadoEntity
 import com.aesir.odin.data.local.entity.ParConceptoEntity
@@ -89,11 +98,26 @@ abstract class OdinDatabase : RoomDatabase() {
                 )
                     .addCallback(
                         object : Callback() {
-                            override fun onCreate(
+                            // Se siembra en onOpen y no en onCreate: al subir la versión,
+                            // fallbackToDestructiveMigration recrea las tablas vacías sin
+                            // llamar a onCreate, y la app se quedaba sin mundos.
+                            override fun onOpen(
                                 db: androidx.sqlite.db.SupportSQLiteDatabase
                             ) {
-                                super.onCreate(db)
-                                DatosIniciales.insertar(db)
+                                super.onOpen(db)
+                                val vacia = db.query("SELECT COUNT(*) FROM mundos").use { c ->
+                                    c.moveToFirst() && c.getInt(0) == 0
+                                }
+                                db.beginTransaction()
+                                try {
+                                    if (vacia) DatosIniciales.insertar(db)
+                                    // El banco de preguntas es contenido fijo: se actualiza en cada
+                                    // apertura para que las preguntas nuevas lleguen sin borrar datos.
+                                    BancoPreguntas.insertar(db)
+                                    db.setTransactionSuccessful()
+                                } finally {
+                                    db.endTransaction()
+                                }
                             }
                         }
                     )

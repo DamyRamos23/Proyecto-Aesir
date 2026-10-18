@@ -43,7 +43,33 @@ import com.aesir.odin.domain.usecase.roadmap.ObtenerTemasPorMundoUseCase
 import com.aesir.odin.domain.usecase.roadmap.ValidarAccesoNivelUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerIntroduccionTemaUseCase
 import com.aesir.odin.domain.usecase.roadmap.RegistrarIntroduccionVistaUseCase
+import com.aesir.odin.domain.usecase.reto.AbandonarRetoContrarrelojUseCase
+import com.aesir.odin.domain.usecase.reto.ArmarRetoContrarrelojUseCase
+import com.aesir.odin.domain.usecase.reto.FinalizarRetoContrarrelojUseCase
+import com.aesir.odin.domain.usecase.reto.PagarEntradaRetoContrarrelojUseCase
 import com.aesir.odin.domain.usecase.shared.ValidarRespuestaUseCase
+import com.aesir.odin.data.repository.FlashcardsRepositoryImpl
+import com.aesir.odin.data.repository.RetoFinMundoRepositoryImpl
+import com.aesir.odin.data.repository.RetoRepositoryImpl
+import com.aesir.odin.domain.hidromiel.ModoAdmin
+import com.aesir.odin.domain.repository.FlashcardsRepository
+import com.aesir.odin.domain.repository.RetoFinMundoRepository
+import com.aesir.odin.domain.repository.RetoRepository
+import com.aesir.odin.domain.usecase.diagnostico.ObtenerPreguntasRepasoUseCase
+import com.aesir.odin.domain.usecase.flashcards.FinalizarFlashcardsUseCase
+import com.aesir.odin.domain.usecase.flashcards.GenerarFlashcardsUseCase
+import com.aesir.odin.domain.usecase.flashcards.RegistrarErrorFlashcardUseCase
+import com.aesir.odin.domain.usecase.flashcards.RegistrarFlashcardsSinSuperarUseCase
+import com.aesir.odin.domain.usecase.ragnarok.AbandonarRetoFinMundoUseCase
+import com.aesir.odin.domain.usecase.ragnarok.FinalizarRetoFinMundoUseCase
+import com.aesir.odin.domain.usecase.ragnarok.ObtenerRetoFinMundoUseCase
+import com.aesir.odin.domain.usecase.ragnarok.RegistrarErrorRetoUseCase
+import com.aesir.odin.domain.usecase.retoarrastrar.AbandonarRetoUseCase
+import com.aesir.odin.domain.usecase.retoarrastrar.CalcularPuntajeRetoUseCase
+import com.aesir.odin.domain.usecase.retoarrastrar.FinalizarRetoUseCase
+import com.aesir.odin.domain.usecase.retoarrastrar.ObtenerRetoUseCase
+import com.aesir.odin.domain.usecase.retoarrastrar.RegistrarErrorRetoArrastrarUseCase
+import com.aesir.odin.domain.usecase.retoarrastrar.ValidarColocacionUseCase
 
 /**
  * Contenedor manual de dependencias (no hay Hilt configurado en el
@@ -56,13 +82,20 @@ class AppContainer(context: Context) {
 
     private val database = OdinDatabase.getInstance(context)
 
+    init {
+        // Modo admin oculto: se recuerda entre aperturas de la app
+        val preferencias = context.getSharedPreferences("odin", Context.MODE_PRIVATE)
+        ModoAdmin.cargar(preferencias.getBoolean(CLAVE_MODO_ADMIN, false))
+        ModoAdmin.alCambiar = { preferencias.edit().putBoolean(CLAVE_MODO_ADMIN, it).apply() }
+    }
+
     val roadmapRepository: RoadmapRepository =
         RoadmapRepositoryImpl(database.mundoDao(), database.temaDao())
 
     val leccionRepository: LeccionRepository =
         LeccionRepositoryImpl(database.leccionDao(), database.ejercicioDao())
 
-    private val historialRepository: HistorialRepository =
+    val historialRepository: HistorialRepository =
         HistorialRepositoryImpl(database.historialErrorDao())
 
     /**

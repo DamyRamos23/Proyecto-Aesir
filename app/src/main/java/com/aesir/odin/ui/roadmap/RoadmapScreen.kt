@@ -77,6 +77,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.aesir.odin.di.AppContainer
 import com.aesir.odin.domain.hidromiel.EstadoNivel
+import com.aesir.odin.domain.hidromiel.ModoAdmin
+import com.aesir.odin.ui.components.odin.rememberTiempo
 import com.aesir.odin.domain.hidromiel.ResultadoAcceso
 import com.aesir.odin.domain.model.Actividad
 import com.aesir.odin.domain.model.ArbolHabilidades
@@ -131,6 +133,7 @@ fun RoadmapScreen(
     var confirmarEntrada by remember { mutableStateOf<Pair<Tema, ResultadoAcceso>?>(null) }
     val mundo by viewModel.mundo.collectAsState()
     val mensajeBloqueo by viewModel.mensajeBloqueo.collectAsState()
+    val pozoDespierto by viewModel.pozoDespierto.collectAsState()
     val scope = rememberCoroutineScope()
 
     var nivelDesbloqueado by remember { mutableStateOf<Boolean?>(null) }
@@ -220,7 +223,7 @@ fun RoadmapScreen(
                 val seleccionado = temas.firstOrNull { it.id == seleccionadoId }
                     ?: ragnarok?.takeIf { it.id == seleccionadoId && accesoRagnarok?.estado != EstadoNivel.BLOQUEADO }
                     ?: temas.firstOrNull { accesos[it.id]?.estado.let { e -> e == EstadoNivel.DISPONIBLE || e == EstadoNivel.GRATUITO } }
-                    ?: ragnarok?.takeIf { accesoRagnarok?.estado == EstadoNivel.DISPONIBLE }
+                    ?: ragnarok?.takeIf { accesoRagnarok?.estado == EstadoNivel.DISPONIBLE || accesoRagnarok?.estado == EstadoNivel.GRATUITO }
                     ?: temas.lastOrNull { it.completado }
                     ?: temas.first()
 
@@ -283,7 +286,19 @@ fun RoadmapScreen(
                         .align(Alignment.CenterHorizontally)
                 )
 
-                Spacer(Modifier.height(20.dp))
+                // Repaso: el pozo de Mímir despierta al completar el mundo
+                FuenteMimir(
+                    estilo = estilo,
+                    despierto = pozoDespierto,
+                    onTocar = { navController.navigate(OdinNavGraph.rutaRepasoMimirCon(mundoActual.id)) },
+                    modifier = Modifier
+                        .padding(top = 14.dp)
+                        .widthIn(max = 420.dp)
+                        .fillMaxWidth()
+                        .align(Alignment.CenterHorizontally)
+                )
+
+                Spacer(Modifier.height(16.dp))
 
                 AnimatedContent(
                     targetState = seleccionado,
@@ -338,6 +353,8 @@ private fun runaDe(tema: Tema, estilo: EstiloMundo): String = when (tema.activid
     Actividad.CRUCIGRAMA -> estilo.runas[4]
     Actividad.MEMORAMA -> estilo.runas[5]
     Actividad.FLASHCARDS -> estilo.runas[6]
+    Actividad.ARRASTRAR -> estilo.runas[7 % estilo.runas.size]
+    Actividad.POR_DEFINIR -> "?"
 }
 
 @Composable
@@ -355,27 +372,19 @@ private fun EscudoTemas(
     // rayos de luz van de cada nivel al centro y el centro parpadea lento.
     val ragnarokVisible = estadoRagnarok != null && estadoRagnarok != EstadoNivel.BLOQUEADO
     val ragnarokSuperado = estadoRagnarok == EstadoNivel.SUPERADO
-    val pulso = rememberInfiniteTransition(label = "ragnarok").animateFloat(
-        initialValue = .25f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1800, easing = LinearEasing), RepeatMode.Reverse),
-        label = "pulsoRagnarok"
-    )
-    // Se lee solo al dibujar, para que el parpadeo no recomponga la pantalla.
-    val brilloCentro: () -> Float = {
-        when {
-            ragnarokSuperado -> .8f
-            ragnarokVisible -> pulso.value
-            else -> 0f
-        }
-    }
-    // Dos anillos (ArbolHabilidades): lecciones adentro y minijuegos afuera
+    // Mientras esté bloqueado el centro queda quieto, sin latido ni onda: el
+    // Ragnarök no se revela hasta terminar todos los niveles jugables. El tiempo
+    // se lee solo al dibujar, para que el latido no recomponga la pantalla.
+    val tiempo = rememberTiempo()
+    // Tres anillos (ArbolHabilidades): lecciones adentro, minijuegos en medio y retos afuera
     val lecciones = temas.filter { !it.esMinijuego }.sortedBy { it.orden }
-    val minijuegos = temas.filter { it.esMinijuego }.sortedBy { it.orden }
+    val minijuegos = temas.filter { it.anillo == ArbolHabilidades.ANILLO_MINIJUEGOS }.sortedBy { it.orden }
+    val retos = temas.filter { it.esReto }.sortedBy { it.orden }
     val n = lecciones.size
     val m = minijuegos.size
-    val conexiones = remember(lecciones.map { it.id }, minijuegos.map { it.id }) {
-        ArbolHabilidades.conexiones(lecciones.map { it.id }, minijuegos.map { it.id })
+    val numRetos = retos.size
+    val conexiones = remember(lecciones.map { it.id }, minijuegos.map { it.id }, retos.map { it.id }) {
+        ArbolHabilidades.conexiones(lecciones.map { it.id }, minijuegos.map { it.id }, retos.map { it.id })
     }
     val medidor = rememberTextMeasurer()
     val runasAro = remember(estilo) {
@@ -384,14 +393,17 @@ private fun EscudoTemas(
 
     BoxWithConstraints(modifier.aspectRatio(1f)) {
         val lado = maxWidth
-        val radioInterior = if (m > 0) lado * 0.2f else lado * 0.33f
-        val radioExterior = lado * 0.35f
-        val tamLeccion = if (m > 0) 48.dp else 58.dp
-        val tamMinijuego = 42.dp
+        val radioInterior = if (numRetos > 0) lado * 0.165f else if (m > 0) lado * 0.2f else lado * 0.33f
+        val radioExterior = if (numRetos > 0) lado * 0.27f else lado * 0.35f
+        val radioRetos = lado * 0.37f
+        val tamLeccion = if (numRetos > 0) 40.dp else if (m > 0) 48.dp else 58.dp
+        val tamMinijuego = if (numRetos > 0) 36.dp else 42.dp
+        val tamReto = 32.dp
         // Ángulo y radio de cada nivel, por id
         val ubicacion: Map<String, Pair<Float, Dp>> =
             lecciones.mapIndexed { i, t -> t.id to (ArbolHabilidades.anguloInterior(i, n) to radioInterior) }.toMap() +
-                minijuegos.mapIndexed { k, t -> t.id to (ArbolHabilidades.anguloExterior(k, n, m) to radioExterior) }
+                minijuegos.mapIndexed { k, t -> t.id to (ArbolHabilidades.anguloExterior(k, n, m) to radioExterior) } +
+                retos.mapIndexed { j, t -> t.id to (ArbolHabilidades.anguloRetos(j, numRetos) to radioRetos) }
 
         Canvas(Modifier.size(lado)) {
             val c = center
@@ -435,6 +447,29 @@ private fun EscudoTemas(
                 style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(2.dp.toPx(), 5.dp.toPx())))
             )
 
+        }
+
+        // Anillos, ramas y umbo (se redibujan en cada cuadro por el latido del centro)
+        Canvas(Modifier.size(lado)) {
+            val c = center
+            val r = size.minDimension / 2f
+            val segundos = tiempo.value
+            val periodo = if (ragnarokVisible) 2.4f else 3.2f
+            val fase = (segundos % periodo) / periodo
+            val tri = if (fase <= 0.5f) fase * 2f else 2f - fase * 2f
+            val brillo = when {
+                ragnarokSuperado -> 0.8f
+                ragnarokVisible -> 0.3f + 0.7f * tri
+                else -> 0f
+            }
+            val latido = when {
+                ragnarokSuperado -> 0.6f
+                ragnarokVisible -> 0.55f + 0.45f * tri
+                else -> 0.3f
+            }
+            val onda: Float? = if (ragnarokVisible && !ragnarokSuperado) fase else null
+            val fuerte = ragnarokVisible
+
             // Posición de cada nivel
             val pos: Map<String, Offset> = ubicacion.mapValues { (_, ubic) ->
                 val a = Math.toRadians(ubic.first.toDouble())
@@ -445,10 +480,13 @@ private fun EscudoTemas(
 
             drawCircle(estilo.metal.copy(alpha = .18f), radioInterior.toPx(), c, style = Stroke(1.dp.toPx()))
             if (m > 0) drawCircle(estilo.metal.copy(alpha = .12f), radioExterior.toPx(), c, style = Stroke(1.dp.toPx()))
+            if (numRetos > 0) drawCircle(
+                estilo.metal.copy(alpha = .1f), radioRetos.toPx(), c,
+                style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx())))
+            )
             lecciones.forEach { t -> pos[t.id]?.let { drawLine(estilo.metal.copy(alpha = .22f), c, it, 1.2.dp.toPx()) } }
 
             // Rayos del Ragnarök: de cada nivel jugable al centro
-            val brillo = brilloCentro()
             if (brillo > 0f) {
                 temas.filter { jugable[it.id] == true }.forEach { t ->
                     val p = pos[t.id] ?: return@forEach
@@ -459,7 +497,8 @@ private fun EscudoTemas(
 
             // Conexiones del árbol. Un tramo se enciende cuando alguno de sus
             // extremos ya se superó; hacia un minijuego que aún no existe, apenas se insinúa.
-            val tramos = conexiones.flatMap { (a, vecinos) -> vecinos.filter { a < it }.map { a to it } }
+            // Cada tramo una sola vez (a < b), en orden fijo para que no parpadee
+            val tramos = conexiones.keys.sorted().flatMap { a -> conexiones[a].orEmpty().sorted().filter { a < it }.map { a to it } }
             for ((a, b) in tramos) {
                 val pa = pos[a] ?: continue
                 val pb = pos[b] ?: continue
@@ -491,6 +530,15 @@ private fun EscudoTemas(
             // Umbo central con el emblema del mundo
             val umbo = r * .2f
             mancha(c + Offset(0f, 3.dp.toPx()), umbo * 1.25f, Color.Black, .7f)
+            if (fuerte) mancha(c, umbo * 2.1f, estilo.acento, 0.75f * latido)
+            if (onda != null) {
+                // Onda que se abre desde el centro, como un latido
+                val rOnda = umbo * (1.02f + onda * (if (fuerte) 0.9f else 0.6f))
+                drawCircle(
+                    estilo.acento.copy(alpha = (1f - onda) * (if (fuerte) 0.9f else 0.55f)), rOnda, c,
+                    style = Stroke((if (fuerte) 2.4f else 1.6f).dp.toPx())
+                )
+            }
             drawCircle(
                 Brush.linearGradient(listOf(estilo.metalClaro, estilo.metalOscuro, estilo.metalClaro), start = c - Offset(umbo, umbo), end = c + Offset(umbo, umbo)),
                 umbo, c
@@ -499,12 +547,13 @@ private fun EscudoTemas(
                 Brush.radialGradient(listOf(estilo.metalClaro, estilo.metalOscuro, Color(0xFF050404)), center = c - Offset(umbo * .3f, umbo * .35f), radius = umbo * 1.3f),
                 umbo * .86f, c
             )
-            mancha(c, umbo * .9f, estilo.acento, .35f)
+            mancha(c, umbo * .9f, estilo.acento, 0.3f + 0.35f * latido)
+            drawCircle(estilo.acento.copy(alpha = 0.35f + 0.5f * latido), umbo * 0.93f, c, style = Stroke(1.4.dp.toPx()))
             if (brillo > 0f) mancha(c, umbo * 1.6f, estilo.acento, .55f * brillo)
-            dibujarEmblema(estilo.emblema, c, umbo * .58f, estilo.acento)
+            dibujarEmblema(estilo.emblema, c, umbo * .58f, estilo.acento.copy(alpha = 0.65f + 0.35f * latido))
         }
 
-        // Centro del escudo: entrada al Ragnarök (solo responde cuando ya es accesible)
+        // Centro del escudo: entrada al Ragnarök, solo cuando ya despertó
         if (ragnarokVisible) {
             val tamUmbo = lado * 0.2f
             Box(
@@ -513,7 +562,10 @@ private fun EscudoTemas(
                     .size(tamUmbo)
                     .clip(CircleShape)
                     .semantics {
-                        contentDescription = "Ragnarök, " + if (ragnarokSuperado) "superado" else "disponible"
+                        contentDescription = "Ragnarök, " + when {
+                            ragnarokSuperado -> "superado"
+                            else -> "disponible"
+                        }
                     }
                     .clickable(role = Role.Button, onClick = onSeleccionarRagnarok)
             )
@@ -522,7 +574,7 @@ private fun EscudoTemas(
         temas.forEach { tema ->
             val (angulo, radio) = ubicacion[tema.id] ?: return@forEach
             val a = Math.toRadians(angulo.toDouble())
-            val tam = if (tema.esMinijuego) tamMinijuego else tamLeccion
+            val tam = if (tema.esReto) tamReto else if (tema.esMinijuego) tamMinijuego else tamLeccion
             val x = lado / 2 + radio * cos(a).toFloat()
             val y = lado / 2 + radio * sin(a).toFloat()
             NodoTema(
@@ -557,7 +609,8 @@ private fun NodoTema(
 ) {
     val estado = estadoDe(tema, acceso)
     val activo = estado == EstadoNodo.ACTUAL || estado == EstadoNodo.COMPLETADO
-    val rombo = tema.esMinijuego
+    val rombo = tema.esMinijuego && !tema.esReto
+    val hexagono = tema.esReto
     Box(
         modifier
             .size(tamNodo)
@@ -585,7 +638,20 @@ private fun NodoTema(
             val interior = Brush.radialGradient(listOf(Color(0xFF2A2622), Color(0xFF070605)), center = center - Offset(r * .2f, r * .3f), radius = r * 1.2f)
             val borde = if (activo) estilo.acento else estilo.metalOscuro
             val grosor = if (activo || seleccionado) 2.dp.toPx() else 1.dp.toPx()
-            if (rombo) {
+            if (hexagono) {
+                fun hex(s: Float) = Path().apply {
+                    for (k in 0 until 6) {
+                        val a = Math.toRadians(-90.0 + k * 60.0)
+                        val x = center.x + s * cos(a).toFloat()
+                        val y = center.y + s * sin(a).toFloat()
+                        if (k == 0) moveTo(x, y) else lineTo(x, y)
+                    }
+                    close()
+                }
+                drawPath(hex(r), metal)
+                drawPath(hex(r * .84f), interior)
+                drawPath(hex(r * .84f), if (seleccionado) estilo.acento else borde, style = Stroke(grosor))
+            } else if (rombo) {
                 fun diamante(s: Float) = Path().apply {
                     moveTo(center.x, center.y - s); lineTo(center.x + s, center.y)
                     lineTo(center.x, center.y + s); lineTo(center.x - s, center.y); close()
@@ -605,7 +671,7 @@ private fun NodoTema(
             EstadoNodo.COMPLETADO -> Insignia(estilo.acento, Modifier.align(Alignment.BottomEnd)) {
                 Icon(Icons.Filled.Check, contentDescription = null, tint = OdinPaleta.Hollin, modifier = Modifier.size(11.dp))
             }
-            EstadoNodo.ACTUAL -> if (!rombo) Box(
+            EstadoNodo.ACTUAL -> if (!tema.esMinijuego) Box(
                 Modifier
                     .align(Alignment.BottomCenter)
                     .offset(y = 8.dp)
@@ -667,6 +733,7 @@ private fun PanelTema(
         Text(
             when {
                 tema.esRagnarok -> "FIN DEL MUNDO"
+                tema.esReto -> "RETO · ${tema.actividad.nombre.uppercase()}"
                 tema.esMinijuego -> "MINIJUEGO · ${tema.actividad.nombre.uppercase()}"
                 else -> "LECCIÓN ${tema.orden} DE $total"
             },
@@ -688,7 +755,8 @@ private fun PanelTema(
         Spacer(Modifier.height(14.dp))
         if (!tema.actividad.jugable) {
             Text(
-                "Próximamente: este minijuego llega en una siguiente versión.",
+                if (tema.actividad == Actividad.POR_DEFINIR) "Próximamente: este reto todavía se está forjando."
+                else "Próximamente: este minijuego llega en una siguiente versión.",
                 color = OdinPaleta.Escarcha,
                 fontFamily = FuenteTexto,
                 fontSize = 14.sp
@@ -735,7 +803,7 @@ private fun LineaEntrada(acceso: ResultadoAcceso, falta: Int) {
         Spacer(Modifier.width(8.dp))
         Text(
             when (acceso.estado) {
-                EstadoNivel.GRATUITO -> "Entrada gratuita: primer nivel del mundo."
+                EstadoNivel.GRATUITO -> if (ModoAdmin.estaActivo) "Modo admin: entrada gratuita." else "Entrada gratuita: primer nivel del mundo."
                 EstadoNivel.SUPERADO -> "Ya superado: repetirlo es gratis, pero no da hidromiel."
                 else -> when {
                     acceso.costo == 0 -> "Ya pagaste la entrada: puedes continuar."
