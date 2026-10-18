@@ -47,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aesir.odin.domain.hidromiel.PoliticaCosto
 import com.aesir.odin.domain.model.PreguntaFlash
 import com.aesir.odin.domain.model.ResultadoContrarreloj
 import com.aesir.odin.domain.model.RetoContrareloj
@@ -208,7 +209,7 @@ private fun ContenidoReto(
                 }
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.End) {
                     EtiquetaPequena("HIDROMIEL")
-                    Text("+$puntaje", style = estiloTitulo(24.sp, color = estilo.acento))
+                    Text(if (puntaje >= 0) "+$puntaje" else "−${-puntaje}", style = estiloTitulo(24.sp, color = estilo.acento))
                 }
             }
             Spacer(Modifier.height(8.dp))
@@ -386,9 +387,14 @@ private fun ResumenReto(estilo: EstiloMundo, resultado: ResultadoContrarreloj, o
                         textAlign = TextAlign.Center
                     )
                     DivisorOrnamental(estilo.metal, estilo.acento, Modifier.padding(vertical = 12.dp))
-                    EtiquetaPequena(if (resultado.abandonado) "HIDROMIEL PERDIDO" else "HIDROMIEL GANADO")
+                    val perdio = resultado.abandonado || resultado.puntaje < 0
+                    EtiquetaPequena(if (perdio) "HIDROMIEL PERDIDO" else "HIDROMIEL GANADO")
                     Text(
-                        if (resultado.abandonado) "−${resultado.penalizacion}" else "+${resultado.puntaje}",
+                        when {
+                            resultado.abandonado -> "−${resultado.penalizacion}"
+                            resultado.puntaje < 0 -> "−${-resultado.puntaje}"
+                            else -> "+${resultado.puntaje}"
+                        },
                         style = estiloTitulo(56.sp, color = Color(0xFFFFF6E0), brillo = estilo.acento)
                     )
                     Spacer(Modifier.height(8.dp))
@@ -455,6 +461,7 @@ private fun PreparacionReto(
                     DivisorOrnamental(estilo.metal, estilo.acento, Modifier.padding(vertical = 12.dp))
                     ReglaReto("Tienes ${formatearTiempo(duracionSegundos)} para responder preguntas de los temas que ya estudiaste.")
                     ReglaReto("Cada respuesta correcta te da +${RetoContrareloj.PUNTOS_POR_ACIERTO} de hidromiel al terminar.")
+                    ReglaReto("Cada respuesta incorrecta te quita ${PoliticaCosto.CONTRARRELOJ_FALLO} de hidromiel.")
                     ReglaReto("Entrar cuesta $costo de hidromiel.")
                     ReglaReto("Si abandonas pierdes lo ganado y se restan ${AbandonarRetoContrarrelojUseCase.PENALIZACION} de hidromiel.")
                     val nota = aviso ?: if (!alcanza) "Te faltan ${costo - saldo} de hidromiel para entrar." else null

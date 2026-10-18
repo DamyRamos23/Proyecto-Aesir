@@ -53,8 +53,20 @@ class FinalizarYAbandonarRetoTest {
     fun `al terminar cada correcta da 2 de hidromiel`() = runBlocking {
         hidromielRepo.fijarSaldo(40)
         pagar()
-        finalizar(puntaje = 10, aciertos = 5, respondidas = 7)
-        assertEquals(40 - 10 + 5 * 2, hidromielRepo.saldo())
+        finalizar(puntaje = 8, aciertos = 5, respondidas = 7)
+        assertEquals(40 - 10 + 5 * 2 - 2, hidromielRepo.saldo())
+    }
+
+    @Test
+    fun `cada incorrecta resta 1 de hidromiel sin bajar de 0`() = runBlocking {
+        hidromielRepo.fijarSaldo(40)
+        pagar()
+        finalizar(puntaje = 2 * 3 - 10, aciertos = 3, respondidas = 13)
+        assertEquals(40 - 10 + 3 * 2 - 10, hidromielRepo.saldo())
+
+        hidromielRepo.fijarSaldo(2)
+        finalizar(puntaje = -5, aciertos = 0, respondidas = 5)
+        assertEquals(0, hidromielRepo.saldo())
     }
 
     @Test

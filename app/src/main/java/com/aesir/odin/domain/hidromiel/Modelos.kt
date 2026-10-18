@@ -108,7 +108,7 @@ data class PreguntaFlashResuelta(
 
 data class ContrarrelojAbandonado(val idUsuario: String)
 
-data class ContrarrelojFinalizado(val idUsuario: String, val aciertos: Int)
+data class ContrarrelojFinalizado(val idUsuario: String, val aciertos: Int, val fallos: Int = 0)
 
 // ---------------------------------------------------------------------------
 // Registros

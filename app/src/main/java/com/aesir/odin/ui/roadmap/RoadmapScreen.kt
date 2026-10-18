@@ -221,8 +221,7 @@ fun RoadmapScreen(
                 val completados = jugables.count { accesos[it.id]?.estado == EstadoNivel.SUPERADO }
                 val accesoRagnarok = ragnarok?.let { accesos[it.id] }
                 val seleccionado = temas.firstOrNull { it.id == seleccionadoId }
-                    // Aunque siga oculto se puede tocar: el panel dice qué falta para despertarlo
-                    ?: ragnarok?.takeIf { it.id == seleccionadoId }
+                    ?: ragnarok?.takeIf { it.id == seleccionadoId && accesoRagnarok?.estado != EstadoNivel.BLOQUEADO }
                     ?: temas.firstOrNull { accesos[it.id]?.estado.let { e -> e == EstadoNivel.DISPONIBLE || e == EstadoNivel.GRATUITO } }
                     ?: ragnarok?.takeIf { accesoRagnarok?.estado == EstadoNivel.DISPONIBLE || accesoRagnarok?.estado == EstadoNivel.GRATUITO }
                     ?: temas.lastOrNull { it.completado }
@@ -373,9 +372,9 @@ private fun EscudoTemas(
     // rayos de luz van de cada nivel al centro y el centro parpadea lento.
     val ragnarokVisible = estadoRagnarok != null && estadoRagnarok != EstadoNivel.BLOQUEADO
     val ragnarokSuperado = estadoRagnarok == EstadoNivel.SUPERADO
-    // El centro late siempre (es un nivel oculto, pero debe notarse); cuando ya
-    // es accesible late más fuerte y lanza rayos desde cada nivel. El tiempo se
-    // lee solo al dibujar, para que el latido no recomponga la pantalla.
+    // Mientras esté bloqueado el centro queda quieto, sin latido ni onda: el
+    // Ragnarök no se revela hasta terminar todos los niveles jugables. El tiempo
+    // se lee solo al dibujar, para que el latido no recomponga la pantalla.
     val tiempo = rememberTiempo()
     // Tres anillos (ArbolHabilidades): lecciones adentro, minijuegos en medio y retos afuera
     val lecciones = temas.filter { !it.esMinijuego }.sortedBy { it.orden }
@@ -466,9 +465,9 @@ private fun EscudoTemas(
             val latido = when {
                 ragnarokSuperado -> 0.6f
                 ragnarokVisible -> 0.55f + 0.45f * tri
-                else -> 0.3f + 0.4f * tri
+                else -> 0.3f
             }
-            val onda: Float? = if (ragnarokSuperado) null else fase
+            val onda: Float? = if (ragnarokVisible && !ragnarokSuperado) fase else null
             val fuerte = ragnarokVisible
 
             // Posición de cada nivel
@@ -531,8 +530,7 @@ private fun EscudoTemas(
             // Umbo central con el emblema del mundo
             val umbo = r * .2f
             mancha(c + Offset(0f, 3.dp.toPx()), umbo * 1.25f, Color.Black, .7f)
-            // Resplandor latente: se nota aunque el Ragnarök siga oculto
-            mancha(c, umbo * (if (fuerte) 2.1f else 1.8f), estilo.acento, (if (fuerte) 0.75f else 0.5f) * latido)
+            if (fuerte) mancha(c, umbo * 2.1f, estilo.acento, 0.75f * latido)
             if (onda != null) {
                 // Onda que se abre desde el centro, como un latido
                 val rOnda = umbo * (1.02f + onda * (if (fuerte) 0.9f else 0.6f))
@@ -555,8 +553,8 @@ private fun EscudoTemas(
             dibujarEmblema(estilo.emblema, c, umbo * .58f, estilo.acento.copy(alpha = 0.65f + 0.35f * latido))
         }
 
-        // Centro del escudo: entrada al Ragnarök (si sigue oculto, el panel dice qué falta)
-        if (estadoRagnarok != null) {
+        // Centro del escudo: entrada al Ragnarök, solo cuando ya despertó
+        if (ragnarokVisible) {
             val tamUmbo = lado * 0.2f
             Box(
                 Modifier
@@ -566,8 +564,7 @@ private fun EscudoTemas(
                     .semantics {
                         contentDescription = "Ragnarök, " + when {
                             ragnarokSuperado -> "superado"
-                            ragnarokVisible -> "disponible"
-                            else -> "oculto"
+                            else -> "disponible"
                         }
                     }
                     .clickable(role = Role.Button, onClick = onSeleccionarRagnarok)

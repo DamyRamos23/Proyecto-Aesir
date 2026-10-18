@@ -282,15 +282,24 @@ class ModuloHidromiel(
         return resultado
     }
 
-    /** Al terminar el reto (sin abandonarlo): +2 por cada respuesta correcta. */
+    /** Al terminar el reto (sin abandonarlo): +2 por cada correcta y -1 por cada incorrecta (RN-01: nunca baja de 0). */
     suspend fun alFinalizarContrarreloj(e: ContrarrelojFinalizado): AvisoHidromiel =
         moverSaldo(e.idUsuario) { reserva ->
-            val ganado = PoliticaCosto.CONTRARRELOJ_CORRECTA * e.aciertos.coerceAtLeast(0)
-            if (ganado > 0) reserva.abonar(ganado, TipoMovimiento.RECOMPENSA_CONTRARRELOJ)
+            val neto = PoliticaCosto.CONTRARRELOJ_CORRECTA * e.aciertos.coerceAtLeast(0) -
+                PoliticaCosto.CONTRARRELOJ_FALLO * e.fallos.coerceAtLeast(0)
+            val cambio = if (neto >= 0) {
+                if (neto > 0) reserva.abonar(neto, TipoMovimiento.RECOMPENSA_CONTRARRELOJ)
+                neto
+            } else {
+                -reserva.descontarHastaCero(-neto, TipoMovimiento.RECOMPENSA_CONTRARRELOJ)
+            }
             AvisoHidromiel(
-                TipoMovimiento.RECOMPENSA_CONTRARRELOJ, ganado, reserva.saldo,
-                if (ganado > 0) "¡Reto terminado! Ganaste $ganado de hidromiel."
-                else "Reto terminado sin aciertos. Tu hidromiel no cambió."
+                TipoMovimiento.RECOMPENSA_CONTRARRELOJ, cambio, reserva.saldo,
+                when {
+                    cambio > 0 -> "¡Reto terminado! Ganaste $cambio de hidromiel."
+                    cambio < 0 -> "Reto terminado. Por tus errores perdiste ${-cambio} de hidromiel."
+                    else -> "Reto terminado. Tu hidromiel no cambió."
+                }
             )
         }
 

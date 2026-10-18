@@ -37,5 +37,7 @@ class PoliticaCosto {
         const val ABANDONO_CONTRARRELOJ = 20
         const val ENTRADA_CONTRARRELOJ = 10
         const val CONTRARRELOJ_CORRECTA = 2
+        /** Se resta por cada respuesta incorrecta en el contrarreloj, para no responder a lo bruto. */
+        const val CONTRARRELOJ_FALLO = 1
     }
 }

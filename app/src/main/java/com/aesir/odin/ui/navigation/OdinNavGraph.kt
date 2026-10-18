@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NamedNavArgument
 import androidx.navigation.NavHostController
@@ -283,13 +284,14 @@ object OdinNavGraph {
             // Reto contrarreloj (CU-11)
             // -------------------------
 
-            composable(rutaRetoContrareloj) {
+            composable(rutaRetoContrareloj) { entrada ->
                 val viewModel: RetoContrarrelojViewModel =
                     viewModel(factory = RetoContrarrelojViewModel.factory(appContainer))
 
                 RetoContrarrelojScreen(
                     viewModel = viewModel,
-                    onSalir = { nav.popBackStack() }
+                    // Toques repetidos en "Volver" hacían popBackStack de más y dejaban la pantalla negra.
+                    onSalir = { if (entrada.lifecycle.currentState == Lifecycle.State.RESUMED) nav.popBackStack() }
                 )
             }
 

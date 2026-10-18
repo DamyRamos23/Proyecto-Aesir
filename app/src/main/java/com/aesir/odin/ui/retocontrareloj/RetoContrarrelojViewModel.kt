@@ -35,10 +35,10 @@ import kotlinx.coroutines.launch
  *
  * Arma el reto y espera en [Estado.Listo] a que el alumno pague la entrada
  * (10 de hidromiel). Luego lleva un contador regresivo general (no por
- * pregunta), valida cada respuesta confirmada, suma puntaje solo si es
- * correcta y pasa de inmediato a la siguiente pregunta sin detener el
- * contador. El reto termina al agotarse el tiempo o las preguntas, o si el
- * alumno lo abandona (E3.1).
+ * pregunta), valida cada respuesta confirmada, suma puntaje si es correcta y
+ * lo resta si es incorrecta, y pasa de inmediato a la siguiente pregunta sin
+ * detener el contador. Si se acaban las preguntas se vuelven a barajar: el
+ * reto solo termina al agotarse el tiempo o si el alumno lo abandona (E3.1).
  */
 class RetoContrarrelojViewModel(
     private val armarRetoUseCase: ArmarRetoContrarrelojUseCase,
@@ -178,17 +178,22 @@ class RetoContrarrelojViewModel(
         if (validacion.estado == EstadoRespuesta.CORRECTA) {
             aciertos++
             _puntaje.value += actual.puntosPorAcierto
+        } else {
+            _puntaje.value -= PoliticaCosto.CONTRARRELOJ_FALLO
         }
 
         indicePregunta++
-        if (indicePregunta < actual.preguntas.size) {
-            _seleccionadas.value = emptySet()
-            _numeroPregunta.value = indicePregunta + 1
-            _preguntaActual.value = actual.preguntas[indicePregunta]
+        if (indicePregunta >= actual.preguntas.size) {
+            // Se acabaron las preguntas antes que el tiempo: se rebaraja y se sigue.
+            val rebarajado = actual.copy(preguntas = actual.preguntas.shuffled())
+            reto = rebarajado
+            indicePregunta = 0
+            _preguntaActual.value = rebarajado.preguntas[0]
         } else {
-            // A7.2: se agotaron las preguntas antes de acabar el tiempo.
-            terminarReto()
+            _preguntaActual.value = actual.preguntas[indicePregunta]
         }
+        _seleccionadas.value = emptySet()
+        _numeroPregunta.value = respondidas + 1
     }
 
     /** E3.1: el alumno abandona a mitad del reto. */

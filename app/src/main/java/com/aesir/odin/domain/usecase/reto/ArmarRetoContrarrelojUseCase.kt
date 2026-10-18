@@ -33,7 +33,7 @@ class ArmarRetoContrarrelojUseCase(
     }
 
     companion object {
-        /** Más de las que se alcanzan a contestar en 2 minutos; si se acaban, termina el reto (A7.2). */
-        const val CANTIDAD_PREGUNTAS = 20
+        /** Todo el banco de los temas estudiados; si se acaban antes del tiempo, se vuelven a barajar. */
+        const val CANTIDAD_PREGUNTAS = 1000
     }
 }

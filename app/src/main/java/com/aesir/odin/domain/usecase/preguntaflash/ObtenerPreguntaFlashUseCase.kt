@@ -1,5 +1,6 @@
 package com.aesir.odin.domain.usecase.preguntaflash
 
+import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.model.PreguntaFlash
 import com.aesir.odin.domain.repository.PreguntaFlashRepository
 import com.aesir.odin.domain.repository.RoadmapRepository
@@ -22,7 +23,10 @@ class ObtenerPreguntaFlashUseCase(
     private val recientes = ArrayDeque<String>()
 
     suspend operator fun invoke(): PreguntaFlash? {
-        val completados = roadmapRepository.obtenerTemas().filter { it.completado }.map { it.id }
+        val temas = roadmapRepository.obtenerTemas()
+        // En modo admin todas las runas cuentan como estudiadas, igual que en el contrarreloj.
+        val completados = (if (ModoAdmin.estaActivo) temas.filter { !it.esRagnarok && !it.esMinijuego } else temas.filter { it.completado })
+            .map { it.id }
         if (completados.isEmpty()) return null
 
         val candidatas = repository.obtenerPreguntasParaReto(completados, MAXIMO_CANDIDATAS)
