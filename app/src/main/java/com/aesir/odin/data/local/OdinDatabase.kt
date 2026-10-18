@@ -12,12 +12,7 @@ import com.aesir.odin.data.local.dao.EjercicioDao
 import com.aesir.odin.data.local.dao.HidromielDao
 import com.aesir.odin.data.local.dao.HistorialErrorDao
 import com.aesir.odin.data.local.dao.LeccionDao
-import com.aesir.odin.data.local.dao.ElementoArrastrableDao
 import com.aesir.odin.data.local.dao.MemoramaDao
-import com.aesir.odin.data.local.dao.PosicionDestinoDao
-import com.aesir.odin.data.local.dao.ResultadoFlashcardsDao
-import com.aesir.odin.data.local.dao.RetoDao
-import com.aesir.odin.data.local.dao.RetoFinMundoDao
 import com.aesir.odin.data.local.dao.MundoDao
 import com.aesir.odin.data.local.dao.PreguntaFlashBancoDao
 import com.aesir.odin.data.local.dao.PreguntaFlashDao
@@ -38,15 +33,12 @@ import com.aesir.odin.data.local.entity.ResultadoRetoFinMundoEntity
 import com.aesir.odin.data.local.entity.RetoArrastrarEntity
 import com.aesir.odin.data.local.entity.MundoEntity
 import com.aesir.odin.data.local.entity.NivelSuperadoEntity
-import com.aesir.odin.data.local.entity.PreguntaFlashAttemptEntity
-import com.aesir.odin.data.local.entity.PreguntaFlashEntity
 import com.aesir.odin.data.local.entity.ParConceptoEntity
 import com.aesir.odin.data.local.entity.PreguntaDiagnosticaEntity
 import com.aesir.odin.data.local.entity.ReservaHidromielEntity
 import com.aesir.odin.data.local.entity.ResultadoCrucigramaEntity
 import com.aesir.odin.data.local.entity.ResultadoDiagnosticoEntity
 import com.aesir.odin.data.local.entity.ResultadoLeccionEntity
-import com.aesir.odin.data.local.entity.ResultadoContrarrelojEntity
 import com.aesir.odin.data.local.entity.ResultadoMemoramaEntity
 import com.aesir.odin.data.local.entity.TemaEntity
 
@@ -64,29 +56,17 @@ import com.aesir.odin.data.local.entity.TemaEntity
         MundoDesbloqueadoEntity::class,
         ConceptoCrucigramaEntity::class,
         ResultadoCrucigramaEntity::class,
-        PreguntaFlashEntity::class,
-        PreguntaFlashAttemptEntity::class,
-        ResultadoContrarrelojEntity::class,
         ParConceptoEntity::class,
         ResultadoMemoramaEntity::class,
         PreguntaDiagnosticaEntity::class,
-        ResultadoDiagnosticoEntity::class,
-        ResultadoFlashcardsEntity::class,
-        ResultadoRetoFinMundoEntity::class,
-        RetoArrastrarEntity::class,
-        ElementoArrastrableEntity::class,
-        PosicionDestinoEntity::class,
-        ResultadoRetoEntity::class
+        ResultadoDiagnosticoEntity::class
     ],
     // v3: MOD-01 Sistema de Hidromiel (tablas nuevas y columna temas.tipo)
     // v4: CU-07 crucigrama (conceptos, resultados y columna temas.actividad)
     // v5: árbol de dos anillos (columna temas.anillo y minijuegos por mundo)
-    // v6: CU-06 pregunta flash (banco de preguntas e historial de intentos)
-    // v7: CU-11 reto contrarreloj (resultados del reto)
-    // v8: CU-04 memorama (pares y resultados), CU-10 diagnóstico (preguntas,
+    // v6: CU-04 memorama (pares y resultados), CU-10 diagnóstico (preguntas,
     //     resultados) y columna temas.conocido
-    // v9: tercer anillo, CU-03 flashcards, CU-08 Ragnarök y CU-09 arrastrar y soltar
-    version = 9,
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -100,16 +80,8 @@ abstract class OdinDatabase : RoomDatabase() {
     abstract fun hidromielDao(): HidromielDao
     abstract fun conceptoCrucigramaDao(): ConceptoCrucigramaDao
     abstract fun resultadoCrucigramaDao(): ResultadoCrucigramaDao
-    abstract fun preguntaFlashBancoDao(): PreguntaFlashBancoDao
-    abstract fun preguntaFlashDao(): PreguntaFlashDao
-    abstract fun resultadoContrarrelojDao(): ResultadoContrarrelojDao
     abstract fun memoramaDao(): MemoramaDao
     abstract fun diagnosticoDao(): DiagnosticoDao
-    abstract fun resultadoFlashcardsDao(): ResultadoFlashcardsDao
-    abstract fun retoFinMundoDao(): RetoFinMundoDao
-    abstract fun retoDao(): RetoDao
-    abstract fun elementoArrastrableDao(): ElementoArrastrableDao
-    abstract fun posicionDestinoDao(): PosicionDestinoDao
 
     companion object {
         private const val NOMBRE = "odin.db"

@@ -8,9 +8,6 @@ import com.aesir.odin.data.repository.DiagnosticoRepositoryImpl
 import com.aesir.odin.data.repository.HidromielRepositoryImpl
 import com.aesir.odin.data.repository.HistorialRepositoryImpl
 import com.aesir.odin.data.repository.LeccionRepositoryImpl
-import com.aesir.odin.data.repository.PreguntaFlashRepositoryImpl
-import com.aesir.odin.data.repository.HidromielFlashRepositoryImpl
-import com.aesir.odin.data.repository.RetoContrarrelojRepositoryImpl
 import com.aesir.odin.data.repository.MemoramaRepositoryImpl
 import com.aesir.odin.data.repository.RoadmapRepositoryImpl
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
@@ -18,9 +15,6 @@ import com.aesir.odin.domain.repository.CrucigramaRepository
 import com.aesir.odin.domain.repository.DiagnosticoRepository
 import com.aesir.odin.domain.repository.HistorialRepository
 import com.aesir.odin.domain.repository.LeccionRepository
-import com.aesir.odin.domain.repository.PreguntaFlashRepository
-import com.aesir.odin.domain.repository.HidromielFlashRepository
-import com.aesir.odin.domain.repository.RetoContrarrelojRepository
 import com.aesir.odin.domain.repository.MemoramaRepository
 import com.aesir.odin.domain.repository.RoadmapRepository
 import com.aesir.odin.domain.usecase.crucigrama.ActualizarPuntajeUseCase
@@ -38,10 +32,6 @@ import com.aesir.odin.domain.usecase.leccion.RegistrarErrorLeccionUseCase
 import com.aesir.odin.domain.usecase.leccion.RegistrarLeccionCompletadaUseCase
 import com.aesir.odin.domain.usecase.leccion.RegistrarNivelSinSuperarUseCase
 import com.aesir.odin.domain.usecase.leccion.ValidarRespuestaEjercicioUseCase
-import com.aesir.odin.domain.usecase.preguntaflash.ObtenerPreguntaFlashUseCase
-import com.aesir.odin.domain.usecase.preguntaflash.ObservarHidromielUseCase
-import com.aesir.odin.domain.usecase.preguntaflash.RegistrarTiempoAgotadoPreguntaFlashUseCase
-import com.aesir.odin.domain.usecase.preguntaflash.ValidarRespuestaPreguntaFlashUseCase
 import com.aesir.odin.domain.usecase.memorama.CalcularPuntosMemoramaUseCase
 import com.aesir.odin.domain.usecase.memorama.FinalizarMemoramaUseCase
 import com.aesir.odin.domain.usecase.memorama.GenerarMemoramaUseCase
@@ -143,38 +133,6 @@ class AppContainer(context: Context) {
         moduloHidromiel
     )
 
-    // Validador compartido por Pregunta Flash y Reto Contrarreloj.
-    val validarRespuestaUseCase = ValidarRespuestaUseCase()
-
-    // ---- Pregunta Flash (CU-06) ----
-    val preguntaFlashRepository: PreguntaFlashRepository =
-        PreguntaFlashRepositoryImpl(database.preguntaFlashDao(), database.preguntaFlashBancoDao())
-
-    // Los puntos de la pregunta flash son hidromiel (MOD-01).
-    private val hidromielFlashRepository: HidromielFlashRepository =
-        HidromielFlashRepositoryImpl(moduloHidromiel)
-
-    val obtenerPreguntaFlashUseCase =
-        ObtenerPreguntaFlashUseCase(roadmapRepository, preguntaFlashRepository)
-    val validarRespuestaPreguntaFlashUseCase = ValidarRespuestaPreguntaFlashUseCase(
-        preguntaFlashRepository, hidromielFlashRepository, historialRepository, validarRespuestaUseCase
-    )
-    val registrarTiempoAgotadoPreguntaFlashUseCase =
-        RegistrarTiempoAgotadoPreguntaFlashUseCase(preguntaFlashRepository, hidromielFlashRepository)
-    val observarHidromielUseCase = ObservarHidromielUseCase(hidromielFlashRepository)
-
-    // ---- Reto Contrarreloj (CU-11): reutiliza el banco de Pregunta Flash ----
-    private val retoContrarrelojRepository: RetoContrarrelojRepository =
-        RetoContrarrelojRepositoryImpl(database.resultadoContrarrelojDao())
-
-    val armarRetoContrarrelojUseCase =
-        ArmarRetoContrarrelojUseCase(roadmapRepository, preguntaFlashRepository)
-    val pagarEntradaRetoContrarrelojUseCase =
-        PagarEntradaRetoContrarrelojUseCase(moduloHidromiel)
-    val finalizarRetoContrarrelojUseCase =
-        FinalizarRetoContrarrelojUseCase(retoContrarrelojRepository, moduloHidromiel)
-    val abandonarRetoContrarrelojUseCase =
-        AbandonarRetoContrarrelojUseCase(retoContrarrelojRepository, moduloHidromiel)
     // CU-04 Resolver memorama de conceptos
     val memoramaRepository: MemoramaRepository = MemoramaRepositoryImpl(database.memoramaDao())
     val validarAccesoMemoramaUseCase = ValidarAccesoMemoramaUseCase(roadmapRepository, memoramaRepository)
@@ -198,45 +156,4 @@ class AppContainer(context: Context) {
         roadmapRepository,
         moduloHidromiel
     )
-
-    // CU-03 Resolver flashcards de conceptos
-    val flashcardsRepository: FlashcardsRepository =
-        FlashcardsRepositoryImpl(database.conceptoCrucigramaDao(), database.resultadoFlashcardsDao())
-    val generarFlashcardsUseCase = GenerarFlashcardsUseCase(flashcardsRepository, roadmapRepository)
-    val registrarErrorFlashcardUseCase = RegistrarErrorFlashcardUseCase(historialRepository)
-    val finalizarFlashcardsUseCase = FinalizarFlashcardsUseCase(
-        flashcardsRepository,
-        RegistrarLeccionCompletadaUseCase(roadmapRepository),
-        moduloHidromiel
-    )
-    val registrarFlashcardsSinSuperarUseCase = RegistrarFlashcardsSinSuperarUseCase(moduloHidromiel)
-
-    // CU-08 Reto de fin de mundo (Ragnarök)
-    val retoFinMundoRepository: RetoFinMundoRepository = RetoFinMundoRepositoryImpl(database.retoFinMundoDao())
-    val obtenerRetoFinMundoUseCase = ObtenerRetoFinMundoUseCase(roadmapRepository, leccionRepository, moduloHidromiel)
-    val registrarErrorRetoUseCase = RegistrarErrorRetoUseCase(historialRepository)
-    val finalizarRetoFinMundoUseCase = FinalizarRetoFinMundoUseCase(retoFinMundoRepository, roadmapRepository, moduloHidromiel)
-    val abandonarRetoFinMundoUseCase = AbandonarRetoFinMundoUseCase(retoFinMundoRepository, moduloHidromiel)
-
-    // CU-09 Resolver reto de arrastrar y soltar
-    val retoRepository: RetoRepository = RetoRepositoryImpl(
-        database.retoDao(), database.elementoArrastrableDao(), database.posicionDestinoDao()
-    )
-    val obtenerRetoUseCase = ObtenerRetoUseCase(retoRepository)
-    val validarColocacionUseCase = ValidarColocacionUseCase()
-    val calcularPuntajeRetoUseCase = CalcularPuntajeRetoUseCase()
-    val registrarErrorRetoArrastrarUseCase = RegistrarErrorRetoArrastrarUseCase(historialRepository)
-    val finalizarRetoUseCase = FinalizarRetoUseCase(
-        retoRepository, calcularPuntajeRetoUseCase, RegistrarLeccionCompletadaUseCase(roadmapRepository), moduloHidromiel
-    )
-    val abandonarRetoUseCase = AbandonarRetoUseCase(moduloHidromiel)
-
-    // Repaso del mundo en el pozo de Mímir
-    val obtenerPreguntasRepasoUseCase = ObtenerPreguntasRepasoUseCase(
-        roadmapRepository, preguntaFlashRepository, diagnosticoRepository
-    )
-
-    private companion object {
-        const val CLAVE_MODO_ADMIN = "modo_admin"
-    }
 }

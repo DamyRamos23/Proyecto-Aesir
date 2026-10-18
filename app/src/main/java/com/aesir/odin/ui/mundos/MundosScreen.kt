@@ -99,18 +99,6 @@ import com.aesir.odin.ui.theme.FuenteTexto
 import com.aesir.odin.ui.theme.OdinPaleta
 import kotlin.random.Random
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import com.aesir.odin.domain.hidromiel.CombinacionSecreta
-import com.aesir.odin.domain.hidromiel.ModoAdmin
-import com.aesir.odin.ui.components.odin.rememberTiempo
 
 /**
  * Pantalla que lista los mundos del roadmap como un escudo dividido en

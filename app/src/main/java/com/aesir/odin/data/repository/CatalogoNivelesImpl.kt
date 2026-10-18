@@ -18,9 +18,9 @@ import com.aesir.odin.domain.model.ArbolHabilidades
  * cada uno conectado a las dos lecciones que tiene más cerca; y los retos en
  * el tercero, cada uno conectado a los dos minijuegos que tiene más cerca.
  *
- * Los niveles cuya actividad todavía no se puede jugar (retos por definir)
- * no entran al catálogo: no se cobran, no abren a nadie y no cuentan para el
- * Ragnarök hasta que se programen (Actividad.jugable).
+ * Los niveles cuya actividad todavía no se puede jugar (flash cards) no
+ * entran al catálogo: no se cobran, no abren a nadie y no cuentan
+ * para el Ragnarök hasta que se programen (Actividad.jugable).
  */
 class CatalogoNivelesImpl(
     private val temaDao: TemaDao,

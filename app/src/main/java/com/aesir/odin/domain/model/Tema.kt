@@ -28,12 +28,5 @@ data class Tema(
 ) {
     val esCrucigrama: Boolean get() = actividad == Actividad.CRUCIGRAMA
     val esMemorama: Boolean get() = actividad == Actividad.MEMORAMA
-    val esFlashcards: Boolean get() = actividad == Actividad.FLASHCARDS
-    val esArrastrar: Boolean get() = actividad == Actividad.ARRASTRAR
-
-    /** Cualquier nivel que no es una lección: minijuegos (anillo 2) y retos (anillo 3). */
-    val esMinijuego: Boolean get() = anillo >= ArbolHabilidades.ANILLO_MINIJUEGOS
-
-    /** Nivel del tercer anillo (arrastrar y soltar y los que se definan después). */
-    val esReto: Boolean get() = anillo == ArbolHabilidades.ANILLO_RETOS
+    val esMinijuego: Boolean get() = anillo == ArbolHabilidades.ANILLO_MINIJUEGOS
 }

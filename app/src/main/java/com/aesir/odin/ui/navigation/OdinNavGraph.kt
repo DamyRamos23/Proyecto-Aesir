@@ -20,6 +20,7 @@ import com.aesir.odin.ui.crucigrama.CrucigramaViewModel
 import com.aesir.odin.ui.crucigrama.ResultadoCrucigramaScreen
 import com.aesir.odin.ui.diagnostico.EvaluacionDiagnosticaScreen
 import com.aesir.odin.ui.diagnostico.EvaluacionDiagnosticaViewModel
+import com.aesir.odin.ui.diagnostico.ResultadoDiagnosticoScreen
 import com.aesir.odin.ui.leccion.LeccionInteractivaScreen
 import com.aesir.odin.ui.leccion.LeccionInteractivaViewModel
 import com.aesir.odin.ui.leccion.LeccionScreen
@@ -63,13 +64,7 @@ object OdinNavGraph {
     const val rutaResumenMemorama = "resumenMemorama"
     // CU-10 Realizar evaluación diagnóstico
     const val rutaEvaluacionDiagnostica = "evaluacionDiagnostica"
-    // Repaso del mundo en el pozo de Mímir
-    const val rutaRepasoMimir = "repasoMimir"
-    // CU-03 flashcards, CU-08 Ragnarök y CU-09 arrastrar y soltar
-    const val rutaFlashcards = "flashcards"
-    const val rutaRagnarok = "ragnarok"
-    const val rutaRetoArrastrar = "retoArrastrar"
-    const val rutaResumenReto = "resumenReto"
+    const val rutaResultadoDiagnostico = "resultadoDiagnostico"
 
     private const val argMundoId = "mundoId"
     private const val argTemaId = "temaId"
@@ -126,33 +121,17 @@ object OdinNavGraph {
     /** Ruta de la evaluación diagnóstica (CU-10) de un mundo. */
     fun rutaEvaluacionDiagnosticaCon(mundoId: String) = "$rutaEvaluacionDiagnostica/$mundoId"
 
-    /** Ruta del repaso del mundo en el pozo de Mímir. */
-    fun rutaRepasoMimirCon(mundoId: String) = "$rutaRepasoMimir/$mundoId"
-
-    fun rutaFlashcardsCon(temaId: String, temasIncluidos: List<String>) =
-        "$rutaFlashcards/$temaId?$argTemas=${temasIncluidos.joinToString(",")}"
-
-    fun rutaRagnarokCon(temaId: String) = "$rutaRagnarok/$temaId"
-
-    fun rutaRetoArrastrarCon(temaId: String, temasIncluidos: List<String>) =
-        "$rutaRetoArrastrar/$temaId?$argTemas=${temasIncluidos.joinToString(",")}"
-
-    fun rutaResumenRetoCon(puntaje: Int, intentos: Int, ordenMundo: Int, desbloqueados: List<String>) =
-        "$rutaResumenReto/$puntaje/$intentos/$ordenMundo?$argDesbloqueados=${android.net.Uri.encode(desbloqueados.joinToString("|"))}"
-
     private const val patronMemorama = "$rutaMemorama/{$argMundoId}/{$argTemaId}"
     private const val patronEvaluacionDiagnostica = "$rutaEvaluacionDiagnostica/{$argMundoId}"
 
     /**
-     * A dónde lleva entrar a un nivel: la introducción del tema; el reto de fin
-     * de mundo si es el Ragnarök; el memorama (CU-04); el reto de arrastrar y
-     * soltar con las lecciones cercanas para repasar (CU-09); o, si el nivel es
-     * un crucigrama o unas flashcards, la actividad con los conceptos de las
-     * dos lecciones que tiene más cerca en el árbol (ArbolHabilidades).
+     * A dónde lleva entrar a un nivel: la introducción del tema, el memorama
+     * (CU-04) o, si el nivel es un crucigrama, el crucigrama con los conceptos
+     * de las dos lecciones que tiene más cerca en el árbol (ArbolHabilidades).
      */
     fun rutaNivelCon(tema: Tema, temasDelMundo: List<Tema>): String {
-        if (tema.esRagnarok) return rutaRagnarokCon(tema.id)
         if (tema.esMemorama) return rutaMemoramaCon(tema.mundoId, tema.id)
+        if (!tema.esCrucigrama) return rutaIntroTemaCon(tema.id)
         val lecciones = temasDelMundo.filter { !it.esRagnarok && !it.esMinijuego }.sortedBy { it.orden }
         if (tema.esArrastrar) {
             // Tercer anillo: las lecciones más cercanas por ángulo son las que se sugiere repasar (A7.2)
@@ -522,136 +501,46 @@ object OdinNavGraph {
                 val mundoId = entrada.arguments?.getString(argMundoId).orEmpty()
                 val viewModel: EvaluacionDiagnosticaViewModel =
                     viewModel(factory = EvaluacionDiagnosticaViewModel.factory(appContainer))
+                val irAlRoadmap: () -> Unit = {
+                    nav.navigate(rutaRoadmapCon(mundoId)) {
+                        popUpTo(rutaMundos) { inclusive = false }
+                    }
+                }
+
                 EvaluacionDiagnosticaScreen(
                     viewModel = viewModel,
                     mundoId = mundoId,
-                    // Tras registrar (u omitir, A1.1) se pasa al roadmap del mundo
-                    onIrAlMundo = { irAlMundo(mundoId) },
+                    // La evaluación se queda en la pila: el resultado observa el mismo ViewModel
+                    onFinalizada = { nav.navigate(rutaResultadoDiagnostico) },
+                    // A1.1: comienza desde el primer nivel disponible
+                    onOmitida = irAlRoadmap,
                     // A6.1: regresa a la lista de mundos sin registrar nada
-                    onVolver = { nav.popBackStack() }
+                    onAbandonar = { nav.popBackStack() }
                 )
             }
 
-            // -------------------------
-            // Repaso en el pozo de Mímir
-            // -------------------------
-
-            composable(
-                route = "$rutaRepasoMimir/{$argMundoId}",
-                arguments = listOf(argumentoMundoId())
-            ) { entrada ->
-                val mundoId = entrada.arguments?.getString(argMundoId).orEmpty()
-                val viewModel: EvaluacionDiagnosticaViewModel =
-                    viewModel(factory = EvaluacionDiagnosticaViewModel.factory(appContainer, repaso = true))
-                EvaluacionDiagnosticaScreen(
+            composable(rutaResultadoDiagnostico) { entrada ->
+                val entradaEvaluacion = remember(entrada) {
+                    runCatching { nav.getBackStackEntry(patronEvaluacionDiagnostica) }.getOrNull()
+                }
+                if (entradaEvaluacion == null) {
+                    LaunchedEffect(Unit) { nav.popBackStack(rutaMundos, inclusive = false) }
+                    return@composable
+                }
+                val mundoId = entradaEvaluacion.arguments?.getString(argMundoId).orEmpty()
+                val viewModel: EvaluacionDiagnosticaViewModel = viewModel(
+                    viewModelStoreOwner = entradaEvaluacion,
+                    factory = EvaluacionDiagnosticaViewModel.factory(appContainer)
+                )
+                ResultadoDiagnosticoScreen(
                     viewModel = viewModel,
-                    mundoId = mundoId,
-                    onIrAlMundo = { nav.popBackStack() },
-                    onVolver = { nav.popBackStack() }
-                )
-            }
-
-            // -------------------------
-            // Flashcards (CU-03)
-            // -------------------------
-
-            composable(
-                route = "$rutaFlashcards/{$argTemaId}?$argTemas={$argTemas}",
-                arguments = listOf(
-                    argumentoTemaId(),
-                    navArgument(argTemas) {
-                        type = NavType.StringType
-                        defaultValue = ""
+                    onIrAlMundo = {
+                        nav.navigate(rutaRoadmapCon(mundoId)) {
+                            popUpTo(rutaMundos) { inclusive = false }
+                        }
                     }
                 )
-            ) { entrada ->
-                val temaId = entrada.arguments?.getString(argTemaId).orEmpty()
-                val temas = entrada.arguments?.getString(argTemas).orEmpty().split(",").filter { it.isNotBlank() }
-                val viewModel: FlashcardsViewModel = viewModel(factory = FlashcardsViewModel.factory(appContainer))
-                FlashcardsScreen(
-                    viewModel = viewModel,
-                    temaId = temaId,
-                    temasIncluidos = temas,
-                    onVolverRoadmap = volverAlRoadmap,
-                    // A5.2: la lección del tema de la carta fallada; el roadmap queda debajo.
-                    onRepasarLeccion = { irDesdeRoadmap(rutaIntroTemaCon(it)) }
-                )
             }
-
-            // -------------------------
-            // Ragnarök: reto de fin de mundo (CU-08)
-            // -------------------------
-
-            composable(
-                route = "$rutaRagnarok/{$argTemaId}",
-                arguments = listOf(argumentoTemaId())
-            ) { entrada ->
-                val temaId = entrada.arguments?.getString(argTemaId).orEmpty()
-                val viewModel: RagnarokViewModel = viewModel(factory = RagnarokViewModel.factory(appContainer))
-                RagnarokScreen(
-                    viewModel = viewModel,
-                    temaId = temaId,
-                    onVolverRoadmap = volverAlRoadmap,
-                    // Al superar el reto se puede pasar directo al mundo que se desbloqueó.
-                    onIrAlMundo = irAlMundo,
-                    // A10.1: repasar la lección de un tema con errores.
-                    onRepasar = { irDesdeRoadmap(rutaIntroTemaCon(it)) }
-                )
-            }
-
-            // -------------------------
-            // Reto de arrastrar y soltar (CU-09)
-            // -------------------------
-
-            composable(
-                route = "$rutaRetoArrastrar/{$argTemaId}?$argTemas={$argTemas}",
-                arguments = listOf(
-                    argumentoTemaId(),
-                    navArgument(argTemas) {
-                        type = NavType.StringType
-                        defaultValue = ""
-                    }
-                )
-            ) { entrada ->
-                val temaId = entrada.arguments?.getString(argTemaId).orEmpty()
-                val temas = entrada.arguments?.getString(argTemas).orEmpty().split(",").filter { it.isNotBlank() }
-                val viewModel: RetoArrastrarViewModel = viewModel(factory = RetoArrastrarViewModel.factory(appContainer))
-                RetoArrastrarScreen(
-                    viewModel = viewModel,
-                    temaId = temaId,
-                    temasIncluidos = temas,
-                    onAprobado = { resultado, desbloqueados, ordenMundo ->
-                        irDesdeRoadmap(rutaResumenRetoCon(resultado.puntaje, resultado.intentos, ordenMundo, desbloqueados))
-                    },
-                    onVolverRoadmap = volverAlRoadmap,
-                    onRepasarLeccion = { irDesdeRoadmap(rutaIntroTemaCon(it)) },
-                    // MOD-01: salir antes de terminar es abandonar el nivel.
-                    onSalir = { viewModel.confirmarSalida(volverAlRoadmap) }
-                )
-            }
-
-            composable(
-                route = "$rutaResumenReto/{$argPuntaje}/{$argIntentos}/{$argOrdenMundo}?$argDesbloqueados={$argDesbloqueados}",
-                arguments = listOf(
-                    navArgument(argPuntaje) { type = NavType.IntType },
-                    navArgument(argIntentos) { type = NavType.IntType },
-                    navArgument(argOrdenMundo) { type = NavType.IntType },
-                    navArgument(argDesbloqueados) {
-                        type = NavType.StringType
-                        defaultValue = ""
-                    }
-                )
-            ) { entrada ->
-                val args = entrada.arguments
-                ResumenRetoScreen(
-                    puntaje = args?.getInt(argPuntaje) ?: 0,
-                    intentos = args?.getInt(argIntentos) ?: 0,
-                    desbloqueados = args?.getString(argDesbloqueados).orEmpty().split("|").filter { it.isNotBlank() },
-                    ordenMundo = args?.getInt(argOrdenMundo) ?: 1,
-                    onVolverRoadmap = volverAlRoadmap
-                )
-            }
-        }
         }
     }
 }

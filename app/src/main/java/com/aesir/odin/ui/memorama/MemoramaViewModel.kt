@@ -24,8 +24,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
@@ -54,23 +52,6 @@ class MemoramaViewModel(
 
     /** Tema y mundo del nivel, solo para el encabezado y el estilo visual. */
     data class Contexto(val tema: Tema?, val mundo: Mundo?)
-
-    /** Par que no coincidió; [numero] cambia en cada fallo (la pantalla lo hace temblar). */
-    data class Fallo(val primera: Int, val segunda: Int, val numero: Int)
-
-    /** Indicación que se muestra bajo el tablero. */
-    enum class Aviso { ELIGE_UNA, ELIGE_SEGUNDA, PAREJA, NO_SON_PAREJA, COMPLETO }
-
-    private val _fallo = MutableStateFlow<Fallo?>(null)
-    val fallo: StateFlow<Fallo?> = _fallo.asStateFlow()
-
-    private val _aviso = MutableStateFlow(Aviso.ELIGE_UNA)
-    val aviso: StateFlow<Aviso> = _aviso.asStateFlow()
-
-    private var contadorFallos = 0
-
-    val saldo: StateFlow<Int> = (moduloHidromiel?.observarSaldo(idUsuario) ?: kotlinx.coroutines.flow.flowOf(0))
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
     private val _tarjetas = MutableStateFlow<List<TarjetaMemorama>>(emptyList())
     val tarjetas: StateFlow<List<TarjetaMemorama>> = _tarjetas.asStateFlow()
@@ -130,7 +111,6 @@ class MemoramaViewModel(
             // Primera tarjeta (RF-08)
             primeraSeleccion = indice
             cambiarEstado(EstadoTarjeta.VISIBLE, indice)
-            _aviso.value = Aviso.ELIGE_SEGUNDA
             return
         }
 
@@ -141,23 +121,12 @@ class MemoramaViewModel(
 
         viewModelScope.launch {
             if (esPar) {
-                // Se deja terminar el giro antes de marcarlas como encontradas
-                delay(360)
-                if (abandonado) return@launch
                 cambiarEstado(EstadoTarjeta.ENCONTRADA, primera, indice) // RF-11
                 _paresEncontrados.value += 1
-                val completo = _paresEncontrados.value == _tarjetas.value.size / 2
-                _aviso.value = if (completo) Aviso.COMPLETO else Aviso.PAREJA
             } else {
-                delay(380)
-                if (abandonado) return@launch
-                contadorFallos++
-                _fallo.value = Fallo(primera, indice, contadorFallos)
-                _aviso.value = Aviso.NO_SON_PAREJA
                 delay(TIEMPO_VISTA_MS) // A7.1: el alumno las ve un momento
                 if (abandonado) return@launch
                 cambiarEstado(EstadoTarjeta.OCULTA, primera, indice) // RF-12
-                _aviso.value = Aviso.ELIGE_UNA
             }
             primeraSeleccion = null
             bloqueado = false
