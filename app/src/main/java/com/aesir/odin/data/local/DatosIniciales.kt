@@ -316,6 +316,35 @@ object DatosIniciales {
                 put("definicion", par.definicion)
             })
         }
+        // CU-09 Resolver reto de arrastrar y soltar
+        DatosArrastrar.retos.forEach { reto ->
+            db.insert("retos_arrastrar", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
+                put("id", reto.id)
+                put("temaId", reto.temaId)
+                put("modalidad", reto.modalidad)
+                put("instrucciones", reto.instrucciones)
+                put("imagenDiagrama", reto.imagenDiagrama)
+                put("completado", reto.completado)
+            })
+        }
+        DatosArrastrar.elementos.forEach { e ->
+            db.insert("elementos_arrastrables", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
+                put("id", e.id)
+                put("retoId", e.retoId)
+                put("texto", e.texto)
+                put("posicionCorrectaId", e.posicionCorrectaId)
+            })
+        }
+        DatosArrastrar.posiciones.forEach { p ->
+            db.insert("posiciones_destino", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
+                put("id", p.id)
+                put("retoId", p.retoId)
+                put("orden", p.orden)
+                put("etiqueta", p.etiqueta)
+                put("x", p.x)
+                put("y", p.y)
+            })
+        }
         // CU-10 Realizar evaluación diagnóstico
         DatosDiagnostico.preguntas.forEach { pregunta ->
             db.insert("preguntas_diagnostico", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {

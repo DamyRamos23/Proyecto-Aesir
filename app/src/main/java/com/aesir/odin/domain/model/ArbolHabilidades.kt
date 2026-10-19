@@ -7,7 +7,13 @@ enum class Actividad(val nombre: String, val jugable: Boolean) {
     LECCION("Lección interactiva", jugable = true),
     CRUCIGRAMA("Crucigrama", jugable = true),
     MEMORAMA("Memorama", jugable = true),
-    FLASHCARDS("Flash cards", jugable = false);
+    FLASHCARDS("Flash cards", jugable = true),
+
+    /** CU-09 Resolver reto de arrastrar y soltar. */
+    ARRASTRAR("Arrastrar y soltar", jugable = true),
+
+    /** Minijuego del tercer anillo que todavía no se define: se muestra como "Próximamente". */
+    POR_DEFINIR("Por definir", jugable = false);
 
     companion object {
         fun desde(texto: String?): Actividad = entries.firstOrNull { it.name == texto } ?: LECCION
