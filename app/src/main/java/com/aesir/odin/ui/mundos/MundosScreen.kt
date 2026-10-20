@@ -17,6 +17,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -126,7 +127,8 @@ import com.aesir.odin.ui.components.odin.rememberTiempo
 @Composable
 fun MundosScreen(
     navController: NavHostController,
-    appContainer: AppContainer
+    appContainer: AppContainer,
+    onInvocarPreguntaFlash: () -> Unit = {}
 ) {
     val viewModel: MundosViewModel = viewModel(
         factory = MundosViewModel.factory(
@@ -212,6 +214,24 @@ fun MundosScreen(
                     )
                 }
                 Spacer(Modifier.weight(1f))
+                if (adminActivo) {
+                    // Modo admin: saca una pregunta flash a voluntad.
+                    Text(
+                        "?",
+                        color = OdinPaleta.Hollin,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Black,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .padding(end = 10.dp)
+                            .size(34.dp)
+                            .clip(CircleShape)
+                            .background(OdinPaleta.Brasa)
+                            .clickable(role = Role.Button, onClick = onInvocarPreguntaFlash)
+                            .semantics { contentDescription = "Invocar pregunta flash" }
+                            .wrapContentHeight()
+                    )
+                }
                 // Modo admin: tocar el contador permite fijar el hidromiel.
                 ContadorHidromiel(
                     saldo = saldo,

@@ -52,7 +52,8 @@ class MainActivity : ComponentActivity() {
                     Box(Modifier.fillMaxSize().padding(innerPadding)) {
                         OdinNavGraph.construirGrafo(
                             nav = navController,
-                            appContainer = appContainer
+                            appContainer = appContainer,
+                            onInvocarPreguntaFlash = preguntaFlashViewModel::invocar
                         )
                         // MOD-01: avisos de hidromiel sobre cualquier pantalla.
                         // Al abrir la app en un nuevo día se entrega la recompensa diaria (E3).
