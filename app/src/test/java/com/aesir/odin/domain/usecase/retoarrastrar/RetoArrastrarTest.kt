@@ -84,6 +84,31 @@ class ObtenerRetoTest {
             assertNotEquals(r.elementos.map { it.id }, obtenido.elementos.map { it.id })
         }
     }
+
+    @Test
+    fun `RF-70 compara contra la solucion aunque la base devuelva los elementos desordenados`() = runBlocking {
+        // La consulta no tiene ORDER BY: simulamos que la base los devuelve en otro orden
+        val base = reto()
+        val r = base.copy(elementos = base.elementos.reversed())
+        val solucion = base.elementos.map { it.id } // e1..e5 = p1..p5
+        repeat(200) { semilla ->
+            val obtenido = ObtenerRetoUseCase(FakeRetoRepository(listOf(r)), Random(semilla))("m1-n1")
+            assertEquals(r.elementos.toSet(), obtenido.elementos.toSet())
+            assertNotEquals(solucion, obtenido.elementos.map { it.id })
+        }
+    }
+
+    @Test
+    fun `RF-70 con dos etapas que llegan invertidas nunca devuelve la solucion`() = runBlocking {
+        // Con dos etapas la única mezcla válida es la inversa de la solución,
+        // sin importar el orden en que las devuelva la base de datos
+        val base = reto(2)
+        val r = base.copy(elementos = base.elementos.reversed())
+        repeat(50) { semilla ->
+            val obtenido = ObtenerRetoUseCase(FakeRetoRepository(listOf(r)), Random(semilla))("m1-n1")
+            assertEquals(listOf("e2", "e1"), obtenido.elementos.map { it.id })
+        }
+    }
 }
 
 class RegistrarErrorRetoTest {

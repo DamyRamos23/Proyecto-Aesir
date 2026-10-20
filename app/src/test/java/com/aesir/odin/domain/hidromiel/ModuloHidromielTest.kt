@@ -287,6 +287,17 @@ class ModuloHidromielTest {
     }
 
     @Test
+    fun `A7_2 el aviso de pregunta flash distingue incompleta, incorrecta y sin respuesta`() = runBlocking {
+        val incompleta = modulo.alResolverPreguntaFlash(PreguntaFlashResuelta(U, ResultadoFlash.INCOMPLETA)).mensaje
+        val incorrecta = modulo.alResolverPreguntaFlash(PreguntaFlashResuelta(U, ResultadoFlash.INCORRECTA)).mensaje
+        val sinRespuesta = modulo.alResolverPreguntaFlash(PreguntaFlashResuelta(U, ResultadoFlash.SIN_RESPUESTA)).mensaje
+        assertTrue(incompleta.startsWith("Respuesta incompleta"))
+        assertTrue(incorrecta.startsWith("Respuesta incorrecta"))
+        assertTrue(sinRespuesta.startsWith("Se agotó el tiempo"))
+        assertFalse(incompleta.contains("incorrecta"))
+    }
+
+    @Test
     fun `E6 abandonar el contrarreloj resta 20`() = runBlocking {
         modulo.alAbandonarContrarreloj(ContrarrelojAbandonado(U))
         assertEquals(20, repo.saldo())

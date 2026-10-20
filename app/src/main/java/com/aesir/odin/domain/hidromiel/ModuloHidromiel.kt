@@ -243,7 +243,12 @@ class ModuloHidromiel(
                 }
                 ResultadoFlash.INCORRECTA, ResultadoFlash.INCOMPLETA, ResultadoFlash.SIN_RESPUESTA -> {
                     val real = reserva.descontarHastaCero(PoliticaCosto.FLASH_FALLO, TipoMovimiento.PREGUNTA_FLASH)
-                    val motivo = if (e.resultado == ResultadoFlash.SIN_RESPUESTA) "Se agotó el tiempo." else "Respuesta incorrecta."
+                    // A7.2 / RF-37: el aviso distingue la respuesta incompleta de la incorrecta
+                    val motivo = when (e.resultado) {
+                        ResultadoFlash.SIN_RESPUESTA -> "Se agotó el tiempo."
+                        ResultadoFlash.INCOMPLETA -> "Respuesta incompleta: te faltó alguna opción."
+                        else -> "Respuesta incorrecta."
+                    }
                     AvisoHidromiel(
                         TipoMovimiento.PREGUNTA_FLASH, -real, reserva.saldo,
                         "$motivo Perdiste $real de hidromiel."
