@@ -303,15 +303,31 @@ class ModuloHidromiel(
             )
         }
 
-    /** E6: abandonar un reto contrarreloj resta 20 (RN-01: nunca baja de 0). */
+    /**
+     * E6: abandonar un reto contrarreloj resta 20. Lo ganado en el reto se descarta,
+     * pero si el saldo del reto es negativo se suma a la penalización (-10 → resta 30).
+     * RN-01: nunca baja de 0.
+     */
     suspend fun alAbandonarContrarreloj(e: ContrarrelojAbandonado): AvisoHidromiel =
         moverSaldo(e.idUsuario) { reserva ->
-            val real = reserva.descontarHastaCero(PoliticaCosto.ABANDONO_CONTRARRELOJ, TipoMovimiento.ABANDONO_CONTRARRELOJ)
+            val penalizacion = PoliticaCosto.ABANDONO_CONTRARRELOJ + (-e.saldoReto).coerceAtLeast(0)
+            val real = reserva.descontarHastaCero(penalizacion, TipoMovimiento.ABANDONO_CONTRARRELOJ)
             AvisoHidromiel(
                 TipoMovimiento.ABANDONO_CONTRARRELOJ, -real, reserva.saldo,
                 "Abandonaste el contrarreloj. Perdiste $real de hidromiel."
             )
         }
+
+    /** Modo admin: fija el saldo a [cantidad] (mínimo 0). Fuera del modo admin no hace nada. */
+    suspend fun establecerSaldoAdmin(idUsuario: String, cantidad: Int): AvisoHidromiel? {
+        if (!ModoAdmin.estaActivo) return null
+        return moverSaldo(idUsuario) { reserva ->
+            val diferencia = cantidad.coerceAtLeast(0) - reserva.saldo
+            if (diferencia > 0) reserva.abonar(diferencia, TipoMovimiento.AJUSTE_ADMIN)
+            else if (diferencia < 0) reserva.descontar(-diferencia, TipoMovimiento.AJUSTE_ADMIN)
+            AvisoHidromiel(TipoMovimiento.AJUSTE_ADMIN, diferencia, reserva.saldo, "Modo admin: hidromiel ajustado a ${reserva.saldo}.")
+        }
+    }
 
     /**
      * E3 / RN-03: 2C una vez al día, sin acumular días anteriores.

@@ -462,8 +462,8 @@ private fun PreparacionReto(
                     ReglaReto("Tienes ${formatearTiempo(duracionSegundos)} para responder preguntas de los temas que ya estudiaste.")
                     ReglaReto("Cada respuesta correcta te da +${RetoContrareloj.PUNTOS_POR_ACIERTO} de hidromiel al terminar.")
                     ReglaReto("Cada respuesta incorrecta te quita ${PoliticaCosto.CONTRARRELOJ_FALLO} de hidromiel.")
-                    ReglaReto("Entrar cuesta $costo de hidromiel.")
-                    ReglaReto("Si abandonas pierdes lo ganado y se restan ${AbandonarRetoContrarrelojUseCase.PENALIZACION} de hidromiel.")
+                    ReglaReto(if (costo == 0) "Modo admin: entrar es gratis." else "Entrar cuesta $costo de hidromiel.")
+                    ReglaReto("Si abandonas pierdes lo ganado y se restan ${AbandonarRetoContrarrelojUseCase.PENALIZACION} de hidromiel; si ibas en negativo, eso también se resta.")
                     val nota = aviso ?: if (!alcanza) "Te faltan ${costo - saldo} de hidromiel para entrar." else null
                     if (nota != null) {
                         Spacer(Modifier.height(8.dp))
@@ -480,7 +480,7 @@ private fun PreparacionReto(
             }
         }
         BotonOdin(
-            texto = "Pagar $costo y comenzar",
+            texto = if (costo == 0) "Comenzar" else "Pagar $costo y comenzar",
             onClick = onComenzar,
             acento = estilo.acento,
             habilitado = alcanza,

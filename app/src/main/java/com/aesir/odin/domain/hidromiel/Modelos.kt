@@ -37,7 +37,8 @@ enum class TipoMovimiento {
     PREGUNTA_FLASH,
     ABANDONO_CONTRARRELOJ,
     ENTRADA_CONTRARRELOJ,
-    RECOMPENSA_CONTRARRELOJ
+    RECOMPENSA_CONTRARRELOJ,
+    AJUSTE_ADMIN
 }
 
 // ---------------------------------------------------------------------------
@@ -106,7 +107,8 @@ data class PreguntaFlashResuelta(
     val resultado: ResultadoFlash
 )
 
-data class ContrarrelojAbandonado(val idUsuario: String)
+/** [saldoReto]: puntaje acumulado en el reto al abandonarlo; si es negativo se suma a la penalización. */
+data class ContrarrelojAbandonado(val idUsuario: String, val saldoReto: Int = 0)
 
 data class ContrarrelojFinalizado(val idUsuario: String, val aciertos: Int, val fallos: Int = 0)
 

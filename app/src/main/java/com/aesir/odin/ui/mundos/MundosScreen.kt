@@ -38,7 +38,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -146,6 +151,30 @@ fun MundosScreen(
      */
     val combinacion = remember { CombinacionSecreta(listOf(0, 1, 3, 2, 0, 1, 3, 2)) }
     var avisoAdmin by remember { mutableStateOf<String?>(null) }
+    var editandoSaldo by remember { mutableStateOf(false) }
+    if (editandoSaldo) {
+        var texto by remember { mutableStateOf(saldo.toString()) }
+        AlertDialog(
+            onDismissRequest = { editandoSaldo = false },
+            title = { Text("Hidromiel (admin)") },
+            text = {
+                OutlinedTextField(
+                    value = texto,
+                    onValueChange = { nuevo -> texto = nuevo.filter(Char::isDigit).take(6) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val cantidad = texto.toIntOrNull()
+                    if (cantidad != null) scope.launch { appContainer.moduloHidromiel.establecerSaldoAdmin(USUARIO_LOCAL, cantidad) }
+                    editandoSaldo = false
+                }) { Text("Guardar") }
+            },
+            dismissButton = { TextButton(onClick = { editandoSaldo = false }) { Text("Cancelar") } }
+        )
+    }
     val vibrar = LocalHapticFeedback.current
     LaunchedEffect(avisoAdmin) {
         if (avisoAdmin != null) {
@@ -183,7 +212,11 @@ fun MundosScreen(
                     )
                 }
                 Spacer(Modifier.weight(1f))
-                ContadorHidromiel(saldo = saldo)
+                // Modo admin: tocar el contador permite fijar el hidromiel.
+                ContadorHidromiel(
+                    saldo = saldo,
+                    modifier = if (adminActivo) Modifier.clickable { editandoSaldo = true } else Modifier
+                )
             }
             Spacer(Modifier.height(6.dp))
             Text(
