@@ -85,12 +85,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.compose.ui.res.painterResource
+import com.aesir.odin.R
 import com.aesir.odin.di.AppContainer
 import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
 import com.aesir.odin.ui.components.odin.ContadorHidromiel
 import com.aesir.odin.domain.model.Mundo
 import com.aesir.odin.ui.components.odin.BotonOdin
 import com.aesir.odin.ui.components.odin.FondoMundo
+import com.aesir.odin.ui.components.odin.TextoAjustable
 import com.aesir.odin.ui.components.odin.desaturar
 import com.aesir.odin.ui.components.odin.dibujarEmblema
 import com.aesir.odin.ui.components.odin.dibujarPaisaje
@@ -188,6 +191,17 @@ fun MundosScreen(
     val seleccionado = visibles.firstOrNull { it.id == seleccionadoId }
         ?: visibles.firstOrNull { it.desbloqueado }
         ?: visibles.firstOrNull()
+    /** CU-10: la primera vez se presenta la evaluación diagnóstica del mundo. */
+    val entrar: (Mundo) -> Unit = { mundo ->
+        scope.launch {
+            val ruta = if (viewModel.intentarAbrirDiagnostico(mundo.id)) {
+                OdinNavGraph.rutaEvaluacionDiagnosticaCon(mundo.id)
+            } else {
+                OdinNavGraph.rutaRoadmapCon(mundo.id)
+            }
+            navController.navigate(ruta)
+        }
+    }
 
     Box(Modifier.fillMaxSize()) {
     FondoMundo(estilo = null) {
@@ -216,20 +230,17 @@ fun MundosScreen(
                 Spacer(Modifier.weight(1f))
                 if (adminActivo) {
                     // Modo admin: saca una pregunta flash a voluntad.
-                    Text(
-                        "?",
-                        color = OdinPaleta.Hollin,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Black,
-                        textAlign = TextAlign.Center,
+                    Icon(
+                        painterResource(R.drawable.ic_rayo),
+                        contentDescription = "Invocar pregunta flash",
+                        tint = OdinPaleta.Hollin,
                         modifier = Modifier
                             .padding(end = 10.dp)
                             .size(34.dp)
                             .clip(CircleShape)
                             .background(OdinPaleta.Brasa)
                             .clickable(role = Role.Button, onClick = onInvocarPreguntaFlash)
-                            .semantics { contentDescription = "Invocar pregunta flash" }
-                            .wrapContentHeight()
+                            .padding(6.dp)
                     )
                 }
                 // Modo admin: tocar el contador permite fijar el hidromiel.
@@ -253,6 +264,13 @@ fun MundosScreen(
                     mundos = visibles,
                     seleccionadoId = seleccionado?.id,
                     onSeleccionar = { id ->
+                        // Tocar otra vez el mundo ya elegido también entra (además del botón).
+                        // Se compara con la selección explícita para no estorbar la combinación admin.
+                        val tocado = visibles.firstOrNull { it.id == id }
+                        if (id == seleccionadoId && tocado != null && tocado.desbloqueado) {
+                            entrar(tocado)
+                            return@EscudoMundos
+                        }
                         seleccionadoId = id
                         val i = visibles.indexOfFirst { it.id == id }
                         if (i >= 0 && combinacion.registrar(i)) {
@@ -293,17 +311,7 @@ fun MundosScreen(
                     PanelMundo(
                         mundo = mundo,
                         anterior = visibles.getOrNull(visibles.indexOfFirst { it.id == mundo.id } - 1),
-                        onEntrar = {
-                            // CU-10: la primera vez se presenta la evaluación diagnóstica del mundo
-                            scope.launch {
-                                val ruta = if (viewModel.intentarAbrirDiagnostico(mundo.id)) {
-                                    OdinNavGraph.rutaEvaluacionDiagnosticaCon(mundo.id)
-                                } else {
-                                    OdinNavGraph.rutaRoadmapCon(mundo.id)
-                                }
-                                navController.navigate(ruta)
-                            }
-                        }
+                        onEntrar = { entrar(mundo) }
                     )
                 }
             }
@@ -439,10 +447,11 @@ private fun FragmentoMundo(
     val grosor by animateDpAsState(if (seleccionado) 2.5.dp else 1.dp, label = "grosorFragmento")
 
     val alineacion = when (cuadrante) {
-        Cuadrante.SUPERIOR_IZQ -> BiasAlignment(0.12f, 0.12f)
-        Cuadrante.SUPERIOR_DER -> BiasAlignment(-0.12f, 0.12f)
-        Cuadrante.INFERIOR_IZQ -> BiasAlignment(0.12f, -0.12f)
-        Cuadrante.INFERIOR_DER -> BiasAlignment(-0.12f, -0.12f)
+        // Cargado hacia el centro del escudo, donde el cuarto de círculo es más ancho y no recorta el nombre.
+        Cuadrante.SUPERIOR_IZQ -> BiasAlignment(0.45f, 0.45f)
+        Cuadrante.SUPERIOR_DER -> BiasAlignment(-0.45f, 0.45f)
+        Cuadrante.INFERIOR_IZQ -> BiasAlignment(0.45f, -0.75f)
+        Cuadrante.INFERIOR_DER -> BiasAlignment(-0.45f, -0.75f)
     }
 
     Box(
@@ -477,7 +486,7 @@ private fun FragmentoMundo(
             mancha(c, size.width * .42f, Color.Black, .45f)
         }
         Column(
-            Modifier.align(alineacion).fillMaxWidth(0.82f),
+            Modifier.align(alineacion).fillMaxWidth(0.55f),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
@@ -495,11 +504,12 @@ private fun FragmentoMundo(
                 }
             }
             Spacer(Modifier.height(6.dp))
-            Text(
+            TextoAjustable(
                 mundo.nombre,
-                style = estiloTitulo(13.sp, if (bloqueado) Color(0xFFD4E4EE) else OdinPaleta.Hueso),
-                textAlign = TextAlign.Center,
-                maxLines = 2
+                estiloTitulo(13.sp, if (bloqueado) Color(0xFFD4E4EE) else OdinPaleta.Hueso).copy(textAlign = TextAlign.Center),
+                Modifier.fillMaxWidth(),
+                minEscala = 0.7f,
+                maxLineas = 2
             )
         }
     }
