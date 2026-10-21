@@ -143,7 +143,7 @@ data class ForjaFinalizada(
 )
 
 /** CU-02: resultado de cobrar la apuesta de la forja (RF-33). [faltante]: hidromiel que faltó si no se cobró. */
-data class ResultadoApuesta(
+data class ResultadoApuestaForja(
     val cobrada: Boolean,
     val saldoActual: Int,
     val faltante: Int = 0

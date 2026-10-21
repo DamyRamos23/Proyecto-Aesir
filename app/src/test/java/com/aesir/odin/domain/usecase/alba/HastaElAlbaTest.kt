@@ -207,7 +207,7 @@ class HastaElAlbaTest {
 
     @Test
     fun `volver al banquete cobra el multiplicador alcanzado como PREMIO_ALBA`() = runBlocking {
-        val cobrar = CobrarNocheAlbaUseCase(alba, modulo) { 0 }
+        val cobrar = CobrarNocheAlbaUseCase(alba, modulo, idUsuario = U, reloj = { 0 })
         repo.fijarSaldo(0)
         val noche = NocheAlba("n1", 30, 0, enemigo = Enemigo.LOBO_DE_FENRIR, multiplicadorAlcanzado = 140, fase = FaseNoche.EN_DECISION)
         val r = cobrar(noche, Desenlace.RETIRADA)
@@ -221,7 +221,7 @@ class HastaElAlbaTest {
 
     @Test
     fun `al llegar al alba cobra por 4 y otorga el titulo solo la primera vez`() = runBlocking {
-        val cobrar = CobrarNocheAlbaUseCase(alba, modulo) { 0 }
+        val cobrar = CobrarNocheAlbaUseCase(alba, modulo, idUsuario = U, reloj = { 0 })
         val noche = NocheAlba("n1", 50, 0, enemigo = Enemigo.EL_ALBA, multiplicadorAlcanzado = 400, fase = FaseNoche.EN_DECISION)
         val r1 = cobrar(noche, Desenlace.ALBA)
         assertEquals(200, r1.premioBruto)

@@ -31,8 +31,6 @@ import com.aesir.odin.ui.theme.ColorNocheOscura
 import com.aesir.odin.ui.theme.ODINTheme
 import com.aesir.odin.ui.racha.AvisosRacha
 import com.aesir.odin.domain.racha.AplicacionAbierta
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 class MainActivity : ComponentActivity() {
@@ -47,18 +45,6 @@ class MainActivity : ComponentActivity() {
     // CU-06: vive en la actividad para contar el tiempo de uso de toda la app.
     private val preguntaFlashViewModel: PreguntaFlashViewModel by viewModels {
         PreguntaFlashViewModel.factory(appContainer)
-    }
-
-    // MOD-02, paso 8: al pasar a segundo plano (o si entra una llamada) se detienen
-    // los efectos y no se reanudan al volver.
-    override fun onStart() {
-        super.onStart()
-        appContainer.moduloSonido.alVolverAPrimerPlano()
-    }
-
-    override fun onStop() {
-        appContainer.moduloSonido.alPasarASegundoPlano()
-        super.onStop()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -138,8 +124,11 @@ class MainActivity : ComponentActivity() {
         appContainer.moduloCarreraSol.alAbrirAplicacion(AplicacionAbierta(USUARIO_LOCAL, hoy))
     }
 
+    // MOD-02, paso 8: al pasar a segundo plano (o si entra una llamada) se detienen
+    // los efectos y no se reanudan al volver.
     override fun onStart() {
         super.onStart()
+        appContainer.moduloSonido.alVolverAPrimerPlano()
         // Si la app volvió a primer plano en un nuevo día, el MOD-05 revisa la racha.
         if (avisosRachaListos) lifecycleScope.launch { registrarAperturaRacha() }
         preguntaFlashViewModel.reanudar()
@@ -147,6 +136,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         preguntaFlashViewModel.pausar()
+        appContainer.moduloSonido.alPasarASegundoPlano()
         super.onStop()
     }
 }

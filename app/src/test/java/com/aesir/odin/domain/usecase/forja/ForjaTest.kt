@@ -92,6 +92,7 @@ class ForjaTest {
         override suspend fun mundoDesbloqueado(mundoId: String) = true
         override suspend fun marcarMemoramaCompletado(nivelId: String) = Unit
         override suspend fun marcarTemasConocidos(mundoId: String, temaIds: List<String>) = Unit
+        override suspend fun haSuperadoAlgunRagnarok() = false
     }
 
     private class FakeRetos : RetoRepository {
@@ -118,6 +119,7 @@ class ForjaTest {
     private val hidromielRepo = FakeHidromielRepository()
     private val catalogo = object : CatalogoNiveles by FakeCatalogo(linkedMapOf("m1" to 6, "m2" to 6)) {
         override suspend fun idsMundos() = listOf("m1", "m2")
+        override suspend fun mundosDesbloqueados() = listOf("m1", "m2")
     }
     private val modulo = ModuloHidromiel(catalogo, hidromielRepo)
     private val forjaRepo = FakeForjaRepository(listOf(mjolnir, gungnir))

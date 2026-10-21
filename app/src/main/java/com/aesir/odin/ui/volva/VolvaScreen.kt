@@ -124,7 +124,8 @@ fun VolvaScreen(viewModel: ConsultaVolvaViewModel, onSalir: () -> Unit, modifier
             EstadoConsulta.CARGANDO ->
                 CircularProgressIndicator(color = estilo.acento, modifier = Modifier.align(Alignment.Center))
 
-            in ESTADOS_CALDERO -> Unit
+            EstadoConsulta.CALDERO_APAGADO, EstadoConsulta.VALHALLA_CERRADO, EstadoConsulta.HIDROMIEL_INSUFICIENTE,
+            EstadoConsulta.VISIONES_INSUFICIENTES, EstadoConsulta.APOSTANDO -> Unit
 
             EstadoConsulta.DECLARANDO_FE, EstadoConsulta.ELIGIENDO_OPCION, EstadoConsulta.VISION_RESUELTA -> consulta?.let { c ->
                 val vision = if (estado == EstadoConsulta.VISION_RESUELTA) c.visiones.getOrNull(c.indiceActual - 1) else c.visionActual()

@@ -8,7 +8,7 @@ import com.aesir.odin.domain.bitacora.OrigenFallo
 import com.aesir.odin.domain.hidromiel.ForjaFinalizada
 import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
-import com.aesir.odin.domain.hidromiel.ResultadoApuesta
+import com.aesir.odin.domain.hidromiel.ResultadoApuestaForja
 import com.aesir.odin.domain.model.ArtefactoVitrina
 import com.aesir.odin.domain.model.AsignacionForja
 import com.aesir.odin.domain.model.EstadoFinalForja
@@ -150,7 +150,7 @@ class ApostarForjaUseCase(
     private val forjaRepository: ForjaRepository,
     private val reloj: () -> Long = System::currentTimeMillis
 ) {
-    suspend operator fun invoke(forja: Forja, rango: RangoApuestaForja): ResultadoApuesta {
+    suspend operator fun invoke(forja: Forja, rango: RangoApuestaForja): ResultadoApuestaForja {
         require(rango.contiene(forja.apuesta)) { "La apuesta está fuera del rango permitido." }
         val resultado = moduloHidromiel.cobrarApuestaForja(forja.apuesta)
         if (resultado.cobrada) forjaRepository.registrarForja(forja, reloj())

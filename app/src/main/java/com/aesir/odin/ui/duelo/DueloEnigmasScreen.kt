@@ -108,7 +108,8 @@ fun DueloEnigmasScreen(vm: DueloEnigmasViewModel, onSalir: () -> Unit) {
             Spacer(Modifier.height(8.dp))
             when (estado) {
                 EstadoDuelo.CARGANDO -> Text("El gigante se prepara…", style = estiloTitulo(18.sp), modifier = Modifier.padding(top = 80.dp))
-                in ESTADOS_RETO -> Unit
+                EstadoDuelo.CONFIRMANDO_APUESTA, EstadoDuelo.SIN_RAGNAROK_SUPERADO, EstadoDuelo.LIMITE_DIARIO_ALCANZADO,
+                EstadoDuelo.HIDROMIEL_INSUFICIENTE, EstadoDuelo.CONCEPTOS_INSUFICIENTES -> Unit
                 EstadoDuelo.EN_CURSO, EstadoDuelo.ULTIMA_ADIVINANZA, EstadoDuelo.PREGUNTAS_AGOTADAS,
                 EstadoDuelo.CONFIRMANDO_ABANDONO -> PantallaTablero(vm, estado)
                 EstadoDuelo.TERMINADO -> vm.cierre.collectAsState().value?.let { ResultadoDueloScreen(it, onSalir) { vm.cargarDuelo() } }

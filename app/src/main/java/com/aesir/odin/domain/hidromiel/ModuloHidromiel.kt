@@ -570,21 +570,21 @@ class ModuloHidromiel(
         candado.withLock { repositorio.enTransaccion { obtenerOCrearReserva(idUsuario).saldo } }
 
     /** RF-33: descuenta la apuesta y la registra como APUESTA_FORJA. Si no alcanza, no cobra nada (E1). */
-    suspend fun cobrarApuestaForja(apuesta: Int, idUsuario: String = USUARIO_LOCAL): ResultadoApuesta {
+    suspend fun cobrarApuestaForja(apuesta: Int, idUsuario: String = USUARIO_LOCAL): ResultadoApuestaForja {
         require(apuesta > 0) { "La apuesta debe ser positiva" }
         var aviso: AvisoHidromiel? = null
         val resultado = candado.withLock {
             repositorio.enTransaccion {
                 val reserva = obtenerOCrearReserva(idUsuario)
                 if (!reserva.descontar(apuesta, TipoMovimiento.APUESTA_FORJA)) {
-                    return@enTransaccion ResultadoApuesta(false, reserva.saldo, apuesta - reserva.saldo)
+                    return@enTransaccion ResultadoApuestaForja(false, reserva.saldo, apuesta - reserva.saldo)
                 }
                 repositorio.guardarReserva(reserva)
                 aviso = AvisoHidromiel(
                     TipoMovimiento.APUESTA_FORJA, -apuesta, reserva.saldo,
                     "Le apostaste $apuesta de hidromiel a Loki."
                 )
-                ResultadoApuesta(true, reserva.saldo)
+                ResultadoApuestaForja(true, reserva.saldo)
             }
         }
         aviso?.let(::publicar)
