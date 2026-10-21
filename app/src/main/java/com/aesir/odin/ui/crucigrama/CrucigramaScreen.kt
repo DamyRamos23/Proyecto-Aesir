@@ -34,8 +34,20 @@ import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
+import com.aesir.odin.ui.theme.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -113,7 +125,7 @@ import kotlinx.coroutines.launch
 /**
  * CU-07 Resolver crucigrama de conceptos, con el diseño del mockup: panel oscuro
  * con runas, casillas de madera que se desplazan si no caben, la pista en un
- * globo junto a la palabra, las ayudas que cuestan hidromiel y un teclado con Ñ.
+ * globo junto a la palabra, las ayudas que cuestan hidromiel y el teclado del sistema.
  */
 @Composable
 fun CrucigramaScreen(
@@ -270,6 +282,8 @@ private fun ContenidoCrucigrama(
     Column(
         Modifier
             .fillMaxSize()
+            // La cuadrícula se encoge cuando aparece el teclado del sistema.
+            .imePadding()
             .padding(start = 14.dp, end = 14.dp, top = 2.dp, bottom = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -321,11 +335,11 @@ private fun ContenidoCrucigrama(
             )
         }
 
-        Teclado(
-            estilo = estilo,
+        EntradaTecladoSistema(
+            activo = editable,
+            celdaActual = celdaActual,
             onLetra = onLetra,
-            onBorrar = onBorrar,
-            modifier = Modifier.padding(top = 12.dp)
+            onBorrar = onBorrar
         )
     }
 }
@@ -878,66 +892,59 @@ private fun RowScope.BotonAyuda(
     }
 }
 
-private val FILA_1 = "QWERTYUIOP".toList()
-private val FILA_2 = "ASDFGHJKLÑ".toList()
-private val FILA_3 = "ZXCVBNM".toList()
-private val ESPACIO_TECLAS = 6.dp
-private val ALTO_TECLA = 48.dp
-private val FORMA_TECLA = RoundedCornerShape(10.dp)
+/** Lo que hay siempre en el campo invisible: si el teclado lo acorta, se presionó «borrar». */
+private const val CENTINELA = " "
 
 /**
- * Teclado propio con Ñ. Las teclas tienen ancho fijo calculado del espacio
- * disponible, así las tres filas quedan parejas y centradas.
+ * Teclado del sistema (en lugar de uno propio). Un campo invisible recibe lo
+ * que se escribe: cada letra va a [onLetra] y borrar va a [onBorrar]; después
+ * el campo vuelve al centinela. Se abre al elegir una palabra que se puede
+ * escribir y se cierra cuando no hay ninguna.
  */
 @Composable
-private fun Teclado(estilo: EstiloMundo, onLetra: (Char) -> Unit, onBorrar: () -> Unit, modifier: Modifier = Modifier) {
-    BoxWithConstraints(modifier.fillMaxWidth()) {
-        val ancho = (maxWidth - ESPACIO_TECLAS * 9) / 10
-        Column(
-            Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilaTeclas(FILA_1, ancho, estilo, onLetra)
-            FilaTeclas(FILA_2, ancho, estilo, onLetra)
-            Row(horizontalArrangement = Arrangement.spacedBy(ESPACIO_TECLAS)) {
-                Box(
-                    Modifier
-                        .size(ancho * 1.6f + ESPACIO_TECLAS, ALTO_TECLA)
-                        .presionable(estilo.acento, onClick = onBorrar)
-                        .fondoTecla(estilo)
-                        .semantics { contentDescription = "Borrar" },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("⌫", color = estilo.acento, fontSize = 20.sp)
-                }
-                FilaTeclas(FILA_3, ancho, estilo, onLetra)
-            }
+private fun EntradaTecladoSistema(
+    activo: Boolean,
+    celdaActual: Celda?,
+    onLetra: (Char) -> Unit,
+    onBorrar: () -> Unit
+) {
+    val foco = remember { FocusRequester() }
+    val teclado = LocalSoftwareKeyboardController.current
+    val vacio = TextFieldValue(CENTINELA, TextRange(CENTINELA.length))
+    var valor by remember { mutableStateOf(vacio) }
+
+    LaunchedEffect(activo, celdaActual) {
+        if (activo) {
+            foco.requestFocus()
+            teclado?.show()
+        } else {
+            teclado?.hide()
         }
     }
+
+    BasicTextField(
+        value = valor,
+        onValueChange = { nuevo ->
+            if (nuevo.text.length < CENTINELA.length) onBorrar()
+            else nuevo.text.drop(CENTINELA.length).filter(Char::isLetter).forEach(onLetra)
+            valor = vacio
+        },
+        modifier = Modifier
+            .size(1.dp)
+            .alpha(0f)
+            .focusRequester(foco)
+            .semantics { contentDescription = "Escribir en el crucigrama" },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.Characters,
+            autoCorrectEnabled = false,
+            // Sin sugerencias ni palabras a medio componer: cada tecla llega sola.
+            keyboardType = KeyboardType.Password,
+            imeAction = ImeAction.Done
+        ),
+        keyboardActions = KeyboardActions(onDone = { teclado?.hide() })
+    )
 }
-
-@Composable
-private fun FilaTeclas(letras: List<Char>, ancho: Dp, estilo: EstiloMundo, onLetra: (Char) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(ESPACIO_TECLAS)) {
-        letras.forEach { letra ->
-            Box(
-                Modifier
-                    .size(ancho, ALTO_TECLA)
-                    .presionable(estilo.acento) { onLetra(letra) }
-                    .fondoTecla(estilo),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("$letra", color = OdinPaleta.Hueso, fontFamily = FuenteTitulo, fontWeight = FontWeight.SemiBold, fontSize = 21.sp)
-            }
-        }
-    }
-}
-
-private fun Modifier.fondoTecla(estilo: EstiloMundo): Modifier = this
-    .background(Brush.verticalGradient(listOf(Color(0xFF2C2118), Color(0xFF16100B))), FORMA_TECLA)
-    .border(1.dp, estilo.metal.copy(alpha = .55f), FORMA_TECLA)
-
 
 /** Flujo alternativo A2.1: no se pudo generar el crucigrama. */
 @Composable

@@ -36,7 +36,7 @@ import com.aesir.odin.ui.ragnarok.Brasas
 import com.aesir.odin.ui.ragnarok.RG
 import com.aesir.odin.ui.ragnarok.caminoPuntas
 import com.aesir.odin.ui.ragnarok.cinzel
-import androidx.compose.material3.Text
+import com.aesir.odin.ui.theme.Text
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.max

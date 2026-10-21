@@ -20,6 +20,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.AnnotatedString
+import com.aesir.odin.ui.theme.LocalPresentacionLectura
+import com.aesir.odin.ui.theme.TextoEnCaja
 
 /**
  * Coloca el centro del elemento en (x, y), en dp de diseño (dentro de un
@@ -68,6 +71,12 @@ fun TextoAjustable(
     maxLineas: Int = 1,
     color: Color = Color.Unspecified
 ) {
+    val estiloFinal = if (color != Color.Unspecified) estilo.copy(color = color) else estilo
+    // MOD-03: con Visión de Heimdall también lleva Lexend y el espaciado del modo.
+    if (LocalPresentacionLectura.current.activa) {
+        TextoEnCaja(AnnotatedString(texto), estiloFinal, modifier, maxLineas, minEscala)
+        return
+    }
     val tamano = if (estilo.fontSize.isSp) estilo.fontSize.value else 14f
     BasicText(
         text = texto,

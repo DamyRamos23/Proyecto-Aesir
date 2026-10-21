@@ -29,7 +29,7 @@ class EvaluarDiagnosticoUseCase(
 
         val correctas = preguntas.filter { pregunta ->
             val seleccionadas = seleccionPorPregunta[pregunta.id].orEmpty()
-            validarRespuestaUseCase(seleccionadas, pregunta.respuestasCorrectas).estado == EstadoRespuesta.CORRECTA
+            validarRespuestaUseCase(seleccionadas, pregunta.respuestasCorrectas, avisarSonido = false).estado == EstadoRespuesta.CORRECTA
         }.map { it.id }.toSet()
 
         val temasConocidos = preguntas

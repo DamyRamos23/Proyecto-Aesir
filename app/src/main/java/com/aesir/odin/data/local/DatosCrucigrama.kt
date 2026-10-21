@@ -46,7 +46,8 @@ object DatosCrucigrama {
         Triple("FLASHCARDS", "Flash cards II", "Repasa los conceptos con tarjetas de pregunta y respuesta.")
     )
 
-    private val banco: Map<String, List<Pair<String, String>>> = mapOf(
+    /** temaId -> (concepto, descripción). También lo usa el duelo de enigmas (DatosEnigmas). */
+    internal val banco: Map<String, List<Pair<String, String>>> = mapOf(
         // Mundo 1 · UML
         "tema_uml_1" to listOf(
             "Clase" to "Plantilla que define los atributos y métodos de un objeto.",

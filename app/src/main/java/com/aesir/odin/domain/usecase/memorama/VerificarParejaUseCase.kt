@@ -1,5 +1,7 @@
 package com.aesir.odin.domain.usecase.memorama
 
+import com.aesir.odin.domain.sonido.EventoSonido
+import com.aesir.odin.domain.sonido.ModuloSonido
 import com.aesir.odin.domain.model.TarjetaMemorama
 
 /**
@@ -7,8 +9,11 @@ import com.aesir.odin.domain.model.TarjetaMemorama
  * concepto y la otra la definición.
  */
 class VerificarParejaUseCase {
-    operator fun invoke(primera: TarjetaMemorama, segunda: TarjetaMemorama): Boolean =
-        primera.id != segunda.id &&
+    operator fun invoke(primera: TarjetaMemorama, segunda: TarjetaMemorama): Boolean {
+        val pareja = primera.id != segunda.id &&
             primera.parId == segunda.parId &&
             primera.tipo != segunda.tipo
+        ModuloSonido.avisar(if (pareja) EventoSonido.ACIERTO else EventoSonido.ERROR) // MOD-02
+        return pareja
+    }
 }

@@ -1,5 +1,6 @@
 package com.aesir.odin.ui.retocontrareloj
 
+import com.aesir.odin.domain.sonido.ModuloSonido
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -213,6 +214,7 @@ class RetoContrarrelojViewModel(
             while (_tiempoRestanteSeg.value > 0) {
                 delay(1000)
                 _tiempoRestanteSeg.value -= 1
+                ModuloSonido.compartido?.avisarTiempoRestante(_tiempoRestanteSeg.value) // MOD-02, disparador 3
             }
             terminarReto()
         }

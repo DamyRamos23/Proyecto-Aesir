@@ -2,7 +2,41 @@ package com.aesir.odin.di
 
 import android.content.Context
 import com.aesir.odin.data.local.OdinDatabase
+import com.aesir.odin.data.repository.AlmacenPreferenciasImpl
+import com.aesir.odin.data.repository.DueloRepositoryImpl
+import com.aesir.odin.domain.repository.DueloRepository
+import com.aesir.odin.domain.usecase.duelo.AbandonarDueloUseCase
+import com.aesir.odin.domain.usecase.duelo.ApostarDueloUseCase
+import com.aesir.odin.domain.usecase.duelo.ArmarDueloUseCase
+import com.aesir.odin.domain.usecase.duelo.FinalizarDueloUseCase
+import com.aesir.odin.domain.usecase.duelo.ValidarAccesoDueloUseCase
+import com.aesir.odin.data.repository.AlmacenEastereggsImpl
+import com.aesir.odin.domain.eastereggs.AlmacenEastereggs
+import com.aesir.odin.domain.heimdall.ModuloVisionHeimdall
+import com.aesir.odin.domain.sonido.ModuloSonido
+import com.aesir.odin.data.repository.AlmacenPreferenciasSonidoImpl
+import com.aesir.odin.data.sonido.ReproductorSoundPool
+import com.aesir.odin.data.sonido.ReproductorMusicaMediaPlayer
+import android.util.Log
 import com.aesir.odin.data.repository.CatalogoNivelesImpl
+import com.aesir.odin.data.repository.ForjaRepositoryImpl
+import com.aesir.odin.data.repository.AlmacenRachaImpl
+import com.aesir.odin.data.sonido.ReproductorRachaMod02
+import com.aesir.odin.domain.usecase.diagnostico.FinalizarRepasoMimirUseCase
+import com.aesir.odin.domain.bitacora.ModuloBitacora
+import com.aesir.odin.domain.racha.ModuloCarreraSol
+import com.aesir.odin.domain.repository.ForjaRepository
+import com.aesir.odin.domain.usecase.forja.AbandonarForjaUseCase
+import com.aesir.odin.domain.usecase.forja.ApostarForjaUseCase
+import com.aesir.odin.domain.usecase.forja.ArmarForjaUseCase
+import com.aesir.odin.domain.usecase.forja.AsignarArtefactoUseCase
+import com.aesir.odin.domain.usecase.forja.CalcularRangoApuestaUseCase
+import com.aesir.odin.domain.usecase.forja.CerrarForjasInconclusasUseCase
+import com.aesir.odin.domain.usecase.forja.EnfriarMetalUseCase
+import com.aesir.odin.domain.usecase.forja.FinalizarForjaUseCase
+import com.aesir.odin.domain.usecase.forja.ObtenerVitrinaUseCase
+import com.aesir.odin.domain.usecase.forja.ValidarAccesoForjaUseCase
+import com.aesir.odin.domain.usecase.forja.ValidarEtapaForjaUseCase
 import com.aesir.odin.data.repository.CrucigramaRepositoryImpl
 import com.aesir.odin.data.repository.DiagnosticoRepositoryImpl
 import com.aesir.odin.data.repository.HidromielRepositoryImpl
@@ -80,6 +114,24 @@ import com.aesir.odin.domain.usecase.retoarrastrar.FinalizarRetoUseCase
 import com.aesir.odin.domain.usecase.retoarrastrar.ObtenerRetoUseCase
 import com.aesir.odin.domain.usecase.retoarrastrar.RegistrarErrorRetoArrastrarUseCase
 import com.aesir.odin.domain.usecase.retoarrastrar.ValidarColocacionUseCase
+import com.aesir.odin.data.repository.VolvaRepositoryImpl
+import com.aesir.odin.data.repository.AlbaRepositoryImpl
+import com.aesir.odin.domain.repository.AlbaRepository
+import com.aesir.odin.domain.usecase.alba.ApostarAlbaUseCase
+import com.aesir.odin.domain.usecase.alba.CaerEnBatallaAlbaUseCase
+import com.aesir.odin.domain.usecase.alba.CobrarNocheAlbaUseCase
+import com.aesir.odin.domain.usecase.alba.ObtenerPreguntaAlbaUseCase
+import com.aesir.odin.domain.usecase.alba.ResponderPreguntaAlbaUseCase
+import com.aesir.odin.domain.usecase.alba.UsarArtefactoAlbaUseCase
+import com.aesir.odin.domain.usecase.alba.SeguirPeleandoAlbaUseCase
+import com.aesir.odin.domain.usecase.alba.ValidarAccesoAlbaUseCase
+import com.aesir.odin.domain.repository.VolvaRepository
+import com.aesir.odin.domain.usecase.volva.AbandonarConsultaVolvaUseCase
+import com.aesir.odin.domain.usecase.volva.ApostarVolvaUseCase
+import com.aesir.odin.domain.usecase.volva.ArmarConsultaVolvaUseCase
+import com.aesir.odin.domain.usecase.volva.FinalizarConsultaVolvaUseCase
+import com.aesir.odin.domain.usecase.volva.ResolverVisionUseCase
+import com.aesir.odin.domain.usecase.volva.ValidarAccesoVolvaUseCase
 
 /**
  * Contenedor manual de dependencias (no hay Hilt configurado en el
@@ -92,15 +144,34 @@ class AppContainer(context: Context) {
 
     private val database = OdinDatabase.getInstance(context)
 
+    private val preferencias = context.getSharedPreferences("odin", Context.MODE_PRIVATE)
+
+    /** MOD-03 Visión de Heimdall: una sola instancia, la observa el tema de toda la app. */
+    val moduloVisionHeimdall = ModuloVisionHeimdall(AlmacenPreferenciasImpl(preferencias))
+
+    /**
+     * MOD-02 Sistema de efectos de sonido: una sola instancia. Los casos de uso
+     * avisan sus eventos con ModuloSonido.avisar (queda en ModuloSonido.compartido).
+     */
+    val moduloSonido = ModuloSonido(
+        AlmacenPreferenciasSonidoImpl(preferencias),
+        ReproductorSoundPool(context.applicationContext),
+        ReproductorMusicaMediaPlayer(context.applicationContext),
+        registrarError = { Log.w("ModuloSonido", it) }
+    ).also { ModuloSonido.compartido = it }
+
+    /** Juegos ocultos (easter eggs) que ya se descubrieron en Mundos. */
+    val almacenEastereggs: AlmacenEastereggs = AlmacenEastereggsImpl(preferencias)
+
     init {
-        // Modo admin oculto: se recuerda entre aperturas de la app
-        val preferencias = context.getSharedPreferences("odin", Context.MODE_PRIVATE)
-        ModoAdmin.cargar(preferencias.getBoolean(CLAVE_MODO_ADMIN, false))
-        ModoAdmin.alCambiar = { preferencias.edit().putBoolean(CLAVE_MODO_ADMIN, it).apply() }
+        // Modo admin oculto: cada apertura de la app inicia sin él.
+        // Se borra el valor que guardaban las versiones anteriores.
+        ModoAdmin.cargar(false)
+        preferencias.edit().remove(CLAVE_MODO_ADMIN).apply()
     }
 
     val roadmapRepository: RoadmapRepository =
-        RoadmapRepositoryImpl(database.mundoDao(), database.temaDao())
+        RoadmapRepositoryImpl(database.mundoDao(), database.temaDao(), database.retoFinMundoDao())
 
     val leccionRepository: LeccionRepository =
         LeccionRepositoryImpl(database.leccionDao(), database.ejercicioDao())
@@ -117,6 +188,16 @@ class AppContainer(context: Context) {
         repositorio = HidromielRepositoryImpl(database)
     )
 
+    /**
+     * MOD-05 La carrera de Sól. Una sola instancia: la avisan las actividades
+     * que cuentan (los Finalizar*UseCase) y la apertura de la app.
+     */
+    val moduloCarreraSol = ModuloCarreraSol(
+        almacen = AlmacenRachaImpl(database.rachaDao()),
+        moduloHidromiel = moduloHidromiel,
+        reproductor = ReproductorRachaMod02
+    )
+
     val obtenerMundosUseCase = ObtenerMundosUseCase(roadmapRepository)
     val obtenerMundoUseCase = ObtenerMundoUseCase(roadmapRepository)
     val obtenerTemasPorMundoUseCase = ObtenerTemasPorMundoUseCase(roadmapRepository)
@@ -128,8 +209,8 @@ class AppContainer(context: Context) {
     val validarRespuestaEjercicioUseCase =
         ValidarRespuestaEjercicioUseCase(ValidarRespuestaUseCase())
     val registrarErrorLeccionUseCase = RegistrarErrorLeccionUseCase(historialRepository)
-    val finalizarLeccionUseCase = FinalizarLeccionUseCase(leccionRepository, moduloHidromiel)
-    val registrarNivelSinSuperarUseCase = RegistrarNivelSinSuperarUseCase(leccionRepository, moduloHidromiel)
+    val finalizarLeccionUseCase = FinalizarLeccionUseCase(leccionRepository, moduloHidromiel, moduloCarreraSol = moduloCarreraSol)
+    val registrarNivelSinSuperarUseCase = RegistrarNivelSinSuperarUseCase(leccionRepository, moduloHidromiel, moduloCarreraSol = moduloCarreraSol)
 
     // CU-07 Resolver crucigrama de conceptos
     val crucigramaRepository: CrucigramaRepository =
@@ -140,7 +221,8 @@ class AppContainer(context: Context) {
     val finalizarCrucigramaUseCase = FinalizarCrucigramaUseCase(
         crucigramaRepository,
         RegistrarLeccionCompletadaUseCase(roadmapRepository), // reutilizado de CU-05
-        moduloHidromiel
+        moduloHidromiel,
+        moduloCarreraSol = moduloCarreraSol
     )
 
     // Validador compartido por Pregunta Flash y Reto Contrarreloj.
@@ -172,7 +254,7 @@ class AppContainer(context: Context) {
     val pagarEntradaRetoContrarrelojUseCase =
         PagarEntradaRetoContrarrelojUseCase(moduloHidromiel)
     val finalizarRetoContrarrelojUseCase =
-        FinalizarRetoContrarrelojUseCase(retoContrarrelojRepository, moduloHidromiel)
+        FinalizarRetoContrarrelojUseCase(retoContrarrelojRepository, moduloHidromiel, moduloCarreraSol = moduloCarreraSol)
     val abandonarRetoContrarrelojUseCase =
         AbandonarRetoContrarrelojUseCase(retoContrarrelojRepository, moduloHidromiel)
     // CU-04 Resolver memorama de conceptos
@@ -184,7 +266,8 @@ class AppContainer(context: Context) {
         memoramaRepository,
         roadmapRepository,
         CalcularPuntosMemoramaUseCase(),
-        moduloHidromiel
+        moduloHidromiel,
+        moduloCarreraSol = moduloCarreraSol
     )
 
     // CU-10 Realizar evaluación diagnóstico
@@ -196,8 +279,10 @@ class AppContainer(context: Context) {
         EvaluarDiagnosticoUseCase(ValidarRespuestaUseCase()), // ValidarRespuestaUseCase reutilizado de CU-05/CU-06
         diagnosticoRepository,
         roadmapRepository,
-        moduloHidromiel
+        moduloHidromiel,
+        moduloCarreraSol = moduloCarreraSol
     )
+    val finalizarRepasoMimirUseCase = FinalizarRepasoMimirUseCase(moduloCarreraSol)
 
     // CU-03 Resolver flashcards de conceptos
     val flashcardsRepository: FlashcardsRepository =
@@ -207,15 +292,16 @@ class AppContainer(context: Context) {
     val finalizarFlashcardsUseCase = FinalizarFlashcardsUseCase(
         flashcardsRepository,
         RegistrarLeccionCompletadaUseCase(roadmapRepository),
-        moduloHidromiel
+        moduloHidromiel,
+        moduloCarreraSol = moduloCarreraSol
     )
-    val registrarFlashcardsSinSuperarUseCase = RegistrarFlashcardsSinSuperarUseCase(moduloHidromiel)
+    val registrarFlashcardsSinSuperarUseCase = RegistrarFlashcardsSinSuperarUseCase(moduloHidromiel, moduloCarreraSol = moduloCarreraSol)
 
     // CU-08 Reto de fin de mundo (Ragnarök)
     val retoFinMundoRepository: RetoFinMundoRepository = RetoFinMundoRepositoryImpl(database.retoFinMundoDao())
     val obtenerRetoFinMundoUseCase = ObtenerRetoFinMundoUseCase(roadmapRepository, leccionRepository, moduloHidromiel)
     val registrarErrorRetoUseCase = RegistrarErrorRetoUseCase(historialRepository)
-    val finalizarRetoFinMundoUseCase = FinalizarRetoFinMundoUseCase(retoFinMundoRepository, roadmapRepository, moduloHidromiel)
+    val finalizarRetoFinMundoUseCase = FinalizarRetoFinMundoUseCase(retoFinMundoRepository, roadmapRepository, moduloHidromiel, moduloCarreraSol = moduloCarreraSol)
     val abandonarRetoFinMundoUseCase = AbandonarRetoFinMundoUseCase(retoFinMundoRepository, moduloHidromiel)
 
     // CU-09 Resolver reto de arrastrar y soltar
@@ -227,14 +313,66 @@ class AppContainer(context: Context) {
     val calcularPuntajeRetoUseCase = CalcularPuntajeRetoUseCase()
     val registrarErrorRetoArrastrarUseCase = RegistrarErrorRetoArrastrarUseCase(historialRepository)
     val finalizarRetoUseCase = FinalizarRetoUseCase(
-        retoRepository, calcularPuntajeRetoUseCase, RegistrarLeccionCompletadaUseCase(roadmapRepository), moduloHidromiel
+        retoRepository, calcularPuntajeRetoUseCase, RegistrarLeccionCompletadaUseCase(roadmapRepository), moduloHidromiel,
+        moduloCarreraSol = moduloCarreraSol
     )
     val abandonarRetoUseCase = AbandonarRetoUseCase(moduloHidromiel)
+
+    // CU-12 Retar a la bruja (La Völva)
+    val volvaRepository: VolvaRepository = VolvaRepositoryImpl(database.volvaDao())
+    val validarAccesoVolvaUseCase = ValidarAccesoVolvaUseCase(roadmapRepository, volvaRepository, moduloHidromiel)
+    val apostarVolvaUseCase = ApostarVolvaUseCase(moduloHidromiel, volvaRepository, roadmapRepository)
+    val armarConsultaVolvaUseCase = ArmarConsultaVolvaUseCase(roadmapRepository, volvaRepository)
+    val resolverVisionUseCase = ResolverVisionUseCase(historialRepository)
+    val finalizarConsultaVolvaUseCase = FinalizarConsultaVolvaUseCase(volvaRepository, moduloHidromiel, moduloCarreraSol = moduloCarreraSol)
+    val abandonarConsultaVolvaUseCase = AbandonarConsultaVolvaUseCase(volvaRepository)
+
+    // CU-01 Sobrevivir oleadas (Hasta el Alba)
+    val albaRepository: AlbaRepository = AlbaRepositoryImpl(database.albaDao(), database.vitrinaDao())
+    val cobrarNocheAlbaUseCase = CobrarNocheAlbaUseCase(albaRepository, moduloHidromiel, moduloCarreraSol = moduloCarreraSol)
+    val caerEnBatallaAlbaUseCase = CaerEnBatallaAlbaUseCase(albaRepository)
+    val validarAccesoAlbaUseCase = ValidarAccesoAlbaUseCase(
+        roadmapRepository, albaRepository, preguntaFlashRepository, moduloHidromiel,
+        cobrarNocheAlbaUseCase, caerEnBatallaAlbaUseCase
+    )
+    val apostarAlbaUseCase = ApostarAlbaUseCase(moduloHidromiel, albaRepository, roadmapRepository)
+    val obtenerPreguntaAlbaUseCase = ObtenerPreguntaAlbaUseCase(roadmapRepository, preguntaFlashRepository)
+    val responderPreguntaAlbaUseCase = ResponderPreguntaAlbaUseCase(validarRespuestaUseCase, historialRepository, albaRepository)
+    val usarArtefactoAlbaUseCase = UsarArtefactoAlbaUseCase(albaRepository)
+    val seguirPeleandoAlbaUseCase = SeguirPeleandoAlbaUseCase(albaRepository)
 
     // Repaso del mundo en el pozo de Mímir
     val obtenerPreguntasRepasoUseCase = ObtenerPreguntasRepasoUseCase(
         roadmapRepository, preguntaFlashRepository, diagnosticoRepository
     )
+
+    // CU-13 Duelo de enigmas
+    private val dueloRepository: DueloRepository = DueloRepositoryImpl(
+        database.conceptoEnigmaDao(), database.preguntaEnigmaDao(), database.resultadoDueloDao()
+    )
+    val validarAccesoDueloUseCase = ValidarAccesoDueloUseCase(roadmapRepository, dueloRepository, moduloHidromiel)
+    val armarDueloUseCase = ArmarDueloUseCase(roadmapRepository, dueloRepository)
+    val apostarDueloUseCase = ApostarDueloUseCase(moduloHidromiel, dueloRepository)
+    val finalizarDueloUseCase = FinalizarDueloUseCase(dueloRepository, moduloHidromiel, historialRepository, moduloCarreraSol = moduloCarreraSol)
+    val abandonarDueloUseCase = AbandonarDueloUseCase(dueloRepository)
+
+    // CU-02 Forjar artefactos en la apuesta de Brokkr
+    val forjaRepository: ForjaRepository = ForjaRepositoryImpl(
+        database.artefactoDao(), database.vitrinaDao(), database.forjaDao(), database.etapaForjaDao(), database.mundoDao()
+    )
+    /** MOD-06 Bitácora de errores: guarda en el historial de errores. */
+    val moduloBitacora = ModuloBitacora(historialRepository)
+    val validarAccesoForjaUseCase = ValidarAccesoForjaUseCase(forjaRepository, roadmapRepository, moduloHidromiel)
+    val obtenerVitrinaUseCase = ObtenerVitrinaUseCase(forjaRepository)
+    val asignarArtefactoUseCase = AsignarArtefactoUseCase(forjaRepository, roadmapRepository)
+    val calcularRangoApuestaUseCase = CalcularRangoApuestaUseCase(moduloHidromiel)
+    val armarForjaUseCase = ArmarForjaUseCase(forjaRepository, retoRepository)
+    val apostarForjaUseCase = ApostarForjaUseCase(moduloHidromiel, forjaRepository)
+    val validarEtapaForjaUseCase = ValidarEtapaForjaUseCase(moduloBitacora)
+    val enfriarMetalUseCase = EnfriarMetalUseCase(moduloBitacora)
+    val finalizarForjaUseCase = FinalizarForjaUseCase(forjaRepository, moduloHidromiel, moduloCarreraSol)
+    val abandonarForjaUseCase = AbandonarForjaUseCase(forjaRepository)
+    val cerrarForjasInconclusasUseCase = CerrarForjasInconclusasUseCase(forjaRepository)
 
     private companion object {
         const val CLAVE_MODO_ADMIN = "modo_admin"

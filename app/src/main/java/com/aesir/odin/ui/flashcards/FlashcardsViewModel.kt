@@ -1,5 +1,7 @@
 package com.aesir.odin.ui.flashcards
 
+import com.aesir.odin.domain.sonido.ModuloSonido
+import com.aesir.odin.domain.sonido.EventoSonido
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -163,6 +165,7 @@ class FlashcardsViewModel(
         val tarjeta = pila.actual ?: return
         val respuesta = pila.responder(indice) ?: return
         respuestaActual = respuesta
+        ModuloSonido.avisar(if (respuesta.correcta) EventoSonido.ACIERTO else EventoSonido.ERROR) // MOD-02
         if (!respuesta.correcta) {
             viewModelScope.launch { runCatching { registrarErrorUseCase(tarjeta, tarjeta.opciones[indice]) } }
             if (respuesta.sugerirRepaso) _sugerenciaRepaso.value = tarjeta

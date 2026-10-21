@@ -28,13 +28,29 @@ import com.aesir.odin.ui.leccion.ResumenLeccionScreen
 import com.aesir.odin.ui.memorama.MemoramaScreen
 import com.aesir.odin.ui.memorama.MemoramaViewModel
 import com.aesir.odin.ui.memorama.ResumenMemoramaScreen
+import com.aesir.odin.ui.moneda.CaraMoneda
+import com.aesir.odin.ui.moneda.CaraMonedaScreen
 import com.aesir.odin.ui.mundos.MundosScreen
+import com.aesir.odin.ui.ajustes.AjustesScreen
+import com.aesir.odin.ui.duelo.DueloEnigmasScreen
+import com.aesir.odin.ui.duelo.DueloEnigmasViewModel
+import com.aesir.odin.domain.eastereggs.JuegoOculto
+import com.aesir.odin.ui.eastereggs.JuegoOcultoScreen
+import com.aesir.odin.ui.ajustes.AjustesViewModel
 import com.aesir.odin.ui.retocontrareloj.RetoContrarrelojScreen
 import com.aesir.odin.ui.retocontrareloj.RetoContrarrelojViewModel
+import com.aesir.odin.ui.volva.ConsultaVolvaViewModel
+import com.aesir.odin.ui.volva.VolvaScreen
+import com.aesir.odin.ui.alba.HastaElAlbaScreen
+import com.aesir.odin.ui.alba.HastaElAlbaViewModel
 import com.aesir.odin.ui.roadmap.RoadmapScreen
 import com.aesir.odin.ui.temaintro.TemaIntroScreen
 import androidx.compose.runtime.CompositionLocalProvider
 import com.aesir.odin.ui.flashcards.FlashcardsScreen
+import com.aesir.odin.ui.forja.ForjaBrokkrScreen
+import com.aesir.odin.ui.racha.RachaScreen
+import com.aesir.odin.ui.racha.RachaViewModel
+import com.aesir.odin.ui.forja.ForjaBrokkrViewModel
 import com.aesir.odin.ui.flashcards.FlashcardsViewModel
 import com.aesir.odin.ui.ragnarok.RagnarokScreen
 import com.aesir.odin.ui.ragnarok.RagnarokViewModel
@@ -51,11 +67,25 @@ import com.aesir.odin.ui.retoarrastrar.RetoArrastrarViewModel
 object OdinNavGraph {
 
     const val rutaMundos = "mundos"
+    // Caras del escudo de Mundos (los casos de uso nuevos) que aún no tienen pantalla propia
+    const val rutaCaraMoneda = "caraMoneda"
+    private const val argCara = "cara"
+    const val rutaAjustes = "ajustes"
+    /** CU-13 Duelo de enigmas (cuarta cara del escudo-moneda). */
+    const val rutaDuelo = "dueloEnigmas"
+    private const val rutaJuegoOculto = "juegoOculto"
+    private const val argJuego = "juego"
+
+    /** Juego oculto (easter egg) de la pantalla de Mundos. */
+    fun rutaJuegoOcultoCon(juego: JuegoOculto) = "$rutaJuegoOculto/${juego.name}"
     const val rutaRoadmap = "roadmap"
     const val rutaIntroTema = "introTema"
     const val rutaLeccion = "leccion"
     const val rutaResumenLeccion = "resumenLeccion"
     const val rutaRetoContrareloj = "retoContrareloj"
+    /** CU-12 Retar a la bruja (La Völva). */
+    const val rutaVolva = "volva"
+    const val rutaAlba = "hastaElAlba"
     const val rutaCrucigrama = "crucigrama"
     const val rutaResultadoCrucigrama = "resultadoCrucigrama"
     // CU-04 Resolver memorama de conceptos
@@ -70,6 +100,10 @@ object OdinNavGraph {
     const val rutaRagnarok = "ragnarok"
     const val rutaRetoArrastrar = "retoArrastrar"
     const val rutaResumenReto = "resumenReto"
+    // CU-02 Forjar artefactos en la apuesta de Brokkr
+    const val rutaForjaBrokkr = "forjaBrokkr"
+    // MOD-05 La carrera de Sól
+    const val rutaRacha = "racha"
 
     private const val argMundoId = "mundoId"
     private const val argTemaId = "temaId"
@@ -88,6 +122,9 @@ object OdinNavGraph {
     private const val argOrdenMundo = "ordenMundo"
     private const val argIntentos = "intentos"
     private const val argDesbloqueados = "desbloqueados"
+
+    /** Ruta de un caso de uso del escudo que todavía no tiene pantalla propia. */
+    fun rutaCaraMonedaCon(cara: String) = "$rutaCaraMoneda/$cara"
 
     /** Ruta concreta del roadmap para un mundo determinado. */
     fun rutaRoadmapCon(mundoId: String) =
@@ -224,6 +261,43 @@ object OdinNavGraph {
                 )
             }
 
+            // CU-13 Duelo de enigmas
+            composable(rutaDuelo) {
+                DueloEnigmasScreen(
+                    vm = viewModel(factory = DueloEnigmasViewModel.factory(appContainer)),
+                    onSalir = { nav.popBackStack() }
+                )
+            }
+
+            // Juegos ocultos (easter eggs)
+            composable("$rutaJuegoOculto/{$argJuego}") { entrada ->
+                val juego = JuegoOculto.entries.firstOrNull { it.name == entrada.arguments?.getString(argJuego) }
+                if (juego != null) JuegoOcultoScreen(juego, appContainer, onVolver = { nav.popBackStack() })
+            }
+
+            // Ajustes (MOD-02, MOD-03 y MOD-04)
+            composable(rutaAjustes) {
+                AjustesScreen(
+                    vm = viewModel(factory = AjustesViewModel.factory(appContainer.moduloVisionHeimdall, appContainer.moduloSonido)),
+                    onVolver = { nav.popBackStack() }
+                )
+            }
+
+            // -------------------------
+            // Caras del escudo (casos de uso aún sin pantalla propia)
+            // -------------------------
+
+            composable(
+                route = "$rutaCaraMoneda/{$argCara}",
+                arguments = listOf(navArgument(argCara) { type = NavType.StringType })
+            ) { entrada ->
+                CaraMonedaScreen(
+                    cara = CaraMoneda.porNombre(entrada.arguments?.getString(argCara)),
+                    // Evita el doble pop (pantalla negra) si se toca dos veces.
+                    onVolver = { if (entrada.lifecycle.currentState == Lifecycle.State.RESUMED) nav.popBackStack() }
+                )
+            }
+
             // -------------------------
             // Roadmap
             // -------------------------
@@ -293,6 +367,32 @@ object OdinNavGraph {
                 RetoContrarrelojScreen(
                     viewModel = viewModel,
                     // Toques repetidos en "Volver" hacían popBackStack de más y dejaban la pantalla negra.
+                    onSalir = { if (entrada.lifecycle.currentState == Lifecycle.State.RESUMED) nav.popBackStack() }
+                )
+            }
+
+            // -------------------------
+            // Sobrevivir oleadas: Hasta el Alba (CU-01)
+            // -------------------------
+
+            composable(rutaAlba) { entrada ->
+                val viewModel: HastaElAlbaViewModel =
+                    viewModel(factory = HastaElAlbaViewModel.factory(appContainer))
+                HastaElAlbaScreen(
+                    vm = viewModel,
+                    onSalir = { if (entrada.lifecycle.currentState == Lifecycle.State.RESUMED) nav.popBackStack() }
+                )
+            }
+
+            // -------------------------
+            // Retar a la bruja (CU-12)
+            // -------------------------
+
+            composable(rutaVolva) { entrada ->
+                val viewModel: ConsultaVolvaViewModel =
+                    viewModel(factory = ConsultaVolvaViewModel.factory(appContainer))
+                VolvaScreen(
+                    viewModel = viewModel,
                     onSalir = { if (entrada.lifecycle.currentState == Lifecycle.State.RESUMED) nav.popBackStack() }
                 )
             }
@@ -629,6 +729,27 @@ object OdinNavGraph {
                     onRepasarLeccion = { irDesdeRoadmap(rutaIntroTemaCon(it)) },
                     // MOD-01: salir antes de terminar es abandonar el nivel.
                     onSalir = { viewModel.confirmarSalida(volverAlRoadmap) }
+                )
+            }
+
+            // -------------------------
+            // La apuesta de Brokkr (CU-02)
+            // -------------------------
+
+            composable(rutaRacha) { entrada ->
+                val viewModel: RachaViewModel = viewModel(factory = RachaViewModel.factory(appContainer))
+                RachaScreen(
+                    viewModel = viewModel,
+                    onVolver = { if (entrada.lifecycle.currentState == Lifecycle.State.RESUMED) nav.popBackStack() }
+                )
+            }
+
+            composable(rutaForjaBrokkr) { entrada ->
+                val viewModel: ForjaBrokkrViewModel = viewModel(factory = ForjaBrokkrViewModel.factory(appContainer))
+                ForjaBrokkrScreen(
+                    viewModel = viewModel,
+                    // Regresa al Valhalla (pantalla de mundos); se ignoran toques repetidos.
+                    onSalir = { if (entrada.lifecycle.currentState == Lifecycle.State.RESUMED) nav.popBackStack() }
                 )
             }
 

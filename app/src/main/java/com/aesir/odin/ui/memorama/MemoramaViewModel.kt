@@ -1,5 +1,7 @@
 package com.aesir.odin.ui.memorama
 
+import com.aesir.odin.domain.sonido.ModuloSonido
+import com.aesir.odin.domain.sonido.EventoSonido
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -129,6 +131,7 @@ class MemoramaViewModel(
         if (primera == null) {
             // Primera tarjeta (RF-08)
             primeraSeleccion = indice
+            ModuloSonido.avisar(EventoSonido.VOLTEO_CARTA) // MOD-02
             cambiarEstado(EstadoTarjeta.VISIBLE, indice)
             _aviso.value = Aviso.ELIGE_SEGUNDA
             return
@@ -136,6 +139,7 @@ class MemoramaViewModel(
 
         // Segunda tarjeta (RF-09) y verificación (RF-10)
         bloqueado = true
+        ModuloSonido.avisar(EventoSonido.VOLTEO_CARTA) // MOD-02
         cambiarEstado(EstadoTarjeta.VISIBLE, indice)
         val esPar = verificarParejaUseCase(_tarjetas.value[primera], _tarjetas.value[indice])
 
