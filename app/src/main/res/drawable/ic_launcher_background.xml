@@ -1,31 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Fondo del ícono: cielo nocturno con chispas doradas, como el fondo de la app. -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <path android:pathData="M0,0h108v108h-108z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:type="radial"
-                android:centerX="54"
-                android:centerY="50"
-                android:gradientRadius="76">
-                <item android:offset="0" android:color="#FF1C2333" />
-                <item android:offset="0.55" android:color="#FF141A26" />
-                <item android:offset="1" android:color="#FF0B0E14" />
-            </gradient>
-        </aapt:attr>
-    </path>
-    <!-- Chispas doradas (ColorChispasDoradas) -->
-    <path android:fillColor="#B3E8C97A" android:pathData="M22,24m-1.2,0a1.2,1.2 0,1 1,2.4 0a1.2,1.2 0,1 1,-2.4 0" />
-    <path android:fillColor="#80E8C97A" android:pathData="M84,20m-0.9,0a0.9,0.9 0,1 1,1.8 0a0.9,0.9 0,1 1,-1.8 0" />
-    <path android:fillColor="#99E8C97A" android:pathData="M90,72m-1.1,0a1.1,1.1 0,1 1,2.2 0a1.1,1.1 0,1 1,-2.2 0" />
-    <path android:fillColor="#66E8C97A" android:pathData="M18,80m-0.8,0a0.8,0.8 0,1 1,1.6 0a0.8,0.8 0,1 1,-1.6 0" />
-    <path android:fillColor="#80E8C97A" android:pathData="M30,94m-0.9,0a0.9,0.9 0,1 1,1.8 0a0.9,0.9 0,1 1,-1.8 0" />
-    <path android:fillColor="#66E8C97A" android:pathData="M76,92m-0.7,0a0.7,0.7 0,1 1,1.4 0a0.7,0.7 0,1 1,-1.4 0" />
-    <path android:fillColor="#99E8C97A" android:pathData="M12,50m-0.8,0a0.8,0.8 0,1 1,1.6 0a0.8,0.8 0,1 1,-1.6 0" />
-    <path android:fillColor="#80E8C97A" android:pathData="M96,44m-0.8,0a0.8,0.8 0,1 1,1.6 0a0.8,0.8 0,1 1,-1.6 0" />
-</vector>
+<!-- Fondo del ícono: el mismo negro cálido del borde del ícono de iOS. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#FF110F0D" />
+</shape>

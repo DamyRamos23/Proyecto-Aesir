@@ -20,8 +20,9 @@ class AbandonarRetoContrarrelojUseCase(
     private val idUsuario: String = USUARIO_LOCAL,
     private val reloj: () -> Long = System::currentTimeMillis
 ) {
-    suspend operator fun invoke(): ResultadoContrarreloj {
-        val aviso = moduloHidromiel.alAbandonarContrarreloj(ContrarrelojAbandonado(idUsuario))
+    /** [puntajeAcumulado]: si es negativo se suma a la penalización; si es positivo se pierde. */
+    suspend operator fun invoke(puntajeAcumulado: Int = 0): ResultadoContrarreloj {
+        val aviso = moduloHidromiel.alAbandonarContrarreloj(ContrarrelojAbandonado(idUsuario, puntajeAcumulado))
         val resultado = ResultadoContrarreloj(
             id = UUID.randomUUID().toString(),
             puntaje = 0,

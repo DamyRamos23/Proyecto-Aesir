@@ -29,7 +29,9 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -245,8 +247,10 @@ private fun PantallaLlamado(
     RotuloPozo(if (repaso) "REPASO DEL MUNDO" else "EVALUACIÓN DIAGNÓSTICA", acento, Modifier.enMI(250f, 127f))
     TituloPozo(if (repaso) "El eco de Mímir" else "El llamado de Mímir", 33f, Modifier.enMI(250f, 170f).width(MI.d(460f).dp))
 
+    // Anclado por abajo: si la cita crece, sube en vez de meterse bajo el recuadro de reglas (y=692).
+    Box(Modifier.enMI(250f, 588f).tamMI(400f, 180f), contentAlignment = Alignment.BottomCenter) {
     Column(
-        Modifier.enMI(250f, 655f).width(MI.d(400f).dp),
+        Modifier.width(MI.d(400f).dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -260,6 +264,7 @@ private fun PantallaLlamado(
             Modifier.padding(top = MI.d(10f).dp),
             style = alegreya(13.5f * MI.K, color = MI.Gris).copy(shadow = Shadow(Color.Black, Offset.Zero, 6f))
         )
+    }
     }
 
     Box(
@@ -344,7 +349,8 @@ private fun PantallaPrueba(viewModel: EvaluacionDiagnosticaViewModel, e: Evaluac
                 (slideOutHorizontally(tween(350)) { -it } + fadeOut(tween(250)))
         },
         contentKey = { it.id },
-        modifier = Modifier.offset(y = MI.d(212f - 40f / MI.K).dp).width(RG.ANCHO.dp),
+        // Tope antes del botón (y≈905): con preguntas largas se desplaza en vez de taparlo.
+        modifier = Modifier.offset(y = MI.d(212f - 40f / MI.K).dp).width(RG.ANCHO.dp).heightIn(max = MI.d(690f).dp),
         label = "pregunta"
     ) { p ->
         CuerpoPregunta(viewModel, e, p, acento)
@@ -379,7 +385,7 @@ private fun CuerpoPregunta(
         return if (elegida) EstadoOpcionPozo.INCORRECTA else EstadoOpcionPozo.APAGADA
     }
 
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             e.nombreTema(pregunta.temaId),
             Modifier.padding(bottom = MI.d(18f).dp),

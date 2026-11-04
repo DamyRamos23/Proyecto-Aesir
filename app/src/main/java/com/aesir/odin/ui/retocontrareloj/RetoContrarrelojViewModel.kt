@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.aesir.odin.di.AppContainer
+import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.hidromiel.PoliticaCosto
 import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
 import com.aesir.odin.domain.model.EstadoRespuesta
@@ -37,8 +38,8 @@ import kotlinx.coroutines.launch
  * (10 de hidromiel). Luego lleva un contador regresivo general (no por
  * pregunta), valida cada respuesta confirmada, suma puntaje si es correcta y
  * lo resta si es incorrecta, y pasa de inmediato a la siguiente pregunta sin
- * detener el contador. Si se acaban las preguntas se vuelven a barajar: el
- * reto solo termina al agotarse el tiempo o si el alumno lo abandona (E3.1).
+ * detener el contador. El reto termina al agotarse el tiempo, al acabarse las
+ * preguntas o si el alumno lo abandona (E3.1).
  */
 class RetoContrarrelojViewModel(
     private val armarRetoUseCase: ArmarRetoContrarrelojUseCase,
@@ -81,7 +82,8 @@ class RetoContrarrelojViewModel(
     val puntaje: StateFlow<Int> = _puntaje.asStateFlow()
     val resultado: StateFlow<ResultadoContrarreloj?> = _resultado.asStateFlow()
     val saldo: StateFlow<Int> = saldoHidromiel.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
-    val costoEntrada: Int = PoliticaCosto.ENTRADA_CONTRARRELOJ
+    /** En modo admin la entrada es gratis, así que se puede entrar sin hidromiel. */
+    val costoEntrada: Int get() = if (ModoAdmin.estaActivo) 0 else PoliticaCosto.ENTRADA_CONTRARRELOJ
 
     /** Duración total del reto, para dibujar la barra de tiempo. */
     var duracionSegundos: Int = RetoContrareloj.DURACION_SEGUNDOS
@@ -183,16 +185,13 @@ class RetoContrarrelojViewModel(
         }
 
         indicePregunta++
-        if (indicePregunta >= actual.preguntas.size) {
-            // Se acabaron las preguntas antes que el tiempo: se rebaraja y se sigue.
-            val rebarajado = actual.copy(preguntas = actual.preguntas.shuffled())
-            reto = rebarajado
-            indicePregunta = 0
-            _preguntaActual.value = rebarajado.preguntas[0]
-        } else {
-            _preguntaActual.value = actual.preguntas[indicePregunta]
-        }
         _seleccionadas.value = emptySet()
+        if (indicePregunta >= actual.preguntas.size) {
+            // Se acabaron las preguntas antes que el tiempo: el reto termina.
+            terminarReto()
+            return
+        }
+        _preguntaActual.value = actual.preguntas[indicePregunta]
         _numeroPregunta.value = respondidas + 1
     }
 
@@ -202,8 +201,9 @@ class RetoContrarrelojViewModel(
         cerrando = true
         temporizador?.cancel()
         _estado.value = Estado.Guardando
+        val puntajeAcumulado = _puntaje.value
         viewModelScope.launch {
-            guardar(Estado.Abandonado) { abandonarRetoUseCase() }
+            guardar(Estado.Abandonado) { abandonarRetoUseCase(puntajeAcumulado) }
         }
     }
 

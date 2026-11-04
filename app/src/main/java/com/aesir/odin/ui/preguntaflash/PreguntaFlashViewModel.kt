@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.aesir.odin.di.AppContainer
+import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.model.EstadoPreguntaFlash
 import com.aesir.odin.domain.model.Mundo
 import com.aesir.odin.domain.model.PreguntaFlash
@@ -121,6 +122,11 @@ class PreguntaFlashViewModel(
                 ruta.startsWith("${OdinNavGraph.rutaRoadmap}/"))
         // Flujo alternativo A2.1: la pregunta pospuesta sale al volver a navegación.
         if (enPantallaNavegacion && preguntaPendiente) mostrarPregunta()
+    }
+
+    /** Modo admin: saca una pregunta flash ya, sin esperar el intervalo. */
+    fun invocar() {
+        if (ModoAdmin.estaActivo && enPantallaNavegacion) mostrarPregunta()
     }
 
     fun alternarOpcion(indice: Int) {

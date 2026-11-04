@@ -1,44 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Logo de ODIN: la runa Ansuz (ᚨ), runa de Odín, en dorado dentro de un anillo
-  rojo como los nodos activos del roadmap. Todo queda dentro de la zona segura
-  (círculo de 66dp al centro) del ícono adaptativo.
+  Logo de ODIN: el mismo ícono de la versión iOS (AppIcon-1024.png).
+  Encogido para que el doble aro quede dentro de la zona segura (66dp de 108dp).
 -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <!-- Halo tenue detrás del anillo -->
-    <path
-        android:fillColor="#26B23B3B"
-        android:pathData="M54,22a32,32 0,1 1,0 64a32,32 0,1 1,0 -64z" />
-    <!-- Anillo rojo (ColorConexionActiva) -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFB23B3B"
-        android:strokeWidth="2.6"
-        android:pathData="M54,25a29,29 0,1 1,0 58a29,29 0,1 1,0 -58z" />
-    <!-- Anillo interior dorado -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#80E8C97A"
-        android:strokeWidth="0.8"
-        android:pathData="M54,29.5a24.5,24.5 0,1 1,0 49a24.5,24.5 0,1 1,0 -49z" />
-    <!-- Sombra de la runa, como el texto pintado a mano -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#66000000"
-        android:strokeWidth="5"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M48.6,38.8L48.6,71.8M48.6,39.3L62.6,47.3M48.6,50.3L62.6,58.3" />
-    <!-- Runa Ansuz (ColorChispasDoradas) -->
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFE8C97A"
-        android:strokeWidth="4.6"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M47.5,37.5L47.5,70.5M47.5,38L61.5,46M47.5,49L61.5,57" />
-</vector>
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_launcher_ios"
+    android:inset="10dp" />

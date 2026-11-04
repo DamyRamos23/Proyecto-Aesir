@@ -17,6 +17,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -38,7 +39,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -79,12 +85,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.compose.ui.res.painterResource
+import com.aesir.odin.R
 import com.aesir.odin.di.AppContainer
 import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
 import com.aesir.odin.ui.components.odin.ContadorHidromiel
 import com.aesir.odin.domain.model.Mundo
 import com.aesir.odin.ui.components.odin.BotonOdin
 import com.aesir.odin.ui.components.odin.FondoMundo
+import com.aesir.odin.ui.components.odin.TextoAjustable
 import com.aesir.odin.ui.components.odin.desaturar
 import com.aesir.odin.ui.components.odin.dibujarEmblema
 import com.aesir.odin.ui.components.odin.dibujarPaisaje
@@ -121,7 +130,8 @@ import com.aesir.odin.ui.components.odin.rememberTiempo
 @Composable
 fun MundosScreen(
     navController: NavHostController,
-    appContainer: AppContainer
+    appContainer: AppContainer,
+    onInvocarPreguntaFlash: () -> Unit = {}
 ) {
     val viewModel: MundosViewModel = viewModel(
         factory = MundosViewModel.factory(
@@ -146,6 +156,30 @@ fun MundosScreen(
      */
     val combinacion = remember { CombinacionSecreta(listOf(0, 1, 3, 2, 0, 1, 3, 2)) }
     var avisoAdmin by remember { mutableStateOf<String?>(null) }
+    var editandoSaldo by remember { mutableStateOf(false) }
+    if (editandoSaldo) {
+        var texto by remember { mutableStateOf(saldo.toString()) }
+        AlertDialog(
+            onDismissRequest = { editandoSaldo = false },
+            title = { Text("Hidromiel (admin)") },
+            text = {
+                OutlinedTextField(
+                    value = texto,
+                    onValueChange = { nuevo -> texto = nuevo.filter(Char::isDigit).take(6) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val cantidad = texto.toIntOrNull()
+                    if (cantidad != null) scope.launch { appContainer.moduloHidromiel.establecerSaldoAdmin(USUARIO_LOCAL, cantidad) }
+                    editandoSaldo = false
+                }) { Text("Guardar") }
+            },
+            dismissButton = { TextButton(onClick = { editandoSaldo = false }) { Text("Cancelar") } }
+        )
+    }
     val vibrar = LocalHapticFeedback.current
     LaunchedEffect(avisoAdmin) {
         if (avisoAdmin != null) {
@@ -157,6 +191,17 @@ fun MundosScreen(
     val seleccionado = visibles.firstOrNull { it.id == seleccionadoId }
         ?: visibles.firstOrNull { it.desbloqueado }
         ?: visibles.firstOrNull()
+    /** CU-10: la primera vez se presenta la evaluación diagnóstica del mundo. */
+    val entrar: (Mundo) -> Unit = { mundo ->
+        scope.launch {
+            val ruta = if (viewModel.intentarAbrirDiagnostico(mundo.id)) {
+                OdinNavGraph.rutaEvaluacionDiagnosticaCon(mundo.id)
+            } else {
+                OdinNavGraph.rutaRoadmapCon(mundo.id)
+            }
+            navController.navigate(ruta)
+        }
+    }
 
     Box(Modifier.fillMaxSize()) {
     FondoMundo(estilo = null) {
@@ -183,7 +228,26 @@ fun MundosScreen(
                     )
                 }
                 Spacer(Modifier.weight(1f))
-                ContadorHidromiel(saldo = saldo)
+                if (adminActivo) {
+                    // Modo admin: saca una pregunta flash a voluntad.
+                    Icon(
+                        painterResource(R.drawable.ic_rayo),
+                        contentDescription = "Invocar pregunta flash",
+                        tint = OdinPaleta.Hollin,
+                        modifier = Modifier
+                            .padding(end = 10.dp)
+                            .size(34.dp)
+                            .clip(CircleShape)
+                            .background(OdinPaleta.Brasa)
+                            .clickable(role = Role.Button, onClick = onInvocarPreguntaFlash)
+                            .padding(6.dp)
+                    )
+                }
+                // Modo admin: tocar el contador permite fijar el hidromiel.
+                ContadorHidromiel(
+                    saldo = saldo,
+                    modifier = if (adminActivo) Modifier.clickable { editandoSaldo = true } else Modifier
+                )
             }
             Spacer(Modifier.height(6.dp))
             Text(
@@ -200,6 +264,13 @@ fun MundosScreen(
                     mundos = visibles,
                     seleccionadoId = seleccionado?.id,
                     onSeleccionar = { id ->
+                        // Tocar otra vez el mundo ya elegido también entra (además del botón).
+                        // Se compara con la selección explícita para no estorbar la combinación admin.
+                        val tocado = visibles.firstOrNull { it.id == id }
+                        if (id == seleccionadoId && tocado != null && tocado.desbloqueado) {
+                            entrar(tocado)
+                            return@EscudoMundos
+                        }
                         seleccionadoId = id
                         val i = visibles.indexOfFirst { it.id == id }
                         if (i >= 0 && combinacion.registrar(i)) {
@@ -240,17 +311,7 @@ fun MundosScreen(
                     PanelMundo(
                         mundo = mundo,
                         anterior = visibles.getOrNull(visibles.indexOfFirst { it.id == mundo.id } - 1),
-                        onEntrar = {
-                            // CU-10: la primera vez se presenta la evaluación diagnóstica del mundo
-                            scope.launch {
-                                val ruta = if (viewModel.intentarAbrirDiagnostico(mundo.id)) {
-                                    OdinNavGraph.rutaEvaluacionDiagnosticaCon(mundo.id)
-                                } else {
-                                    OdinNavGraph.rutaRoadmapCon(mundo.id)
-                                }
-                                navController.navigate(ruta)
-                            }
-                        }
+                        onEntrar = { entrar(mundo) }
                     )
                 }
             }
@@ -386,10 +447,11 @@ private fun FragmentoMundo(
     val grosor by animateDpAsState(if (seleccionado) 2.5.dp else 1.dp, label = "grosorFragmento")
 
     val alineacion = when (cuadrante) {
-        Cuadrante.SUPERIOR_IZQ -> BiasAlignment(0.12f, 0.12f)
-        Cuadrante.SUPERIOR_DER -> BiasAlignment(-0.12f, 0.12f)
-        Cuadrante.INFERIOR_IZQ -> BiasAlignment(0.12f, -0.12f)
-        Cuadrante.INFERIOR_DER -> BiasAlignment(-0.12f, -0.12f)
+        // Cargado hacia el centro del escudo, donde el cuarto de círculo es más ancho y no recorta el nombre.
+        Cuadrante.SUPERIOR_IZQ -> BiasAlignment(0.45f, 0.45f)
+        Cuadrante.SUPERIOR_DER -> BiasAlignment(-0.45f, 0.45f)
+        Cuadrante.INFERIOR_IZQ -> BiasAlignment(0.45f, -0.75f)
+        Cuadrante.INFERIOR_DER -> BiasAlignment(-0.45f, -0.75f)
     }
 
     Box(
@@ -424,7 +486,7 @@ private fun FragmentoMundo(
             mancha(c, size.width * .42f, Color.Black, .45f)
         }
         Column(
-            Modifier.align(alineacion).fillMaxWidth(0.82f),
+            Modifier.align(alineacion).fillMaxWidth(0.55f),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
@@ -442,11 +504,12 @@ private fun FragmentoMundo(
                 }
             }
             Spacer(Modifier.height(6.dp))
-            Text(
+            TextoAjustable(
                 mundo.nombre,
-                style = estiloTitulo(13.sp, if (bloqueado) Color(0xFFD4E4EE) else OdinPaleta.Hueso),
-                textAlign = TextAlign.Center,
-                maxLines = 2
+                estiloTitulo(13.sp, if (bloqueado) Color(0xFFD4E4EE) else OdinPaleta.Hueso).copy(textAlign = TextAlign.Center),
+                Modifier.fillMaxWidth(),
+                minEscala = 0.7f,
+                maxLineas = 2
             )
         }
     }

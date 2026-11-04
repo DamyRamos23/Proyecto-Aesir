@@ -185,7 +185,8 @@ object OdinNavGraph {
     fun construirGrafo(
         nav: NavHostController,
         appContainer: AppContainer,
-        modifier: Modifier = Modifier
+        modifier: Modifier = Modifier,
+        onInvocarPreguntaFlash: () -> Unit = {}
     ) {
 
         val volverAlRoadmap: () -> Unit = {
@@ -218,7 +219,8 @@ object OdinNavGraph {
             composable(rutaMundos) {
                 MundosScreen(
                     nav,
-                    appContainer
+                    appContainer,
+                    onInvocarPreguntaFlash
                 )
             }
 
