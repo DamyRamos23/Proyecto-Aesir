@@ -17,3 +17,6 @@ local.properties
 # Documentos del equipo (Drive), no forman parte del código
 /Docs/
 _to_delete/
+
+# graphify
+graphify-out/
