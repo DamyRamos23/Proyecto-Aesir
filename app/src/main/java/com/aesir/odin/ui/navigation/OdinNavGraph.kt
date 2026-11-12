@@ -29,6 +29,12 @@ import com.aesir.odin.ui.memorama.MemoramaScreen
 import com.aesir.odin.ui.memorama.MemoramaViewModel
 import com.aesir.odin.ui.memorama.ResumenMemoramaScreen
 import com.aesir.odin.ui.mundos.MundosScreen
+import com.aesir.odin.ui.ajustes.AjustesScreen
+import com.aesir.odin.ui.duelo.DueloEnigmasScreen
+import com.aesir.odin.ui.duelo.DueloEnigmasViewModel
+import com.aesir.odin.domain.eastereggs.JuegoOculto
+import com.aesir.odin.ui.eastereggs.JuegoOcultoScreen
+import com.aesir.odin.ui.ajustes.AjustesViewModel
 import com.aesir.odin.ui.retocontrareloj.RetoContrarrelojScreen
 import com.aesir.odin.ui.retocontrareloj.RetoContrarrelojViewModel
 import com.aesir.odin.ui.roadmap.RoadmapScreen
@@ -51,6 +57,14 @@ import com.aesir.odin.ui.retoarrastrar.RetoArrastrarViewModel
 object OdinNavGraph {
 
     const val rutaMundos = "mundos"
+    const val rutaAjustes = "ajustes"
+    /** CU-13 Duelo de enigmas (reverso de la moneda de Mundos). */
+    const val rutaDuelo = "dueloEnigmas"
+    private const val rutaJuegoOculto = "juegoOculto"
+    private const val argJuego = "juego"
+
+    /** Juego oculto (easter egg) de la pantalla de Mundos. */
+    fun rutaJuegoOcultoCon(juego: JuegoOculto) = "$rutaJuegoOculto/${juego.name}"
     const val rutaRoadmap = "roadmap"
     const val rutaIntroTema = "introTema"
     const val rutaLeccion = "leccion"
@@ -221,6 +235,28 @@ object OdinNavGraph {
                     nav,
                     appContainer,
                     onInvocarPreguntaFlash
+                )
+            }
+
+            // CU-13 Duelo de enigmas
+            composable(rutaDuelo) {
+                DueloEnigmasScreen(
+                    vm = viewModel(factory = DueloEnigmasViewModel.factory(appContainer)),
+                    onSalir = { nav.popBackStack() }
+                )
+            }
+
+            // Juegos ocultos (easter eggs)
+            composable("$rutaJuegoOculto/{$argJuego}") { entrada ->
+                val juego = JuegoOculto.entries.firstOrNull { it.name == entrada.arguments?.getString(argJuego) }
+                if (juego != null) JuegoOcultoScreen(juego, appContainer, onVolver = { nav.popBackStack() })
+            }
+
+            // Ajustes (MOD-02, MOD-03 y MOD-04)
+            composable(rutaAjustes) {
+                AjustesScreen(
+                    vm = viewModel(factory = AjustesViewModel.factory(appContainer.moduloVisionHeimdall)),
+                    onVolver = { nav.popBackStack() }
                 )
             }
 

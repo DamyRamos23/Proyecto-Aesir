@@ -39,18 +39,20 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.material3.Text
+import com.aesir.odin.ui.theme.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -108,6 +110,12 @@ import com.aesir.odin.ui.theme.FuenteTexto
 import com.aesir.odin.ui.theme.OdinPaleta
 import kotlin.random.Random
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.ui.input.pointer.pointerInput
+import com.aesir.odin.domain.eastereggs.JuegoOculto
+import com.aesir.odin.ui.eastereggs.MenuEastereggs
 import kotlinx.coroutines.delay
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
@@ -157,6 +165,29 @@ fun MundosScreen(
     val combinacion = remember { CombinacionSecreta(listOf(0, 1, 3, 2, 0, 1, 3, 2)) }
     var avisoAdmin by remember { mutableStateOf<String?>(null) }
     var editandoSaldo by remember { mutableStateOf(false) }
+    // Easter eggs: una combinación por juego oculto y 7 toques al contador para el menú.
+    val combinacionesJuegos = remember { JuegoOculto.entries.associateWith { CombinacionSecreta(it.combinacion) } }
+    val sieteToques = remember { CombinacionSecreta(List(7) { 0 }) }
+    var mostrarMenuJuegos by remember { mutableStateOf(false) }
+    // Medias vueltas de la moneda (cara par = mundos, impar = duelo de enigmas)
+    var girosMoneda by rememberSaveable { mutableIntStateOf(0) }
+    val enAnverso = girosMoneda % 2 == 0
+    val abrirJuego: (JuegoOculto) -> Unit = { juego ->
+        appContainer.almacenEastereggs.descubrir(juego)
+        mostrarMenuJuegos = false
+        navController.navigate(OdinNavGraph.rutaJuegoOcultoCon(juego))
+    }
+    if (mostrarMenuJuegos) {
+        MenuEastereggs(
+            descubiertos = remember { appContainer.almacenEastereggs.descubiertos() },
+            todosVisibles = adminActivo,
+            onElegir = { juego ->
+                mostrarMenuJuegos = false
+                navController.navigate(OdinNavGraph.rutaJuegoOcultoCon(juego))
+            },
+            onCerrar = { mostrarMenuJuegos = false }
+        )
+    }
     if (editandoSaldo) {
         var texto by remember { mutableStateOf(saldo.toString()) }
         AlertDialog(
@@ -243,10 +274,34 @@ fun MundosScreen(
                             .padding(6.dp)
                     )
                 }
-                // Modo admin: tocar el contador permite fijar el hidromiel.
+                Icon(
+                    Icons.Filled.Settings,
+                    contentDescription = "Ajustes",
+                    tint = OdinPaleta.Hueso,
+                    modifier = Modifier
+                        .padding(end = 10.dp)
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .clickable(role = Role.Button) { navController.navigate(OdinNavGraph.rutaAjustes) }
+                        .padding(5.dp)
+                )
+                // 7 toques: menú de easter eggs. Modo admin: mantener 3 s permite fijar el hidromiel.
                 ContadorHidromiel(
                     saldo = saldo,
-                    modifier = if (adminActivo) Modifier.clickable { editandoSaldo = true } else Modifier
+                    modifier = Modifier.pointerInput(adminActivo) {
+                        awaitEachGesture {
+                            awaitFirstDown()
+                            val soltado = withTimeoutOrNull(PRESION_ADMIN_MS) { waitForUpOrCancellation() }
+                            if (soltado == null) {
+                                if (adminActivo) {
+                                    vibrar.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    editandoSaldo = true
+                                }
+                            } else if (sieteToques.registrar(0)) {
+                                mostrarMenuJuegos = true
+                            }
+                        }
+                    }
                 )
             }
             Spacer(Modifier.height(6.dp))
@@ -260,37 +315,56 @@ fun MundosScreen(
             Spacer(Modifier.height(24.dp))
 
             if (visibles.isNotEmpty()) {
-                EscudoMundos(
-                    mundos = visibles,
-                    seleccionadoId = seleccionado?.id,
-                    onSeleccionar = { id ->
-                        // Tocar otra vez el mundo ya elegido también entra (además del botón).
-                        // Se compara con la selección explícita para no estorbar la combinación admin.
-                        val tocado = visibles.firstOrNull { it.id == id }
-                        if (id == seleccionadoId && tocado != null && tocado.desbloqueado) {
-                            entrar(tocado)
-                            return@EscudoMundos
-                        }
-                        seleccionadoId = id
-                        val i = visibles.indexOfFirst { it.id == id }
-                        if (i >= 0 && combinacion.registrar(i)) {
-                            ModoAdmin.alternar()
-                            viewModel.cargarMundos()
-                            vibrar.performHapticFeedback(HapticFeedbackType.LongPress)
-                            avisoAdmin = if (ModoAdmin.estaActivo) "ᛟ Modo admin activado: todo abierto y gratis" else "Modo admin desactivado"
-                        }
-                    },
-                    // CU-11: el reto mezcla preguntas de todos los temas ya
-                    // estudiados, por eso se entra desde el centro del escudo.
-                    onAbrirReto = { navController.navigate(OdinNavGraph.rutaRetoContrareloj) },
+                // La pantalla es una moneda: deslizar hacia arriba la gira al duelo de enigmas y de vuelta.
+                MonedaMundos(
+                    giros = girosMoneda,
+                    onGirar = { girosMoneda++ },
                     modifier = Modifier
                         .widthIn(max = 440.dp)
                         .fillMaxWidth()
-                        .align(Alignment.CenterHorizontally)
+                        .align(Alignment.CenterHorizontally),
+                    caras = listOf(
+                        {
+                        EscudoMundos(
+                            mundos = visibles,
+                            seleccionadoId = seleccionado?.id,
+                            onSeleccionar = { id ->
+                                // Tocar otra vez el mundo ya elegido también entra (además del botón).
+                                // Se compara con la selección explícita para no estorbar la combinación admin.
+                                val tocado = visibles.firstOrNull { it.id == id }
+                                if (id == seleccionadoId && tocado != null && tocado.desbloqueado) {
+                                    entrar(tocado)
+                                    return@EscudoMundos
+                                }
+                                seleccionadoId = id
+                                val i = visibles.indexOfFirst { it.id == id }
+                                // Todas las combinaciones escuchan cada toque (no se interrumpen entre sí).
+                                val juego = combinacionesJuegos.entries.filter { (_, c) -> i >= 0 && c.registrar(i) }.firstOrNull()?.key
+                                if (juego != null) {
+                                    vibrar.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    abrirJuego(juego)
+                                    return@EscudoMundos
+                                }
+                                if (i >= 0 && combinacion.registrar(i)) {
+                                    ModoAdmin.alternar()
+                                    viewModel.cargarMundos()
+                                    vibrar.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    avisoAdmin = if (ModoAdmin.estaActivo) "ᛟ Modo admin activado: todo abierto y gratis" else "Modo admin desactivado"
+                                }
+                            },
+                            // CU-11: el reto mezcla preguntas de todos los temas ya
+                            // estudiados, por eso se entra desde el centro del escudo.
+                            onAbrirReto = { navController.navigate(OdinNavGraph.rutaRetoContrareloj) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        },
+                        { ReversoDuelo(onRetar = { navController.navigate(OdinNavGraph.rutaDuelo) }) }
+                    )
                 )
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "Toca el Valknut del centro para el reto contrarreloj.",
+                    if (enAnverso) "Toca el Valknut del centro para el reto contrarreloj. Desliza hacia arriba para girar la moneda."
+                    else "Desliza hacia arriba para volver a los mundos.",
                     color = OdinPaleta.HuesoTenue,
                     fontFamily = FuenteTexto,
                     fontSize = 13.sp,
@@ -301,7 +375,7 @@ fun MundosScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            if (seleccionado != null) {
+            if (seleccionado != null && enAnverso) {
                 AnimatedContent(
                     targetState = seleccionado,
                     transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(120)) },
@@ -648,3 +722,6 @@ private fun PanelMundo(mundo: Mundo, anterior: Mundo?, onEntrar: () -> Unit) {
         }
     }
 }
+
+/** Mantener presionado el contador este tiempo abre el editor de hidromiel (modo admin). */
+private const val PRESION_ADMIN_MS = 3_000L

@@ -58,6 +58,9 @@ class CatalogoNivelesImpl(
         return if (i < 0) null else mundos.getOrNull(i + 1)?.id
     }
 
+    override suspend fun mundosDesbloqueados(): List<String> =
+        mundoDao.getAll().filter { it.desbloqueado }.map { it.id }
+
     private inner class Arbol(val lecciones: List<TemaEntity>, val minijuegos: List<TemaEntity>, val retos: List<TemaEntity>) {
         val jugables: List<TemaEntity> get() = (lecciones + minijuegos + retos).filter { it.jugable() }
     }
@@ -79,7 +82,8 @@ class CatalogoNivelesImpl(
         nombre = tema.nombre,
         tipo = if (tema.tipo == RAGNAROK) TipoNivel.RAGNAROK else TipoNivel.NORMAL,
         // La entrada gratuita es la primera lección del anillo interior
-        esPrimero = tema.tipo != RAGNAROK && tema.id == arbol.lecciones.firstOrNull()?.id
+        esPrimero = tema.tipo != RAGNAROK && tema.id == arbol.lecciones.firstOrNull()?.id,
+        anillo = tema.anillo.coerceAtLeast(ArbolHabilidades.ANILLO_LECCIONES)
     )
 
     private companion object {

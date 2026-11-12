@@ -49,6 +49,13 @@ import com.aesir.odin.data.local.entity.ResultadoLeccionEntity
 import com.aesir.odin.data.local.entity.ResultadoContrarrelojEntity
 import com.aesir.odin.data.local.entity.ResultadoMemoramaEntity
 import com.aesir.odin.data.local.entity.TemaEntity
+import com.aesir.odin.data.local.entity.ConceptoEnigmaEntity
+import com.aesir.odin.data.local.entity.PreguntaEnigmaEntity
+import com.aesir.odin.data.local.entity.ResultadoDueloEntity
+import com.aesir.odin.data.local.dao.ConceptoEnigmaDao
+import com.aesir.odin.data.local.dao.PreguntaEnigmaDao
+import com.aesir.odin.data.local.dao.ResultadoDueloDao
+import androidx.room.migration.Migration
 
 @Database(
     entities = [
@@ -76,7 +83,10 @@ import com.aesir.odin.data.local.entity.TemaEntity
         RetoArrastrarEntity::class,
         ElementoArrastrableEntity::class,
         PosicionDestinoEntity::class,
-        ResultadoRetoEntity::class
+        ResultadoRetoEntity::class,
+        ConceptoEnigmaEntity::class,
+        PreguntaEnigmaEntity::class,
+        ResultadoDueloEntity::class
     ],
     // v3: MOD-01 Sistema de Hidromiel (tablas nuevas y columna temas.tipo)
     // v4: CU-07 crucigrama (conceptos, resultados y columna temas.actividad)
@@ -86,7 +96,9 @@ import com.aesir.odin.data.local.entity.TemaEntity
     // v8: CU-04 memorama (pares y resultados), CU-10 diagnóstico (preguntas,
     //     resultados) y columna temas.conocido
     // v9: tercer anillo, CU-03 flashcards, CU-08 Ragnarök y CU-09 arrastrar y soltar
-    version = 9,
+    // v10: CU-13 duelo de enigmas (conceptos, preguntas y duelos). Con migración:
+    //      solo crea las tablas nuevas y conserva el progreso y el hidromiel.
+    version = 10,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -110,9 +122,21 @@ abstract class OdinDatabase : RoomDatabase() {
     abstract fun retoDao(): RetoDao
     abstract fun elementoArrastrableDao(): ElementoArrastrableDao
     abstract fun posicionDestinoDao(): PosicionDestinoDao
+    abstract fun conceptoEnigmaDao(): ConceptoEnigmaDao
+    abstract fun preguntaEnigmaDao(): PreguntaEnigmaDao
+    abstract fun resultadoDueloDao(): ResultadoDueloDao
 
     companion object {
         private const val NOMBRE = "odin.db"
+
+        /** CU-13: agrega las tablas del duelo sin tocar las demás (no borra el progreso). */
+        val MIGRACION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `conceptos_enigma` (`id` TEXT NOT NULL, `temaId` TEXT NOT NULL, `nombre` TEXT NOT NULL, `explicacion` TEXT NOT NULL, PRIMARY KEY(`id`))")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `preguntas_enigma` (`id` TEXT NOT NULL, `texto` TEXT NOT NULL, `tipo` TEXT NOT NULL, `conceptosSi` TEXT NOT NULL, PRIMARY KEY(`id`))")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `duelos_enigmas` (`id` TEXT NOT NULL, `conceptoId` TEXT NOT NULL, `resultado` TEXT, `preguntasRealizadas` INTEGER NOT NULL, `adivinanzasFallidas` INTEGER NOT NULL, `sorbosSobrantes` INTEGER NOT NULL, `hidromielObtenido` INTEGER NOT NULL, `fecha` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+            }
+        }
 
         @Volatile
         private var INSTANCE: OdinDatabase? = null
@@ -142,6 +166,7 @@ abstract class OdinDatabase : RoomDatabase() {
                                     // El banco de preguntas es contenido fijo: se actualiza en cada
                                     // apertura para que las preguntas nuevas lleguen sin borrar datos.
                                     BancoPreguntas.insertar(db)
+                                    DatosEnigmas.insertar(db)
                                     db.setTransactionSuccessful()
                                 } finally {
                                     db.endTransaction()
@@ -149,6 +174,7 @@ abstract class OdinDatabase : RoomDatabase() {
                             }
                         }
                     )
+                    .addMigrations(MIGRACION_9_10)
                     .fallbackToDestructiveMigration()
                     .build()
                     .also {

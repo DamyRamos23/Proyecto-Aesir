@@ -38,6 +38,13 @@ enum class TipoMovimiento {
     ABANDONO_CONTRARRELOJ,
     ENTRADA_CONTRARRELOJ,
     RECOMPENSA_CONTRARRELOJ,
+    BONO_DIAGNOSTICO,
+    /** Juegos ocultos (easter eggs) de la pantalla de Mundos. */
+    APUESTA_OCULTA,
+    /** CU-13 duelo de enigmas. */
+    APUESTA_DUELO,
+    PREMIO_DUELO,
+    PREMIO_OCULTO,
     AJUSTE_ADMIN
 }
 
@@ -55,7 +62,9 @@ data class NivelInfo(
     val idMundo: String,
     val nombre: String,
     val tipo: TipoNivel,
-    val esPrimero: Boolean
+    val esPrimero: Boolean,
+    /** Anillo del árbol (1 lecciones, 2 minijuegos, 3 retos): el diagnóstico reconoce de adentro hacia afuera. */
+    val anillo: Int = 1
 )
 
 /**
@@ -111,6 +120,12 @@ data class PreguntaFlashResuelta(
 data class ContrarrelojAbandonado(val idUsuario: String, val saldoReto: Int = 0)
 
 data class ContrarrelojFinalizado(val idUsuario: String, val aciertos: Int, val fallos: Int = 0)
+
+/** CU-13: el duelo terminó (ganado o perdido) con [sorbosSobrantes] en el cuerno. */
+data class DueloFinalizado(val idUsuario: String, val ganado: Boolean, val sorbosSobrantes: Int)
+
+/** CU-13: respuesta a una apuesta. Reemplaza a ResultadoAcceso porque el duelo no es un nivel. */
+data class ResultadoApuesta(val autorizado: Boolean, val faltante: Int, val motivo: String)
 
 // ---------------------------------------------------------------------------
 // Registros

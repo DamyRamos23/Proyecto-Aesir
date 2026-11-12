@@ -18,8 +18,8 @@ android {
         applicationId = "com.aesir.odin"
         minSdk = 24
         targetSdk = 37
-        versionCode = 212
-        versionName = "2.1.2"
+        versionCode = 310
+        versionName = "3.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

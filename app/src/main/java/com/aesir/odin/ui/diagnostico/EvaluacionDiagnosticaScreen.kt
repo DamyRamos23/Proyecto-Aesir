@@ -38,7 +38,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
+import com.aesir.odin.ui.theme.LocalPresentacionLectura
+import com.aesir.odin.ui.theme.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -61,6 +62,7 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -292,7 +294,8 @@ private fun PantallaLlamado(
         Text(
             "Omitir evaluación",
             Modifier.enMI(250f, 1006f).pulsable(alPulsar = onOmitir).padding(horizontal = 12.dp, vertical = 6.dp),
-            style = alegreya(15f * MI.K, color = MI.Gris).copy(textDecoration = TextDecoration.Underline)
+            style = alegreya(15f * MI.K, color = MI.Gris).copy(textDecoration = TextDecoration.Underline),
+            maxLines = 1
         )
     }
 }
@@ -305,8 +308,10 @@ fun TituloPozo(texto: String, tamano: Float, modifier: Modifier) {
         textAlign = TextAlign.Center,
         shadow = Shadow(Color.Black.copy(alpha = 0.7f), Offset(0f, 2f), 6f)
     )
+    // MOD-03: sin versalitas (mayúsculas) para que «Mímir» conserve su mayúscula y se lea mejor.
+    val heimdall = LocalPresentacionLectura.current.activa
     Text(
-        FuentesMockup.versalitas(texto, estilo.fontSize, conCinzel),
+        if (heimdall) AnnotatedString(texto) else FuentesMockup.versalitas(texto, estilo.fontSize, conCinzel),
         modifier,
         style = estilo,
         maxLines = 1,
@@ -373,10 +378,18 @@ private fun CuerpoPregunta(
     pregunta: PreguntaDiagnostica,
     acento: Color
 ) {
-    // Solo el estado de la pregunta que se muestra (la que sale conserva el suyo)
+    // Mientras es la actual se guarda lo que muestra; al salir (animación de AnimatedContent)
+    // conserva ese último estado en vez de volver a «sin responder» y mostrar por un
+    // instante «EL ECO NO COINCIDE» aunque se haya acertado.
     val esActual = e.preguntaActual?.id == pregunta.id
-    val revelada = esActual && e.revelada
-    val seleccion = if (esActual) e.seleccion else emptySet()
+    val vista = remember(pregunta.id) { VistaPregunta() }
+    if (esActual) {
+        vista.revelada = e.revelada
+        vista.seleccion = e.seleccion
+        vista.correcta = e.actualCorrecta
+    }
+    val revelada = vista.revelada
+    val seleccion = vista.seleccion
 
     fun estadoOpcion(i: Int): EstadoOpcionPozo {
         val elegida = i in seleccion
@@ -414,7 +427,7 @@ private fun CuerpoPregunta(
                 OpcionPozo(('A' + i).toString(), texto, estadoOpcion(i), acento) { viewModel.alternarOpcion(i) }
             }
         }
-        val correcta = if (esActual) e.actualCorrecta else null
+        val correcta = vista.correcta
         AnimatedVisibility(
             revelada && correcta != null,
             modifier = Modifier.padding(top = MI.d(26f).dp),
@@ -437,6 +450,13 @@ private fun CuerpoPregunta(
             }
         }
     }
+}
+
+/** Último estado mostrado de una pregunta (no es estado de Compose: solo se lee al recomponer). */
+private class VistaPregunta {
+    var revelada = false
+    var seleccion: Set<Int> = emptySet()
+    var correcta: Boolean? = null
 }
 
 /** «La respuesta era la B: …» (o las letras si hay varias correctas). */

@@ -39,5 +39,13 @@ class PoliticaCosto {
         const val CONTRARRELOJ_CORRECTA = 2
         /** Se resta por cada respuesta incorrecta en el contrarreloj, para no responder a lo bruto. */
         const val CONTRARRELOJ_FALLO = 1
+
+        // CU-13 Duelo de enigmas
+        const val APUESTA_DUELO = 24
+        const val HIDROMIEL_POR_SORBO = 4
+        const val MAX_DUELOS_DIA = 3
+
+        /** Paso 12: se recupera la apuesta más 4 por sorbo sobrante, sin diezmo (RF-194). */
+        fun premioDuelo(sorbosSobrantes: Int): Int = APUESTA_DUELO + HIDROMIEL_POR_SORBO * sorbosSobrantes
     }
 }

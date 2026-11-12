@@ -2,6 +2,17 @@ package com.aesir.odin.di
 
 import android.content.Context
 import com.aesir.odin.data.local.OdinDatabase
+import com.aesir.odin.data.repository.AlmacenPreferenciasImpl
+import com.aesir.odin.data.repository.DueloRepositoryImpl
+import com.aesir.odin.domain.repository.DueloRepository
+import com.aesir.odin.domain.usecase.duelo.AbandonarDueloUseCase
+import com.aesir.odin.domain.usecase.duelo.ApostarDueloUseCase
+import com.aesir.odin.domain.usecase.duelo.ArmarDueloUseCase
+import com.aesir.odin.domain.usecase.duelo.FinalizarDueloUseCase
+import com.aesir.odin.domain.usecase.duelo.ValidarAccesoDueloUseCase
+import com.aesir.odin.data.repository.AlmacenEastereggsImpl
+import com.aesir.odin.domain.eastereggs.AlmacenEastereggs
+import com.aesir.odin.domain.heimdall.ModuloVisionHeimdall
 import com.aesir.odin.data.repository.CatalogoNivelesImpl
 import com.aesir.odin.data.repository.CrucigramaRepositoryImpl
 import com.aesir.odin.data.repository.DiagnosticoRepositoryImpl
@@ -92,15 +103,23 @@ class AppContainer(context: Context) {
 
     private val database = OdinDatabase.getInstance(context)
 
+    private val preferencias = context.getSharedPreferences("odin", Context.MODE_PRIVATE)
+
+    /** MOD-03 Visión de Heimdall: una sola instancia, la observa el tema de toda la app. */
+    val moduloVisionHeimdall = ModuloVisionHeimdall(AlmacenPreferenciasImpl(preferencias))
+
+    /** Juegos ocultos (easter eggs) que ya se descubrieron en Mundos. */
+    val almacenEastereggs: AlmacenEastereggs = AlmacenEastereggsImpl(preferencias)
+
     init {
-        // Modo admin oculto: se recuerda entre aperturas de la app
-        val preferencias = context.getSharedPreferences("odin", Context.MODE_PRIVATE)
-        ModoAdmin.cargar(preferencias.getBoolean(CLAVE_MODO_ADMIN, false))
-        ModoAdmin.alCambiar = { preferencias.edit().putBoolean(CLAVE_MODO_ADMIN, it).apply() }
+        // Modo admin oculto: cada apertura de la app inicia sin él.
+        // Se borra el valor que guardaban las versiones anteriores.
+        ModoAdmin.cargar(false)
+        preferencias.edit().remove(CLAVE_MODO_ADMIN).apply()
     }
 
     val roadmapRepository: RoadmapRepository =
-        RoadmapRepositoryImpl(database.mundoDao(), database.temaDao())
+        RoadmapRepositoryImpl(database.mundoDao(), database.temaDao(), database.retoFinMundoDao())
 
     val leccionRepository: LeccionRepository =
         LeccionRepositoryImpl(database.leccionDao(), database.ejercicioDao())
@@ -235,6 +254,16 @@ class AppContainer(context: Context) {
     val obtenerPreguntasRepasoUseCase = ObtenerPreguntasRepasoUseCase(
         roadmapRepository, preguntaFlashRepository, diagnosticoRepository
     )
+
+    // CU-13 Duelo de enigmas
+    private val dueloRepository: DueloRepository = DueloRepositoryImpl(
+        database.conceptoEnigmaDao(), database.preguntaEnigmaDao(), database.resultadoDueloDao()
+    )
+    val validarAccesoDueloUseCase = ValidarAccesoDueloUseCase(roadmapRepository, dueloRepository, moduloHidromiel)
+    val armarDueloUseCase = ArmarDueloUseCase(roadmapRepository, dueloRepository)
+    val apostarDueloUseCase = ApostarDueloUseCase(moduloHidromiel, dueloRepository)
+    val finalizarDueloUseCase = FinalizarDueloUseCase(dueloRepository, moduloHidromiel, historialRepository)
+    val abandonarDueloUseCase = AbandonarDueloUseCase(dueloRepository)
 
     private companion object {
         const val CLAVE_MODO_ADMIN = "modo_admin"

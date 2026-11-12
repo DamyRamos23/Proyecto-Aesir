@@ -12,4 +12,7 @@ interface CatalogoNiveles {
 
     /** Mundo que se abre al superar el Ragnarök de [idMundo], o null si es el último. */
     suspend fun siguienteMundo(idMundo: String): String?
+
+    /** Mundos que el alumno ya tiene abiertos (para el piso de apuesta, RN-08). */
+    suspend fun mundosDesbloqueados(): List<String> = emptyList()
 }

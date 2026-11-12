@@ -1,6 +1,7 @@
 package com.aesir.odin.domain.hidromiel
 
 import com.aesir.odin.domain.hidromiel.regla.ReglaConexionArbol
+import com.aesir.odin.domain.model.ArbolHabilidades
 import com.aesir.odin.domain.hidromiel.regla.ReglaNivelSuperado
 import com.aesir.odin.domain.hidromiel.regla.ReglaPrimerNivel
 import com.aesir.odin.domain.hidromiel.regla.ReglaRagnarok
@@ -211,21 +212,140 @@ class ModuloHidromiel(
     /**
      * Marca como superados los niveles conocidos, sin cobrar ni otorgar (RN-06).
      * El Ragnarök no se puede reconocer por diagnóstico: siempre se juega.
+     *
+     * El diagnóstico pregunta por las lecciones; los «niveles de esos temas»
+     * (CU-10, paso 9) son además los minijuegos y retos que dependen solo de
+     * ellas: un minijuego cuenta si todas sus lecciones conectadas son
+     * conocidas, y un reto si todos sus minijuegos conectados lo son.
+     *
+     * A9.1: si con eso quedan superados todos los niveles del mundo, se otorga
+     * una vez 3C como BONO_DIAGNOSTICO para cubrir la entrada al Ragnarök.
      */
     suspend fun alCompletarDiagnostico(e: DiagnosticoCompletado) {
-        candado.withLock {
+        val aviso = candado.withLock {
             repositorio.enTransaccion {
-                obtenerOCrearReserva(e.idUsuario)
-                val delMundo = catalogo.nivelesDelMundo(e.idMundo).associateBy { it.idNivel }
-                e.nivelesConocidos
-                    .mapNotNull { delMundo[it] }
+                val reserva = obtenerOCrearReserva(e.idUsuario)
+                val normales = catalogo.nivelesDelMundo(e.idMundo)
                     .filter { it.tipo == TipoNivel.NORMAL }
-                    .filter { repositorio.obtenerNivelSuperado(e.idUsuario, it.idNivel) == null }
+                    .associateBy { it.idNivel }
+                val conocidos = nivelesReconocidos(e.nivelesConocidos, normales)
+                conocidos
+                    .filter { repositorio.obtenerNivelSuperado(e.idUsuario, it) == null }
                     .forEach {
                         repositorio.registrarNivelSuperado(
-                            NivelSuperado(e.idUsuario, it.idNivel, OrigenSuperado.DIAGNOSTICO, 0, hoy())
+                            NivelSuperado(e.idUsuario, it, OrigenSuperado.DIAGNOSTICO, 0, hoy())
                         )
                     }
+
+                val soloQuedaRagnarok = conocidos.isNotEmpty() &&
+                    normales.keys.all { repositorio.obtenerNivelSuperado(e.idUsuario, it) != null }
+                if (!soloQuedaRagnarok) return@enTransaccion null
+                val bono = PoliticaCosto.C * PoliticaCosto.MULT_RAGNAROK
+                reserva.abonar(bono, TipoMovimiento.BONO_DIAGNOSTICO)
+                repositorio.guardarReserva(reserva)
+                AvisoHidromiel(
+                    TipoMovimiento.BONO_DIAGNOSTICO, bono, reserva.saldo,
+                    "El pozo reconoce todo tu saber: el Ragnarök despertó y recibes $bono de hidromiel para enfrentarlo."
+                )
+            }
+        }
+        aviso?.let(::publicar)
+    }
+
+    /** Lecciones conocidas más los minijuegos y retos que quedan cubiertos por ellas, anillo por anillo. */
+    private suspend fun nivelesReconocidos(lecciones: List<String>, normales: Map<String, NivelInfo>): Set<String> {
+        val conocidos = lecciones.filter { it in normales }.toMutableSet()
+        for (anillo in ArbolHabilidades.ANILLO_MINIJUEGOS..ArbolHabilidades.ANILLO_RETOS) {
+            normales.values
+                .filter { it.anillo == anillo && it.idNivel !in conocidos }
+                .forEach { nivel ->
+                    val base = catalogo.conectados(nivel.idNivel).filter { normales[it]?.anillo == anillo - 1 }
+                    if (base.isNotEmpty() && base.all { it in conocidos }) conocidos += nivel.idNivel
+                }
+        }
+        return conocidos
+    }
+
+    // -----------------------------------------------------------------------
+    // Apuestas: piso (RN-08) y juegos ocultos
+    // -----------------------------------------------------------------------
+
+    /**
+     * RN-08: costo de entrada más bajo entre los niveles Disponibles de los
+     * mundos abiertos, o 0 si no hay. Ninguna apuesta puede dejar el saldo debajo.
+     */
+    suspend fun calcularPisoApuesta(idUsuario: String): Int = candado.withLock {
+        repositorio.enTransaccion { piso(idUsuario) }
+    }
+
+    private suspend fun piso(idUsuario: String): Int =
+        catalogo.mundosDesbloqueados()
+            .flatMap { catalogo.nivelesDelMundo(it) }
+            .filter { evaluar(idUsuario, it) == EstadoNivel.DISPONIBLE }
+            .minOfOrNull { politica.costoDe(it) } ?: 0
+
+    /** Cobra la apuesta de un juego oculto si no deja el saldo debajo del piso (RN-01, RN-08). */
+    suspend fun apostarJuegoOculto(idUsuario: String, cantidad: Int): ResultadoAcceso =
+        candado.withLock {
+            repositorio.enTransaccion {
+                val reserva = obtenerOCrearReserva(idUsuario)
+                val piso = piso(idUsuario)
+                val falta = (cantidad + piso - reserva.saldo).coerceAtLeast(0)
+                if (falta > 0) {
+                    val motivo = if (piso > 0) "Debes conservar $piso de hidromiel para tu siguiente nivel. Te faltan $falta."
+                    else "Te faltan $falta de hidromiel para apostar."
+                    return@enTransaccion ResultadoAcceso(ID_JUEGO_OCULTO, EstadoNivel.DISPONIBLE, false, cantidad, falta, motivo)
+                }
+                reserva.descontar(cantidad, TipoMovimiento.APUESTA_OCULTA)
+                repositorio.guardarReserva(reserva)
+                ResultadoAcceso(ID_JUEGO_OCULTO, EstadoNivel.DISPONIBLE, true, cantidad, 0, "Apuesta aceptada.")
+            }
+        }
+
+    /** CU-13 paso 4: descuenta 24 como APUESTA_DUELO si el saldo no queda debajo del piso (RN-08). */
+    suspend fun cobrarApuestaDuelo(idUsuario: String): ResultadoApuesta {
+        var aviso: AvisoHidromiel? = null
+        val resultado = candado.withLock {
+            repositorio.enTransaccion {
+                val reserva = obtenerOCrearReserva(idUsuario)
+                val piso = piso(idUsuario)
+                val apuesta = PoliticaCosto.APUESTA_DUELO
+                val falta = (apuesta + piso - reserva.saldo).coerceAtLeast(0)
+                if (falta > 0) {
+                    return@enTransaccion ResultadoApuesta(
+                        false, falta,
+                        if (piso > 0) "Te faltan $falta de hidromiel: debes conservar $piso para tu siguiente nivel."
+                        else "Te faltan $falta de hidromiel para la apuesta."
+                    )
+                }
+                reserva.descontar(apuesta, TipoMovimiento.APUESTA_DUELO)
+                repositorio.guardarReserva(reserva)
+                aviso = AvisoHidromiel(TipoMovimiento.APUESTA_DUELO, -apuesta, reserva.saldo, "Apostaste $apuesta de hidromiel contra el gigante.")
+                ResultadoApuesta(true, 0, "Apuesta aceptada.")
+            }
+        }
+        aviso?.let(::publicar)
+        return resultado
+    }
+
+    /** CU-13 paso 12: si ganó, abona 24 + 4 × sorbos sobrantes como PREMIO_DUELO, sin diezmo. Si perdió, nada. */
+    suspend fun alFinalizarDuelo(e: DueloFinalizado): AvisoHidromiel? {
+        if (!e.ganado) return null
+        val premio = PoliticaCosto.premioDuelo(e.sorbosSobrantes)
+        return moverSaldo(e.idUsuario) { reserva ->
+            reserva.abonar(premio, TipoMovimiento.PREMIO_DUELO)
+            AvisoHidromiel(TipoMovimiento.PREMIO_DUELO, premio, reserva.saldo, "¡Venciste al gigante! Recibes $premio de hidromiel.")
+        }
+    }
+
+    /** Paga el premio bruto de un juego oculto (si perdió no hay nada que pagar). */
+    suspend fun pagarJuegoOculto(idUsuario: String, premio: Int) {
+        if (premio <= 0) return
+        candado.withLock {
+            repositorio.enTransaccion {
+                val reserva = obtenerOCrearReserva(idUsuario)
+                reserva.abonar(premio, TipoMovimiento.PREMIO_OCULTO)
+                repositorio.guardarReserva(reserva)
             }
         }
     }
@@ -442,5 +562,6 @@ class ModuloHidromiel(
     companion object {
         /** Identificador del reto contrarreloj en los [ResultadoAcceso]. */
         const val ID_CONTRARRELOJ = "CONTRARRELOJ"
+        const val ID_JUEGO_OCULTO = "JUEGO_OCULTO"
     }
 }

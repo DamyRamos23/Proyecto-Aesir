@@ -67,6 +67,10 @@ class FakeRoadmapRepository(
             temas[id]?.takeIf { it.mundoId == mundoId }?.let { temas[id] = it.copy(conocido = true) }
         }
     }
+
+    // CU-13
+    var ragnarokSuperado = false
+    override suspend fun haSuperadoAlgunRagnarok(): Boolean = ragnarokSuperado
 }
 
 fun mundo(id: String, orden: Int = 1, desbloqueado: Boolean = true, nombre: String = "Mundo $id") =

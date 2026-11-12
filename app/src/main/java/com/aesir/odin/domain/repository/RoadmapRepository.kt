@@ -30,4 +30,8 @@ interface RoadmapRepository {
     // CU-10 Realizar evaluación diagnóstico
     /** Registra como conocidos los temas demostrados en el diagnóstico (RF-87). */
     suspend fun marcarTemasConocidos(mundoId: String, temaIds: List<String>)
+
+    // CU-13 Duelo de enigmas
+    /** true si el alumno superó al menos un reto de fin de mundo (precondición del duelo). */
+    suspend fun haSuperadoAlgunRagnarok(): Boolean
 }

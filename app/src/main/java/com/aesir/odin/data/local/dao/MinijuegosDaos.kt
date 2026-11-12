@@ -22,4 +22,8 @@ interface RetoFinMundoDao {
 
     @Query("SELECT * FROM intentos_reto_fin_mundo WHERE mundoId = :mundoId ORDER BY fecha DESC")
     suspend fun getPorMundo(mundoId: String): List<ResultadoRetoFinMundoEntity>
+
+    /** CU-13: el duelo de enigmas se abre al superar al menos un Ragnarök. */
+    @Query("SELECT EXISTS(SELECT 1 FROM intentos_reto_fin_mundo WHERE superado = 1)")
+    suspend fun existeSuperado(): Boolean
 }
