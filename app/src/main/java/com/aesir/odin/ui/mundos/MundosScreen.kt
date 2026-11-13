@@ -297,6 +297,15 @@ fun MundosScreen(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
+                Spacer(Modifier.height(14.dp))
+                // CU-12: modo con apuesta del Valhalla.
+                BotonOdin(
+                    texto = "Retar a la bruja",
+                    onClick = { navController.navigate(OdinNavGraph.rutaVolva) },
+                    acento = OdinPaleta.Brasa,
+                    primario = false,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             Spacer(Modifier.height(24.dp))

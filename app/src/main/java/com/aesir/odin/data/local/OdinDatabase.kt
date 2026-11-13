@@ -24,6 +24,7 @@ import com.aesir.odin.data.local.dao.PreguntaFlashDao
 import com.aesir.odin.data.local.dao.ResultadoCrucigramaDao
 import com.aesir.odin.data.local.dao.ResultadoContrarrelojDao
 import com.aesir.odin.data.local.dao.TemaDao
+import com.aesir.odin.data.local.dao.VolvaDao
 import com.aesir.odin.data.local.entity.ConceptoCrucigramaEntity
 import com.aesir.odin.data.local.entity.EjercicioEntity
 import com.aesir.odin.data.local.entity.HistorialErrorEntity
@@ -49,6 +50,9 @@ import com.aesir.odin.data.local.entity.ResultadoLeccionEntity
 import com.aesir.odin.data.local.entity.ResultadoContrarrelojEntity
 import com.aesir.odin.data.local.entity.ResultadoMemoramaEntity
 import com.aesir.odin.data.local.entity.TemaEntity
+import com.aesir.odin.data.local.entity.ConsultaVolvaEntity
+import com.aesir.odin.data.local.entity.RunaObtenidaEntity
+import com.aesir.odin.data.local.entity.VisionEntity
 
 @Database(
     entities = [
@@ -76,7 +80,10 @@ import com.aesir.odin.data.local.entity.TemaEntity
         RetoArrastrarEntity::class,
         ElementoArrastrableEntity::class,
         PosicionDestinoEntity::class,
-        ResultadoRetoEntity::class
+        ResultadoRetoEntity::class,
+        VisionEntity::class,
+        RunaObtenidaEntity::class,
+        ConsultaVolvaEntity::class
     ],
     // v3: MOD-01 Sistema de Hidromiel (tablas nuevas y columna temas.tipo)
     // v4: CU-07 crucigrama (conceptos, resultados y columna temas.actividad)
@@ -86,7 +93,8 @@ import com.aesir.odin.data.local.entity.TemaEntity
     // v8: CU-04 memorama (pares y resultados), CU-10 diagnóstico (preguntas,
     //     resultados) y columna temas.conocido
     // v9: tercer anillo, CU-03 flashcards, CU-08 Ragnarök y CU-09 arrastrar y soltar
-    version = 9,
+    // v10: CU-12 Retar a la bruja (visiones, runas obtenidas y consultas)
+    version = 10,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -110,6 +118,7 @@ abstract class OdinDatabase : RoomDatabase() {
     abstract fun retoDao(): RetoDao
     abstract fun elementoArrastrableDao(): ElementoArrastrableDao
     abstract fun posicionDestinoDao(): PosicionDestinoDao
+    abstract fun volvaDao(): VolvaDao
 
     companion object {
         private const val NOMBRE = "odin.db"
@@ -142,6 +151,8 @@ abstract class OdinDatabase : RoomDatabase() {
                                     // El banco de preguntas es contenido fijo: se actualiza en cada
                                     // apertura para que las preguntas nuevas lleguen sin borrar datos.
                                     BancoPreguntas.insertar(db)
+                                    // CU-12: las visiones de la Völva también son contenido fijo.
+                                    DatosVolva.insertar(db)
                                     db.setTransactionSuccessful()
                                 } finally {
                                     db.endTransaction()
