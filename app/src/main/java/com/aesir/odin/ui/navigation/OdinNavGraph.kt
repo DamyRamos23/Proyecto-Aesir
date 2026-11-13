@@ -37,6 +37,8 @@ import com.aesir.odin.ui.eastereggs.JuegoOcultoScreen
 import com.aesir.odin.ui.ajustes.AjustesViewModel
 import com.aesir.odin.ui.retocontrareloj.RetoContrarrelojScreen
 import com.aesir.odin.ui.retocontrareloj.RetoContrarrelojViewModel
+import com.aesir.odin.ui.volva.ConsultaVolvaViewModel
+import com.aesir.odin.ui.volva.VolvaScreen
 import com.aesir.odin.ui.roadmap.RoadmapScreen
 import com.aesir.odin.ui.temaintro.TemaIntroScreen
 import androidx.compose.runtime.CompositionLocalProvider
@@ -70,6 +72,8 @@ object OdinNavGraph {
     const val rutaLeccion = "leccion"
     const val rutaResumenLeccion = "resumenLeccion"
     const val rutaRetoContrareloj = "retoContrareloj"
+    /** CU-12 Retar a la bruja (La Völva). */
+    const val rutaVolva = "volva"
     const val rutaCrucigrama = "crucigrama"
     const val rutaResultadoCrucigrama = "resultadoCrucigrama"
     // CU-04 Resolver memorama de conceptos
@@ -329,6 +333,19 @@ object OdinNavGraph {
                 RetoContrarrelojScreen(
                     viewModel = viewModel,
                     // Toques repetidos en "Volver" hacían popBackStack de más y dejaban la pantalla negra.
+                    onSalir = { if (entrada.lifecycle.currentState == Lifecycle.State.RESUMED) nav.popBackStack() }
+                )
+            }
+
+            // -------------------------
+            // Retar a la bruja (CU-12)
+            // -------------------------
+
+            composable(rutaVolva) { entrada ->
+                val viewModel: ConsultaVolvaViewModel =
+                    viewModel(factory = ConsultaVolvaViewModel.factory(appContainer))
+                VolvaScreen(
+                    viewModel = viewModel,
                     onSalir = { if (entrada.lifecycle.currentState == Lifecycle.State.RESUMED) nav.popBackStack() }
                 )
             }

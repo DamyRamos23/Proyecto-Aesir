@@ -24,6 +24,7 @@ import com.aesir.odin.data.local.dao.PreguntaFlashDao
 import com.aesir.odin.data.local.dao.ResultadoCrucigramaDao
 import com.aesir.odin.data.local.dao.ResultadoContrarrelojDao
 import com.aesir.odin.data.local.dao.TemaDao
+import com.aesir.odin.data.local.dao.VolvaDao
 import com.aesir.odin.data.local.entity.ConceptoCrucigramaEntity
 import com.aesir.odin.data.local.entity.EjercicioEntity
 import com.aesir.odin.data.local.entity.HistorialErrorEntity
@@ -56,6 +57,9 @@ import com.aesir.odin.data.local.dao.ConceptoEnigmaDao
 import com.aesir.odin.data.local.dao.PreguntaEnigmaDao
 import com.aesir.odin.data.local.dao.ResultadoDueloDao
 import androidx.room.migration.Migration
+import com.aesir.odin.data.local.entity.ConsultaVolvaEntity
+import com.aesir.odin.data.local.entity.RunaObtenidaEntity
+import com.aesir.odin.data.local.entity.VisionEntity
 
 @Database(
     entities = [
@@ -86,7 +90,10 @@ import androidx.room.migration.Migration
         ResultadoRetoEntity::class,
         ConceptoEnigmaEntity::class,
         PreguntaEnigmaEntity::class,
-        ResultadoDueloEntity::class
+        ResultadoDueloEntity::class,
+        VisionEntity::class,
+        RunaObtenidaEntity::class,
+        ConsultaVolvaEntity::class
     ],
     // v3: MOD-01 Sistema de Hidromiel (tablas nuevas y columna temas.tipo)
     // v4: CU-07 crucigrama (conceptos, resultados y columna temas.actividad)
@@ -98,7 +105,9 @@ import androidx.room.migration.Migration
     // v9: tercer anillo, CU-03 flashcards, CU-08 Ragnarök y CU-09 arrastrar y soltar
     // v10: CU-13 duelo de enigmas (conceptos, preguntas y duelos). Con migración:
     //      solo crea las tablas nuevas y conserva el progreso y el hidromiel.
-    version = 10,
+    // v11: CU-12 Retar a la bruja (visiones, runas obtenidas y consultas). Con
+    //      migración: solo crea las tablas nuevas.
+    version = 11,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -125,6 +134,7 @@ abstract class OdinDatabase : RoomDatabase() {
     abstract fun conceptoEnigmaDao(): ConceptoEnigmaDao
     abstract fun preguntaEnigmaDao(): PreguntaEnigmaDao
     abstract fun resultadoDueloDao(): ResultadoDueloDao
+    abstract fun volvaDao(): VolvaDao
 
     companion object {
         private const val NOMBRE = "odin.db"
@@ -135,6 +145,15 @@ abstract class OdinDatabase : RoomDatabase() {
                 db.execSQL("CREATE TABLE IF NOT EXISTS `conceptos_enigma` (`id` TEXT NOT NULL, `temaId` TEXT NOT NULL, `nombre` TEXT NOT NULL, `explicacion` TEXT NOT NULL, PRIMARY KEY(`id`))")
                 db.execSQL("CREATE TABLE IF NOT EXISTS `preguntas_enigma` (`id` TEXT NOT NULL, `texto` TEXT NOT NULL, `tipo` TEXT NOT NULL, `conceptosSi` TEXT NOT NULL, PRIMARY KEY(`id`))")
                 db.execSQL("CREATE TABLE IF NOT EXISTS `duelos_enigmas` (`id` TEXT NOT NULL, `conceptoId` TEXT NOT NULL, `resultado` TEXT, `preguntasRealizadas` INTEGER NOT NULL, `adivinanzasFallidas` INTEGER NOT NULL, `sorbosSobrantes` INTEGER NOT NULL, `hidromielObtenido` INTEGER NOT NULL, `fecha` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+            }
+        }
+
+        /** CU-12: agrega las tablas de la Völva sin tocar las demás (no borra el progreso). */
+        val MIGRACION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `visiones_volva` (`id` TEXT NOT NULL, `temaId` TEXT NOT NULL, `norna` TEXT NOT NULL, `caso` TEXT NOT NULL, `opciones` TEXT NOT NULL, `indiceCorrecta` INTEGER NOT NULL, `pista` TEXT NOT NULL, `explicacion` TEXT NOT NULL, PRIMARY KEY(`id`))")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `runas_obtenidas` (`orden` INTEGER NOT NULL, `fecha` INTEGER NOT NULL, PRIMARY KEY(`orden`))")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `consultas_volva` (`id` TEXT NOT NULL, `apuesta` INTEGER NOT NULL, `puntosDestino` INTEGER NOT NULL, `visionesCumplidas` INTEGER NOT NULL, `visionesErradas` INTEGER NOT NULL, `lectura` TEXT, `pago` INTEGER NOT NULL, `runaOrden` INTEGER, `abandonada` INTEGER NOT NULL, `terminada` INTEGER NOT NULL, `fecha` INTEGER NOT NULL, PRIMARY KEY(`id`))")
             }
         }
 
@@ -167,6 +186,8 @@ abstract class OdinDatabase : RoomDatabase() {
                                     // apertura para que las preguntas nuevas lleguen sin borrar datos.
                                     BancoPreguntas.insertar(db)
                                     DatosEnigmas.insertar(db)
+                                    // CU-12: las visiones de la Völva también son contenido fijo.
+                                    DatosVolva.insertar(db)
                                     db.setTransactionSuccessful()
                                 } finally {
                                     db.endTransaction()
@@ -174,7 +195,7 @@ abstract class OdinDatabase : RoomDatabase() {
                             }
                         }
                     )
-                    .addMigrations(MIGRACION_9_10)
+                    .addMigrations(MIGRACION_9_10, MIGRACION_10_11)
                     .fallbackToDestructiveMigration()
                     .build()
                     .also {

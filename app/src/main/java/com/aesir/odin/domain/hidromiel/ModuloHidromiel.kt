@@ -443,6 +443,65 @@ class ModuloHidromiel(
             )
         }
 
+    // -----------------------------------------------------------------------
+    // Modos con apuesta del Valhalla (Funcionamiento, paso 10)
+    // -----------------------------------------------------------------------
+
+    /**
+     * CU-12 (RF-163): la apuesta va de 15 al menor valor entre 70 y el saldo
+     * menos el piso. En modo admin la apuesta es gratuita: no hay piso.
+     */
+    suspend fun rangoApuestaVolva(idUsuario: String, mundosDesbloqueados: List<String>): com.aesir.odin.domain.model.RangoApuesta =
+        candado.withLock {
+            repositorio.enTransaccion { rangoVolva(idUsuario, mundosDesbloqueados) }
+        }
+
+    /** CU-12 (RF-164): descuenta la apuesta y la registra como APUESTA_VOLVA. Si no está en el rango, no cobra (E1). */
+    suspend fun cobrarApuestaVolva(idUsuario: String, apuesta: Int, mundosDesbloqueados: List<String>): ResultadoAcceso {
+        if (ModoAdmin.estaActivo) {
+            return ResultadoAcceso(ID_VOLVA, EstadoNivel.DISPONIBLE, true, 0, 0, "Modo admin: apuesta gratuita.")
+        }
+        var aviso: AvisoHidromiel? = null
+        val resultado = candado.withLock {
+            repositorio.enTransaccion {
+                val rango = rangoVolva(idUsuario, mundosDesbloqueados)
+                if (!rango.contiene(apuesta)) {
+                    val falta = (PoliticaCosto.APUESTA_MIN_VOLVA + rango.piso - rango.saldo).coerceAtLeast(0)
+                    return@enTransaccion ResultadoAcceso(
+                        ID_VOLVA, EstadoNivel.DISPONIBLE, false, apuesta, falta,
+                        if (!rango.alcanza) "Te faltan $falta de hidromiel para apostar."
+                        else "La apuesta debe ir de ${rango.minimo} a ${rango.maximo} de hidromiel."
+                    )
+                }
+                val reserva = obtenerOCrearReserva(idUsuario)
+                reserva.descontar(apuesta, TipoMovimiento.APUESTA_VOLVA)
+                repositorio.guardarReserva(reserva)
+                aviso = AvisoHidromiel(
+                    TipoMovimiento.APUESTA_VOLVA, -apuesta, reserva.saldo,
+                    "Apostaste $apuesta de hidromiel ante la Völva."
+                )
+                ResultadoAcceso(ID_VOLVA, EstadoNivel.DISPONIBLE, true, apuesta, 0, "Apuesta pagada.")
+            }
+        }
+        aviso?.let(::publicar)
+        return resultado
+    }
+
+    /** CU-12 (pasos 12 y 13, A12.1 a A12.3): abona el pago de la lectura como PREMIO_VOLVA. */
+    suspend fun alTerminarConsultaVolva(e: ConsultaVolvaTerminada): AvisoHidromiel =
+        moverSaldo(e.idUsuario) { reserva ->
+            val pago = politica.pagoVolva(e.apuesta, e.lectura)
+            if (pago.neto > 0) reserva.abonar(pago.neto, TipoMovimiento.PREMIO_VOLVA)
+            AvisoHidromiel(
+                TipoMovimiento.PREMIO_VOLVA, pago.neto, reserva.saldo,
+                when {
+                    pago.diezmo > 0 -> "${e.lectura.nombre}: ganaste ${pago.neto} de hidromiel (diezmo de Odín: ${pago.diezmo})."
+                    pago.neto > 0 -> "${e.lectura.nombre}: recuperaste tu apuesta de ${pago.neto}."
+                    else -> "${e.lectura.nombre}: perdiste tu apuesta."
+                }
+            )
+        }
+
     /** Modo admin: fija el saldo a [cantidad] (mínimo 0). Fuera del modo admin no hace nada. */
     suspend fun establecerSaldoAdmin(idUsuario: String, cantidad: Int): AvisoHidromiel? {
         if (!ModoAdmin.estaActivo) return null
@@ -491,6 +550,24 @@ class ModuloHidromiel(
         // Modo admin: todo lo que no está superado queda abierto y gratis (incluido el Ragnarök)
         return if (ModoAdmin.estaActivo && (estado == EstadoNivel.BLOQUEADO || estado == EstadoNivel.DISPONIBLE)) EstadoNivel.GRATUITO
         else estado
+    }
+
+    /**
+     * RN-08 para la Völva: igual que [piso], pero con los mundos que ve el alumno
+     * (en modo admin, todos) y sin contar el nivel cuya entrada ya se pagó.
+     */
+    private suspend fun pisoApuesta(idUsuario: String, mundosDesbloqueados: List<String>): Int =
+        mundosDesbloqueados
+            .flatMap { catalogo.nivelesDelMundo(it) }
+            .filter { evaluar(idUsuario, it) == EstadoNivel.DISPONIBLE && entradasPagadas[idUsuario] != it.idNivel }
+            .minOfOrNull { politica.costoDe(it) } ?: 0
+
+    private suspend fun rangoVolva(idUsuario: String, mundosDesbloqueados: List<String>): com.aesir.odin.domain.model.RangoApuesta {
+        val saldo = obtenerOCrearReserva(idUsuario).saldo
+        val piso = if (ModoAdmin.estaActivo) 0 else pisoApuesta(idUsuario, mundosDesbloqueados)
+        val maximo = if (ModoAdmin.estaActivo) PoliticaCosto.APUESTA_MAX_VOLVA
+        else minOf(PoliticaCosto.APUESTA_MAX_VOLVA, saldo - piso)
+        return com.aesir.odin.domain.model.RangoApuesta(PoliticaCosto.APUESTA_MIN_VOLVA, maximo, saldo, piso)
     }
 
     private suspend fun obtenerOCrearReserva(idUsuario: String): ReservaHidromiel {
@@ -563,5 +640,8 @@ class ModuloHidromiel(
         /** Identificador del reto contrarreloj en los [ResultadoAcceso]. */
         const val ID_CONTRARRELOJ = "CONTRARRELOJ"
         const val ID_JUEGO_OCULTO = "JUEGO_OCULTO"
+
+        /** Identificador de la consulta a la Völva (CU-12) en los [ResultadoAcceso]. */
+        const val ID_VOLVA = "VOLVA"
     }
 }

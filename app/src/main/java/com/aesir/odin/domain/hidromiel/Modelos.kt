@@ -45,7 +45,11 @@ enum class TipoMovimiento {
     APUESTA_DUELO,
     PREMIO_DUELO,
     PREMIO_OCULTO,
-    AJUSTE_ADMIN
+    AJUSTE_ADMIN,
+    /** CU-12: apuesta de la consulta a la Völva (RF-164). */
+    APUESTA_VOLVA,
+    /** CU-12: premio o devolución de la consulta a la Völva (RF-173 a RF-175). */
+    PREMIO_VOLVA
 }
 
 // ---------------------------------------------------------------------------
@@ -126,6 +130,12 @@ data class DueloFinalizado(val idUsuario: String, val ganado: Boolean, val sorbo
 
 /** CU-13: respuesta a una apuesta. Reemplaza a ResultadoAcceso porque el duelo no es un nivel. */
 data class ResultadoApuesta(val autorizado: Boolean, val faltante: Int, val motivo: String)
+
+/** CU-12: la consulta a la Völva terminó con [lectura]; el módulo paga lo que corresponda (pasos 12 y 13). */
+data class ConsultaVolvaTerminada(val idUsuario: String, val apuesta: Int, val lectura: com.aesir.odin.domain.model.Lectura)
+
+/** Pago de un modo del Valhalla: premio bruto, diezmo de Odín y lo que se abona. */
+data class PagoValhalla(val bruto: Int, val diezmo: Int, val neto: Int)
 
 // ---------------------------------------------------------------------------
 // Registros

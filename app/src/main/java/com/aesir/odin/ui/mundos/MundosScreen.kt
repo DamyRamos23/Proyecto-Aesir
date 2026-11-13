@@ -116,6 +116,7 @@ import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.ui.input.pointer.pointerInput
 import com.aesir.odin.domain.eastereggs.JuegoOculto
 import com.aesir.odin.ui.eastereggs.MenuEastereggs
+import com.aesir.odin.ui.volva.CaraMonedaVolva
 import kotlinx.coroutines.delay
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
@@ -169,9 +170,10 @@ fun MundosScreen(
     val combinacionesJuegos = remember { JuegoOculto.entries.associateWith { CombinacionSecreta(it.combinacion) } }
     val sieteToques = remember { CombinacionSecreta(List(7) { 0 }) }
     var mostrarMenuJuegos by remember { mutableStateOf(false) }
-    // Medias vueltas de la moneda (cara par = mundos, impar = duelo de enigmas)
+    // Medias vueltas de la moneda: 0 mundos, 1 duelo de enigmas (CU-13), 2 la Völva (CU-12)
     var girosMoneda by rememberSaveable { mutableIntStateOf(0) }
-    val enAnverso = girosMoneda % 2 == 0
+    val caraMoneda = girosMoneda % CARAS_MONEDA
+    val enAnverso = caraMoneda == 0
     val abrirJuego: (JuegoOculto) -> Unit = { juego ->
         appContainer.almacenEastereggs.descubrir(juego)
         mostrarMenuJuegos = false
@@ -358,13 +360,17 @@ fun MundosScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
                         },
-                        { ReversoDuelo(onRetar = { navController.navigate(OdinNavGraph.rutaDuelo) }) }
+                        { ReversoDuelo(onRetar = { navController.navigate(OdinNavGraph.rutaDuelo) }) },
+                        { CaraMonedaVolva(onRetar = { navController.navigate(OdinNavGraph.rutaVolva) }) }
                     )
                 )
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    if (enAnverso) "Toca el Valknut del centro para el reto contrarreloj. Desliza hacia arriba para girar la moneda."
-                    else "Desliza hacia arriba para volver a los mundos.",
+                    when (caraMoneda) {
+                        0 -> "Toca el Valknut del centro para el reto contrarreloj. Desliza hacia arriba para girar la moneda."
+                        CARAS_MONEDA - 1 -> "Desliza hacia arriba para volver a los mundos."
+                        else -> "Desliza hacia arriba para ver la siguiente cara."
+                    },
                     color = OdinPaleta.HuesoTenue,
                     fontFamily = FuenteTexto,
                     fontSize = 13.sp,
@@ -725,3 +731,6 @@ private fun PanelMundo(mundo: Mundo, anterior: Mundo?, onEntrar: () -> Unit) {
 
 /** Mantener presionado el contador este tiempo abre el editor de hidromiel (modo admin). */
 private const val PRESION_ADMIN_MS = 3_000L
+
+/** Caras de la moneda de Mundos: mundos, duelo de enigmas (CU-13) y la Völva (CU-12). */
+private const val CARAS_MONEDA = 3

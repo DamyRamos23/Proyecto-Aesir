@@ -91,6 +91,14 @@ import com.aesir.odin.domain.usecase.retoarrastrar.FinalizarRetoUseCase
 import com.aesir.odin.domain.usecase.retoarrastrar.ObtenerRetoUseCase
 import com.aesir.odin.domain.usecase.retoarrastrar.RegistrarErrorRetoArrastrarUseCase
 import com.aesir.odin.domain.usecase.retoarrastrar.ValidarColocacionUseCase
+import com.aesir.odin.data.repository.VolvaRepositoryImpl
+import com.aesir.odin.domain.repository.VolvaRepository
+import com.aesir.odin.domain.usecase.volva.AbandonarConsultaVolvaUseCase
+import com.aesir.odin.domain.usecase.volva.ApostarVolvaUseCase
+import com.aesir.odin.domain.usecase.volva.ArmarConsultaVolvaUseCase
+import com.aesir.odin.domain.usecase.volva.FinalizarConsultaVolvaUseCase
+import com.aesir.odin.domain.usecase.volva.ResolverVisionUseCase
+import com.aesir.odin.domain.usecase.volva.ValidarAccesoVolvaUseCase
 
 /**
  * Contenedor manual de dependencias (no hay Hilt configurado en el
@@ -249,6 +257,15 @@ class AppContainer(context: Context) {
         retoRepository, calcularPuntajeRetoUseCase, RegistrarLeccionCompletadaUseCase(roadmapRepository), moduloHidromiel
     )
     val abandonarRetoUseCase = AbandonarRetoUseCase(moduloHidromiel)
+
+    // CU-12 Retar a la bruja (La Völva)
+    val volvaRepository: VolvaRepository = VolvaRepositoryImpl(database.volvaDao())
+    val validarAccesoVolvaUseCase = ValidarAccesoVolvaUseCase(roadmapRepository, volvaRepository, moduloHidromiel)
+    val apostarVolvaUseCase = ApostarVolvaUseCase(moduloHidromiel, volvaRepository, roadmapRepository)
+    val armarConsultaVolvaUseCase = ArmarConsultaVolvaUseCase(roadmapRepository, volvaRepository)
+    val resolverVisionUseCase = ResolverVisionUseCase(historialRepository)
+    val finalizarConsultaVolvaUseCase = FinalizarConsultaVolvaUseCase(volvaRepository, moduloHidromiel)
+    val abandonarConsultaVolvaUseCase = AbandonarConsultaVolvaUseCase(volvaRepository)
 
     // Repaso del mundo en el pozo de Mímir
     val obtenerPreguntasRepasoUseCase = ObtenerPreguntasRepasoUseCase(
