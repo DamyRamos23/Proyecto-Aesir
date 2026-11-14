@@ -18,8 +18,17 @@ class RetoRepositoryImpl(
     private val posicionDao: PosicionDestinoDao
 ) : RetoRepository {
 
-    override suspend fun obtenerRetoPorTema(temaId: String): RetoArrastrar {
-        val reto = checkNotNull(retoDao.getByTemaId(temaId)) { "Este nivel todavía no tiene un reto registrado." }
+    override suspend fun obtenerRetoPorTema(temaId: String): RetoArrastrar =
+        armar(checkNotNull(retoDao.getByTemaId(temaId)) { "Este nivel todavía no tiene un reto registrado." })
+
+    override suspend fun obtenerRetoOrdenar(mundoId: String): RetoArrastrar =
+        armar(
+            checkNotNull(retoDao.getPorMundoYModalidad(mundoId, ModalidadReto.ORDENAR_PROCESO.name)) {
+                "Este mundo no tiene un reto de ordenar un proceso."
+            }
+        )
+
+    private suspend fun armar(reto: com.aesir.odin.data.local.entity.RetoArrastrarEntity): RetoArrastrar {
         val elementos = elementoDao.getByRetoId(reto.id)
         val posiciones = posicionDao.getByRetoId(reto.id)
         return RetoArrastrar(

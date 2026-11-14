@@ -58,6 +58,9 @@ class CatalogoNivelesImpl(
         return if (i < 0) null else mundos.getOrNull(i + 1)?.id
     }
 
+    override suspend fun idsMundos(): List<String> =
+        mundoDao.getAll().sortedBy { it.orden }.map { it.id }
+
     private inner class Arbol(val lecciones: List<TemaEntity>, val minijuegos: List<TemaEntity>, val retos: List<TemaEntity>) {
         val jugables: List<TemaEntity> get() = (lecciones + minijuegos + retos).filter { it.jugable() }
     }

@@ -35,6 +35,8 @@ import com.aesir.odin.ui.roadmap.RoadmapScreen
 import com.aesir.odin.ui.temaintro.TemaIntroScreen
 import androidx.compose.runtime.CompositionLocalProvider
 import com.aesir.odin.ui.flashcards.FlashcardsScreen
+import com.aesir.odin.ui.forja.ForjaBrokkrScreen
+import com.aesir.odin.ui.forja.ForjaBrokkrViewModel
 import com.aesir.odin.ui.flashcards.FlashcardsViewModel
 import com.aesir.odin.ui.ragnarok.RagnarokScreen
 import com.aesir.odin.ui.ragnarok.RagnarokViewModel
@@ -70,6 +72,8 @@ object OdinNavGraph {
     const val rutaRagnarok = "ragnarok"
     const val rutaRetoArrastrar = "retoArrastrar"
     const val rutaResumenReto = "resumenReto"
+    // CU-02 Forjar artefactos en la apuesta de Brokkr
+    const val rutaForjaBrokkr = "forjaBrokkr"
 
     private const val argMundoId = "mundoId"
     private const val argTemaId = "temaId"
@@ -629,6 +633,19 @@ object OdinNavGraph {
                     onRepasarLeccion = { irDesdeRoadmap(rutaIntroTemaCon(it)) },
                     // MOD-01: salir antes de terminar es abandonar el nivel.
                     onSalir = { viewModel.confirmarSalida(volverAlRoadmap) }
+                )
+            }
+
+            // -------------------------
+            // La apuesta de Brokkr (CU-02)
+            // -------------------------
+
+            composable(rutaForjaBrokkr) { entrada ->
+                val viewModel: ForjaBrokkrViewModel = viewModel(factory = ForjaBrokkrViewModel.factory(appContainer))
+                ForjaBrokkrScreen(
+                    viewModel = viewModel,
+                    // Regresa al Valhalla (pantalla de mundos); se ignoran toques repetidos.
+                    onSalir = { if (entrada.lifecycle.currentState == Lifecycle.State.RESUMED) nav.popBackStack() }
                 )
             }
 

@@ -22,4 +22,8 @@ interface RetoFinMundoDao {
 
     @Query("SELECT * FROM intentos_reto_fin_mundo WHERE mundoId = :mundoId ORDER BY fecha DESC")
     suspend fun getPorMundo(mundoId: String): List<ResultadoRetoFinMundoEntity>
+
+    /** CU-02: mundos cuyo reto de fin de mundo (Ragnarök) ya se superó. */
+    @Query("SELECT DISTINCT mundoId FROM intentos_reto_fin_mundo WHERE superado = 1")
+    suspend fun getMundosSuperados(): List<String>
 }

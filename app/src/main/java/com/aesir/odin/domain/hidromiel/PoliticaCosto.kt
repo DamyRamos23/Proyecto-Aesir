@@ -24,6 +24,17 @@ class PoliticaCosto {
 
     fun cantidadInicial(): Int = C * ENTRADAS_INICIALES
 
+    /**
+     * CU-02 (RF-41): premio de la forja perfecta. La apuesta ×3 menos el
+     * diezmo de Odín del 10 %, ambos redondeados hacia abajo (20 → 60 − 6 = 54).
+     */
+    fun premioForja(apuesta: Int): Int {
+        val bruto = apuesta.coerceAtLeast(0) * MULTIPLICADOR_FORJA
+        // Entero para no arrastrar errores de punto flotante: 10 % = bruto / 10, hacia abajo
+        val diezmo = bruto * DIEZMO_ODIN_PORCIENTO / 100
+        return bruto - diezmo
+    }
+
     companion object {
         const val C = 20
         const val MULT_RAGNAROK = 3
@@ -39,5 +50,11 @@ class PoliticaCosto {
         const val CONTRARRELOJ_CORRECTA = 2
         /** Se resta por cada respuesta incorrecta en el contrarreloj, para no responder a lo bruto. */
         const val CONTRARRELOJ_FALLO = 1
+        // CU-02 La apuesta de Brokkr
+        const val APUESTA_FORJA_MIN = 20
+        const val APUESTA_FORJA_MAX = 80
+        const val MULTIPLICADOR_FORJA = 3
+        const val DIEZMO_ODIN = 0.10
+        const val DIEZMO_ODIN_PORCIENTO = 10
     }
 }

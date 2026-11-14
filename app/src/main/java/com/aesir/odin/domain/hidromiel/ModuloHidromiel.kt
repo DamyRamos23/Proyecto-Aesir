@@ -323,6 +323,77 @@ class ModuloHidromiel(
             )
         }
 
+    // -----------------------------------------------------------------------
+    // CU-02 La apuesta de Brokkr
+    // -----------------------------------------------------------------------
+
+    /** Saldo actual del alumno (crea la reserva con la cantidad inicial si aún no existe). */
+    suspend fun saldo(idUsuario: String = USUARIO_LOCAL): Int =
+        candado.withLock { repositorio.enTransaccion { obtenerOCrearReserva(idUsuario).saldo } }
+
+    /**
+     * RN-08: piso de apuesta = costo de entrada más bajo entre los niveles que
+     * el alumno puede abrir ahora (DISPONIBLE y con entrada por pagar). Así una
+     * apuesta nunca lo deja sin hidromiel para seguir avanzando. Si no hay
+     * ninguno (todo superado, solo gratuitos o modo admin) el piso es 0.
+     */
+    suspend fun calcularPisoApuesta(idUsuario: String = USUARIO_LOCAL): Int {
+        if (ModoAdmin.estaActivo) return 0
+        return candado.withLock {
+            catalogo.idsMundos()
+                .flatMap { catalogo.nivelesDelMundo(it) }
+                .filter { entradasPagadas[idUsuario] != it.idNivel && evaluar(idUsuario, it) == EstadoNivel.DISPONIBLE }
+                .map { politica.costoDe(it) }
+                .filter { it > 0 }
+                .minOrNull() ?: 0
+        }
+    }
+
+    /** RF-33: descuenta la apuesta y la registra como APUESTA_FORJA. Si no alcanza, no cobra nada (E1). */
+    suspend fun cobrarApuestaForja(apuesta: Int, idUsuario: String = USUARIO_LOCAL): ResultadoApuesta {
+        require(apuesta > 0) { "La apuesta debe ser positiva" }
+        var aviso: AvisoHidromiel? = null
+        val resultado = candado.withLock {
+            repositorio.enTransaccion {
+                val reserva = obtenerOCrearReserva(idUsuario)
+                if (!reserva.descontar(apuesta, TipoMovimiento.APUESTA_FORJA)) {
+                    return@enTransaccion ResultadoApuesta(false, reserva.saldo, apuesta - reserva.saldo)
+                }
+                repositorio.guardarReserva(reserva)
+                aviso = AvisoHidromiel(
+                    TipoMovimiento.APUESTA_FORJA, -apuesta, reserva.saldo,
+                    "Le apostaste $apuesta de hidromiel a Loki."
+                )
+                ResultadoApuesta(true, reserva.saldo)
+            }
+        }
+        aviso?.let(::publicar)
+        return resultado
+    }
+
+    /**
+     * RF-41 / RF-43: si la forja salió perfecta abona la apuesta ×3 menos el
+     * diezmo de Odín (PREMIO_FORJA). Si se rompió no abona nada: la apuesta,
+     * que ya se descontó al apostar, queda perdida.
+     */
+    suspend fun alFinalizarForja(e: ForjaFinalizada, idUsuario: String = USUARIO_LOCAL): AvisoHidromiel =
+        moverSaldo(idUsuario) { reserva ->
+            when (e.resultado) {
+                com.aesir.odin.domain.model.EstadoFinalForja.PERFECTO -> {
+                    val premio = politica.premioForja(e.apuesta)
+                    reserva.abonar(premio, TipoMovimiento.PREMIO_FORJA)
+                    AvisoHidromiel(
+                        TipoMovimiento.PREMIO_FORJA, premio, reserva.saldo,
+                        "¡Forja perfecta! Ganaste $premio de hidromiel (apuesta ×3 menos el diezmo de Odín)."
+                    )
+                }
+                com.aesir.odin.domain.model.EstadoFinalForja.ROTO -> AvisoHidromiel(
+                    TipoMovimiento.APUESTA_FORJA, 0, reserva.saldo,
+                    "El artefacto se rompió. Perdiste tu apuesta de ${e.apuesta} de hidromiel."
+                )
+            }
+        }
+
     /** Modo admin: fija el saldo a [cantidad] (mínimo 0). Fuera del modo admin no hace nada. */
     suspend fun establecerSaldoAdmin(idUsuario: String, cantidad: Int): AvisoHidromiel? {
         if (!ModoAdmin.estaActivo) return null

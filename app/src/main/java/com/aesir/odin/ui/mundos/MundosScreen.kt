@@ -297,6 +297,18 @@ fun MundosScreen(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
+                Spacer(Modifier.height(14.dp))
+                // CU-02: modo del Valhalla para apostar hidromiel en la forja de Brokkr
+                BotonOdin(
+                    texto = "ᚱ  La Apuesta de Brokkr",
+                    onClick = { navController.navigate(OdinNavGraph.rutaForjaBrokkr) },
+                    acento = OdinPaleta.Brasa,
+                    primario = false,
+                    modifier = Modifier
+                        .widthIn(max = 440.dp)
+                        .fillMaxWidth()
+                        .align(Alignment.CenterHorizontally)
+                )
             }
 
             Spacer(Modifier.height(24.dp))

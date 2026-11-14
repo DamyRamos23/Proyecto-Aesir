@@ -10,4 +10,8 @@ interface RetoRepository {
 
     /** Guarda el resultado y, si se aprobó, marca el reto como completado. */
     suspend fun guardarResultado(resultado: ResultadoReto)
+
+    /** CU-02 (RF-35): reto de ordenar un proceso del mundo, para la etapa «Calentar el metal». */
+    suspend fun obtenerRetoOrdenar(mundoId: String): RetoArrastrar =
+        error("Este repositorio no tiene retos de ordenar por mundo.")
 }

@@ -12,4 +12,10 @@ interface CatalogoNiveles {
 
     /** Mundo que se abre al superar el Ragnarök de [idMundo], o null si es el último. */
     suspend fun siguienteMundo(idMundo: String): String?
+
+    /**
+     * Ids de todos los mundos, en orden. Lo usa el piso de apuesta del CU-02
+     * (RN-08) para buscar el costo de entrada más bajo disponible.
+     */
+    suspend fun idsMundos(): List<String> = emptyList()
 }

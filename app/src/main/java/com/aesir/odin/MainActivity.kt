@@ -47,6 +47,10 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(Unit) {
                     preguntaFlashViewModel.iniciarTemporizador()
                 }
+                // CU-02 (RF-45): si la app se cerró durante una forja, esa forja queda rota.
+                LaunchedEffect(Unit) {
+                    appContainer.cerrarForjasInconclusasUseCase()
+                }
 
                 Scaffold(modifier = Modifier.fillMaxSize(), containerColor = ColorNocheOscura) { innerPadding ->
                     Box(Modifier.fillMaxSize().padding(innerPadding)) {

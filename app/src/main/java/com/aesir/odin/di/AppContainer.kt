@@ -3,6 +3,21 @@ package com.aesir.odin.di
 import android.content.Context
 import com.aesir.odin.data.local.OdinDatabase
 import com.aesir.odin.data.repository.CatalogoNivelesImpl
+import com.aesir.odin.data.repository.ForjaRepositoryImpl
+import com.aesir.odin.domain.bitacora.ModuloBitacora
+import com.aesir.odin.domain.racha.ModuloCarreraSol
+import com.aesir.odin.domain.repository.ForjaRepository
+import com.aesir.odin.domain.usecase.forja.AbandonarForjaUseCase
+import com.aesir.odin.domain.usecase.forja.ApostarForjaUseCase
+import com.aesir.odin.domain.usecase.forja.ArmarForjaUseCase
+import com.aesir.odin.domain.usecase.forja.AsignarArtefactoUseCase
+import com.aesir.odin.domain.usecase.forja.CalcularRangoApuestaUseCase
+import com.aesir.odin.domain.usecase.forja.CerrarForjasInconclusasUseCase
+import com.aesir.odin.domain.usecase.forja.EnfriarMetalUseCase
+import com.aesir.odin.domain.usecase.forja.FinalizarForjaUseCase
+import com.aesir.odin.domain.usecase.forja.ObtenerVitrinaUseCase
+import com.aesir.odin.domain.usecase.forja.ValidarAccesoForjaUseCase
+import com.aesir.odin.domain.usecase.forja.ValidarEtapaForjaUseCase
 import com.aesir.odin.data.repository.CrucigramaRepositoryImpl
 import com.aesir.odin.data.repository.DiagnosticoRepositoryImpl
 import com.aesir.odin.data.repository.HidromielRepositoryImpl
@@ -100,7 +115,7 @@ class AppContainer(context: Context) {
     }
 
     val roadmapRepository: RoadmapRepository =
-        RoadmapRepositoryImpl(database.mundoDao(), database.temaDao())
+        RoadmapRepositoryImpl(database.mundoDao(), database.temaDao(), database.retoFinMundoDao())
 
     val leccionRepository: LeccionRepository =
         LeccionRepositoryImpl(database.leccionDao(), database.ejercicioDao())
@@ -235,6 +250,26 @@ class AppContainer(context: Context) {
     val obtenerPreguntasRepasoUseCase = ObtenerPreguntasRepasoUseCase(
         roadmapRepository, preguntaFlashRepository, diagnosticoRepository
     )
+
+    // CU-02 Forjar artefactos en la apuesta de Brokkr
+    val forjaRepository: ForjaRepository = ForjaRepositoryImpl(
+        database.artefactoDao(), database.vitrinaDao(), database.forjaDao(), database.etapaForjaDao(), database.mundoDao()
+    )
+    /** MOD-06 Bitácora de errores: guarda en el historial de errores. */
+    val moduloBitacora = ModuloBitacora(historialRepository)
+    /** MOD-05 La carrera del sol: todavía no está implementado. */
+    val moduloCarreraSol: ModuloCarreraSol = ModuloCarreraSol.Pendiente
+    val validarAccesoForjaUseCase = ValidarAccesoForjaUseCase(forjaRepository, roadmapRepository, moduloHidromiel)
+    val obtenerVitrinaUseCase = ObtenerVitrinaUseCase(forjaRepository)
+    val asignarArtefactoUseCase = AsignarArtefactoUseCase(forjaRepository, roadmapRepository)
+    val calcularRangoApuestaUseCase = CalcularRangoApuestaUseCase(moduloHidromiel)
+    val armarForjaUseCase = ArmarForjaUseCase(forjaRepository, retoRepository)
+    val apostarForjaUseCase = ApostarForjaUseCase(moduloHidromiel, forjaRepository)
+    val validarEtapaForjaUseCase = ValidarEtapaForjaUseCase(moduloBitacora)
+    val enfriarMetalUseCase = EnfriarMetalUseCase(moduloBitacora)
+    val finalizarForjaUseCase = FinalizarForjaUseCase(forjaRepository, moduloHidromiel, moduloCarreraSol)
+    val abandonarForjaUseCase = AbandonarForjaUseCase(forjaRepository)
+    val cerrarForjasInconclusasUseCase = CerrarForjasInconclusasUseCase(forjaRepository)
 
     private companion object {
         const val CLAVE_MODO_ADMIN = "modo_admin"

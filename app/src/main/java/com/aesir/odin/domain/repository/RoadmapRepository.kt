@@ -30,4 +30,8 @@ interface RoadmapRepository {
     // CU-10 Realizar evaluación diagnóstico
     /** Registra como conocidos los temas demostrados en el diagnóstico (RF-87). */
     suspend fun marcarTemasConocidos(mundoId: String, temaIds: List<String>)
+
+    // CU-02 Forjar artefactos en la apuesta de Brokkr
+    /** Mundos cuyo reto de fin de mundo (Ragnarök) ya superó el alumno. */
+    suspend fun obtenerMundosSuperados(): List<String> = emptyList()
 }

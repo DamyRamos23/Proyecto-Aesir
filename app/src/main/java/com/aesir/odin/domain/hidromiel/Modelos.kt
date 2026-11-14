@@ -38,7 +38,11 @@ enum class TipoMovimiento {
     ABANDONO_CONTRARRELOJ,
     ENTRADA_CONTRARRELOJ,
     RECOMPENSA_CONTRARRELOJ,
-    AJUSTE_ADMIN
+    AJUSTE_ADMIN,
+    /** CU-02: apuesta de la forja de Brokkr (se descuenta al apostar a Loki). */
+    APUESTA_FORJA,
+    /** CU-02: premio de la forja perfecta (apuesta ×3 menos el diezmo de Odín). */
+    PREMIO_FORJA
 }
 
 // ---------------------------------------------------------------------------
@@ -109,6 +113,20 @@ data class PreguntaFlashResuelta(
 
 /** [saldoReto]: puntaje acumulado en el reto al abandonarlo; si es negativo se suma a la penalización. */
 data class ContrarrelojAbandonado(val idUsuario: String, val saldoReto: Int = 0)
+
+/** CU-02: la forja de Brokkr terminó con [resultado]; si fue perfecta se abona el premio (RF-41). */
+data class ForjaFinalizada(
+    val forjaId: String,
+    val apuesta: Int,
+    val resultado: com.aesir.odin.domain.model.EstadoFinalForja
+)
+
+/** CU-02: resultado de cobrar la apuesta de la forja (RF-33). [faltante]: hidromiel que faltó si no se cobró. */
+data class ResultadoApuesta(
+    val cobrada: Boolean,
+    val saldoActual: Int,
+    val faltante: Int = 0
+)
 
 data class ContrarrelojFinalizado(val idUsuario: String, val aciertos: Int, val fallos: Int = 0)
 

@@ -24,6 +24,15 @@ import com.aesir.odin.data.local.dao.PreguntaFlashDao
 import com.aesir.odin.data.local.dao.ResultadoCrucigramaDao
 import com.aesir.odin.data.local.dao.ResultadoContrarrelojDao
 import com.aesir.odin.data.local.dao.TemaDao
+import com.aesir.odin.data.local.dao.ArtefactoDao
+import com.aesir.odin.data.local.dao.EtapaForjaDao
+import com.aesir.odin.data.local.dao.ForjaDao
+import com.aesir.odin.data.local.dao.VitrinaDao
+import com.aesir.odin.data.local.entity.ArtefactoEntity
+import com.aesir.odin.data.local.entity.ForjaEntity
+import com.aesir.odin.data.local.entity.ProblemaMartillarEntity
+import com.aesir.odin.data.local.entity.TempladoEntity
+import com.aesir.odin.data.local.entity.VitrinaArtefactoEntity
 import com.aesir.odin.data.local.entity.ConceptoCrucigramaEntity
 import com.aesir.odin.data.local.entity.EjercicioEntity
 import com.aesir.odin.data.local.entity.HistorialErrorEntity
@@ -76,7 +85,12 @@ import com.aesir.odin.data.local.entity.TemaEntity
         RetoArrastrarEntity::class,
         ElementoArrastrableEntity::class,
         PosicionDestinoEntity::class,
-        ResultadoRetoEntity::class
+        ResultadoRetoEntity::class,
+        ArtefactoEntity::class,
+        VitrinaArtefactoEntity::class,
+        ForjaEntity::class,
+        ProblemaMartillarEntity::class,
+        TempladoEntity::class
     ],
     // v3: MOD-01 Sistema de Hidromiel (tablas nuevas y columna temas.tipo)
     // v4: CU-07 crucigrama (conceptos, resultados y columna temas.actividad)
@@ -86,7 +100,8 @@ import com.aesir.odin.data.local.entity.TemaEntity
     // v8: CU-04 memorama (pares y resultados), CU-10 diagnóstico (preguntas,
     //     resultados) y columna temas.conocido
     // v9: tercer anillo, CU-03 flashcards, CU-08 Ragnarök y CU-09 arrastrar y soltar
-    version = 9,
+    // v10: CU-02 forja de Brokkr (artefactos, vitrina, forjas, problemas y templados)
+    version = 10,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -110,6 +125,10 @@ abstract class OdinDatabase : RoomDatabase() {
     abstract fun retoDao(): RetoDao
     abstract fun elementoArrastrableDao(): ElementoArrastrableDao
     abstract fun posicionDestinoDao(): PosicionDestinoDao
+    abstract fun artefactoDao(): ArtefactoDao
+    abstract fun vitrinaDao(): VitrinaDao
+    abstract fun forjaDao(): ForjaDao
+    abstract fun etapaForjaDao(): EtapaForjaDao
 
     companion object {
         private const val NOMBRE = "odin.db"
@@ -142,6 +161,8 @@ abstract class OdinDatabase : RoomDatabase() {
                                     // El banco de preguntas es contenido fijo: se actualiza en cada
                                     // apertura para que las preguntas nuevas lleguen sin borrar datos.
                                     BancoPreguntas.insertar(db)
+                                    // CU-02: artefactos y preguntas de la forja (contenido fijo)
+                                    DatosForja.insertar(db)
                                     db.setTransactionSuccessful()
                                 } finally {
                                     db.endTransaction()
