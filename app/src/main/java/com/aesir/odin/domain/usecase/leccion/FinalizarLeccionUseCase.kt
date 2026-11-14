@@ -1,5 +1,9 @@
 package com.aesir.odin.domain.usecase.leccion
 
+import com.aesir.odin.domain.racha.ActividadTerminada
+import com.aesir.odin.domain.racha.ModuloCarreraSol
+import com.aesir.odin.domain.racha.TipoActividad
+import com.aesir.odin.domain.racha.fechaLocal
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.hidromiel.NivelFinalizado
 import com.aesir.odin.domain.hidromiel.ResultadoNivel
@@ -21,6 +25,8 @@ class FinalizarLeccionUseCase(
     private val leccionRepository: LeccionRepository,
     private val moduloHidromiel: ModuloHidromiel,
     private val idUsuario: String = USUARIO_LOCAL,
+    /** MOD-05: terminar la actividad sin abandonarla cuenta para la racha. */
+    private val moduloCarreraSol: ModuloCarreraSol? = null,
     private val reloj: () -> Long = System::currentTimeMillis
 ) {
     suspend operator fun invoke(leccionId: String, totalEjercicios: Int, errores: Int): ResultadoLeccion {
@@ -49,6 +55,7 @@ class FinalizarLeccionUseCase(
                 )
             )
         }
+        moduloCarreraSol?.alTerminarActividad(ActividadTerminada(idUsuario, TipoActividad.NIVEL_ROADMAP, abandonada = false, fechaFin = fechaLocal(resultado.fecha)))
         return resultado
     }
 }

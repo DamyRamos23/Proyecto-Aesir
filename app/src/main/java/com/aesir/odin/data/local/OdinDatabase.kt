@@ -28,6 +28,9 @@ import com.aesir.odin.data.local.dao.ArtefactoDao
 import com.aesir.odin.data.local.dao.EtapaForjaDao
 import com.aesir.odin.data.local.dao.ForjaDao
 import com.aesir.odin.data.local.dao.VitrinaDao
+import com.aesir.odin.data.local.dao.RachaDao
+import com.aesir.odin.data.local.entity.RachaEntity
+import com.aesir.odin.data.local.entity.HitoRachaEntity
 import com.aesir.odin.data.local.entity.ArtefactoEntity
 import com.aesir.odin.data.local.entity.ForjaEntity
 import com.aesir.odin.data.local.entity.ProblemaMartillarEntity
@@ -90,7 +93,9 @@ import com.aesir.odin.data.local.entity.TemaEntity
         VitrinaArtefactoEntity::class,
         ForjaEntity::class,
         ProblemaMartillarEntity::class,
-        TempladoEntity::class
+        TempladoEntity::class,
+        RachaEntity::class,
+        HitoRachaEntity::class
     ],
     // v3: MOD-01 Sistema de Hidromiel (tablas nuevas y columna temas.tipo)
     // v4: CU-07 crucigrama (conceptos, resultados y columna temas.actividad)
@@ -101,7 +106,8 @@ import com.aesir.odin.data.local.entity.TemaEntity
     //     resultados) y columna temas.conocido
     // v9: tercer anillo, CU-03 flashcards, CU-08 Ragnarök y CU-09 arrastrar y soltar
     // v10: CU-02 forja de Brokkr (artefactos, vitrina, forjas, problemas y templados)
-    version = 10,
+    // v11: MOD-05 racha (rachas e hitos cobrados)
+    version = 11,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -129,6 +135,7 @@ abstract class OdinDatabase : RoomDatabase() {
     abstract fun vitrinaDao(): VitrinaDao
     abstract fun forjaDao(): ForjaDao
     abstract fun etapaForjaDao(): EtapaForjaDao
+    abstract fun rachaDao(): RachaDao
 
     companion object {
         private const val NOMBRE = "odin.db"

@@ -42,7 +42,11 @@ enum class TipoMovimiento {
     /** CU-02: apuesta de la forja de Brokkr (se descuenta al apostar a Loki). */
     APUESTA_FORJA,
     /** CU-02: premio de la forja perfecta (apuesta ×3 menos el diezmo de Odín). */
-    PREMIO_FORJA
+    PREMIO_FORJA,
+    /** MOD-05: bono por alcanzar un hito de racha. */
+    BONO_RACHA,
+    /** MOD-05: compra de una ofrenda a Sól. */
+    OFRENDA_SOL
 }
 
 // ---------------------------------------------------------------------------

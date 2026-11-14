@@ -92,6 +92,7 @@ import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
 import com.aesir.odin.ui.components.odin.ContadorHidromiel
 import com.aesir.odin.domain.model.Mundo
 import com.aesir.odin.ui.components.odin.BotonOdin
+import com.aesir.odin.ui.racha.ContadorRacha
 import com.aesir.odin.ui.components.odin.FondoMundo
 import com.aesir.odin.ui.components.odin.TextoAjustable
 import com.aesir.odin.ui.components.odin.desaturar
@@ -141,6 +142,9 @@ fun MundosScreen(
     )
     val mundos by viewModel.mundos.collectAsState()
     val saldo by remember { appContainer.moduloHidromiel.observarSaldo(USUARIO_LOCAL) }.collectAsState(initial = 0)
+    // MOD-05: contador de la racha; abre la pantalla de la carrera de Sól
+    val racha by appContainer.moduloCarreraSol.estado.collectAsState()
+    LaunchedEffect(Unit) { appContainer.moduloCarreraSol.resumen(USUARIO_LOCAL, java.time.LocalDate.now()) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
@@ -243,6 +247,11 @@ fun MundosScreen(
                             .padding(6.dp)
                     )
                 }
+                ContadorRacha(
+                    estado = racha,
+                    onClick = { navController.navigate(OdinNavGraph.rutaRacha) },
+                    modifier = Modifier.padding(end = 8.dp)
+                )
                 // Modo admin: tocar el contador permite fijar el hidromiel.
                 ContadorHidromiel(
                     saldo = saldo,

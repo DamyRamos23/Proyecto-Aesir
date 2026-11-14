@@ -23,11 +23,12 @@ import com.aesir.odin.domain.model.TipoEtapa
 import com.aesir.odin.domain.racha.ActividadTerminada
 import com.aesir.odin.domain.racha.ModuloCarreraSol
 import com.aesir.odin.domain.racha.TipoActividad
+import com.aesir.odin.domain.racha.fechaLocal
+import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
 import com.aesir.odin.domain.repository.ForjaRepository
 import com.aesir.odin.domain.repository.RetoRepository
 import com.aesir.odin.domain.repository.RoadmapRepository
 import java.time.Instant
-import java.time.LocalDate
 import java.time.ZoneId
 import java.util.UUID
 import kotlin.random.Random
@@ -213,7 +214,7 @@ class EnfriarMetalUseCase(
 class FinalizarForjaUseCase(
     private val forjaRepository: ForjaRepository,
     private val moduloHidromiel: ModuloHidromiel,
-    private val moduloCarreraSol: ModuloCarreraSol,
+    private val moduloCarreraSol: ModuloCarreraSol?,
     private val reloj: () -> Long = System::currentTimeMillis
 ) {
     suspend operator fun invoke(forja: Forja): ResultadoForja {
@@ -238,8 +239,8 @@ class FinalizarForjaUseCase(
             fecha = fecha
         )
         forjaRepository.guardarResultado(final)
-        moduloCarreraSol.alTerminarActividad(
-            ActividadTerminada(TipoActividad.MODO_VALHALLA, abandonada = false, fechaFin = LocalDate.now())
+        moduloCarreraSol?.alTerminarActividad(
+            ActividadTerminada(USUARIO_LOCAL, TipoActividad.MODO_VALHALLA, abandonada = false, fechaFin = fechaLocal(fecha))
         )
         return final
     }

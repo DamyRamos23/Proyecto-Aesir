@@ -394,6 +394,46 @@ class ModuloHidromiel(
             }
         }
 
+    // -----------------------------------------------------------------------
+    // MOD-05 La carrera de Sól
+    // -----------------------------------------------------------------------
+
+    /** Abona el bono de un hito de racha (BONO_RACHA). */
+    suspend fun abonarBonoRacha(idUsuario: String, bono: Int): AvisoHidromiel =
+        moverSaldo(idUsuario) { reserva ->
+            reserva.abonar(bono.coerceAtLeast(0), TipoMovimiento.BONO_RACHA)
+            AvisoHidromiel(
+                TipoMovimiento.BONO_RACHA, bono, reserva.saldo,
+                "¡Hito de racha! Ganaste $bono de hidromiel."
+            )
+        }
+
+    /** Cobra una ofrenda a Sól (OFRENDA_SOL). Si no alcanza, se aplica E1 y no se cobra. */
+    suspend fun cobrarOfrendaSol(idUsuario: String, costo: Int): ResultadoAcceso {
+        var aviso: AvisoHidromiel? = null
+        val resultado = candado.withLock {
+            repositorio.enTransaccion {
+                val reserva = obtenerOCrearReserva(idUsuario)
+                if (!reserva.descontar(costo, TipoMovimiento.OFRENDA_SOL)) {
+                    val falta = costo - reserva.saldo
+                    return@enTransaccion ResultadoAcceso(
+                        idNivel = ID_OFRENDA_SOL, estado = EstadoNivel.DISPONIBLE, autorizado = false,
+                        costo = costo, faltante = falta,
+                        motivo = "Te faltan $falta de hidromiel para la ofrenda."
+                    )
+                }
+                repositorio.guardarReserva(reserva)
+                aviso = AvisoHidromiel(
+                    TipoMovimiento.OFRENDA_SOL, -costo, reserva.saldo,
+                    "Ofreciste $costo de hidromiel a Sól."
+                )
+                ResultadoAcceso(ID_OFRENDA_SOL, EstadoNivel.DISPONIBLE, true, costo, 0, "Ofrenda pagada.")
+            }
+        }
+        aviso?.let(::publicar)
+        return resultado
+    }
+
     /** Modo admin: fija el saldo a [cantidad] (mínimo 0). Fuera del modo admin no hace nada. */
     suspend fun establecerSaldoAdmin(idUsuario: String, cantidad: Int): AvisoHidromiel? {
         if (!ModoAdmin.estaActivo) return null
@@ -513,5 +553,7 @@ class ModuloHidromiel(
     companion object {
         /** Identificador del reto contrarreloj en los [ResultadoAcceso]. */
         const val ID_CONTRARRELOJ = "CONTRARRELOJ"
+        /** Identificador de la ofrenda a Sól (MOD-05) en los [ResultadoAcceso]. */
+        const val ID_OFRENDA_SOL = "OFRENDA_SOL"
     }
 }

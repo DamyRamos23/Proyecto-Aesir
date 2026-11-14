@@ -4,6 +4,9 @@ import android.content.Context
 import com.aesir.odin.data.local.OdinDatabase
 import com.aesir.odin.data.repository.CatalogoNivelesImpl
 import com.aesir.odin.data.repository.ForjaRepositoryImpl
+import com.aesir.odin.data.repository.AlmacenRachaImpl
+import com.aesir.odin.data.sonido.ReproductorSonidoTonos
+import com.aesir.odin.domain.usecase.diagnostico.FinalizarRepasoMimirUseCase
 import com.aesir.odin.domain.bitacora.ModuloBitacora
 import com.aesir.odin.domain.racha.ModuloCarreraSol
 import com.aesir.odin.domain.repository.ForjaRepository
@@ -132,6 +135,16 @@ class AppContainer(context: Context) {
         repositorio = HidromielRepositoryImpl(database)
     )
 
+    /**
+     * MOD-05 La carrera de Sól. Una sola instancia: la avisan las actividades
+     * que cuentan (los Finalizar*UseCase) y la apertura de la app.
+     */
+    val moduloCarreraSol = ModuloCarreraSol(
+        almacen = AlmacenRachaImpl(database.rachaDao()),
+        moduloHidromiel = moduloHidromiel,
+        reproductor = ReproductorSonidoTonos()
+    )
+
     val obtenerMundosUseCase = ObtenerMundosUseCase(roadmapRepository)
     val obtenerMundoUseCase = ObtenerMundoUseCase(roadmapRepository)
     val obtenerTemasPorMundoUseCase = ObtenerTemasPorMundoUseCase(roadmapRepository)
@@ -143,8 +156,8 @@ class AppContainer(context: Context) {
     val validarRespuestaEjercicioUseCase =
         ValidarRespuestaEjercicioUseCase(ValidarRespuestaUseCase())
     val registrarErrorLeccionUseCase = RegistrarErrorLeccionUseCase(historialRepository)
-    val finalizarLeccionUseCase = FinalizarLeccionUseCase(leccionRepository, moduloHidromiel)
-    val registrarNivelSinSuperarUseCase = RegistrarNivelSinSuperarUseCase(leccionRepository, moduloHidromiel)
+    val finalizarLeccionUseCase = FinalizarLeccionUseCase(leccionRepository, moduloHidromiel, moduloCarreraSol = moduloCarreraSol)
+    val registrarNivelSinSuperarUseCase = RegistrarNivelSinSuperarUseCase(leccionRepository, moduloHidromiel, moduloCarreraSol = moduloCarreraSol)
 
     // CU-07 Resolver crucigrama de conceptos
     val crucigramaRepository: CrucigramaRepository =
@@ -155,7 +168,8 @@ class AppContainer(context: Context) {
     val finalizarCrucigramaUseCase = FinalizarCrucigramaUseCase(
         crucigramaRepository,
         RegistrarLeccionCompletadaUseCase(roadmapRepository), // reutilizado de CU-05
-        moduloHidromiel
+        moduloHidromiel,
+        moduloCarreraSol = moduloCarreraSol
     )
 
     // Validador compartido por Pregunta Flash y Reto Contrarreloj.
@@ -187,7 +201,7 @@ class AppContainer(context: Context) {
     val pagarEntradaRetoContrarrelojUseCase =
         PagarEntradaRetoContrarrelojUseCase(moduloHidromiel)
     val finalizarRetoContrarrelojUseCase =
-        FinalizarRetoContrarrelojUseCase(retoContrarrelojRepository, moduloHidromiel)
+        FinalizarRetoContrarrelojUseCase(retoContrarrelojRepository, moduloHidromiel, moduloCarreraSol = moduloCarreraSol)
     val abandonarRetoContrarrelojUseCase =
         AbandonarRetoContrarrelojUseCase(retoContrarrelojRepository, moduloHidromiel)
     // CU-04 Resolver memorama de conceptos
@@ -199,7 +213,8 @@ class AppContainer(context: Context) {
         memoramaRepository,
         roadmapRepository,
         CalcularPuntosMemoramaUseCase(),
-        moduloHidromiel
+        moduloHidromiel,
+        moduloCarreraSol = moduloCarreraSol
     )
 
     // CU-10 Realizar evaluación diagnóstico
@@ -211,8 +226,10 @@ class AppContainer(context: Context) {
         EvaluarDiagnosticoUseCase(ValidarRespuestaUseCase()), // ValidarRespuestaUseCase reutilizado de CU-05/CU-06
         diagnosticoRepository,
         roadmapRepository,
-        moduloHidromiel
+        moduloHidromiel,
+        moduloCarreraSol = moduloCarreraSol
     )
+    val finalizarRepasoMimirUseCase = FinalizarRepasoMimirUseCase(moduloCarreraSol)
 
     // CU-03 Resolver flashcards de conceptos
     val flashcardsRepository: FlashcardsRepository =
@@ -222,15 +239,16 @@ class AppContainer(context: Context) {
     val finalizarFlashcardsUseCase = FinalizarFlashcardsUseCase(
         flashcardsRepository,
         RegistrarLeccionCompletadaUseCase(roadmapRepository),
-        moduloHidromiel
+        moduloHidromiel,
+        moduloCarreraSol = moduloCarreraSol
     )
-    val registrarFlashcardsSinSuperarUseCase = RegistrarFlashcardsSinSuperarUseCase(moduloHidromiel)
+    val registrarFlashcardsSinSuperarUseCase = RegistrarFlashcardsSinSuperarUseCase(moduloHidromiel, moduloCarreraSol = moduloCarreraSol)
 
     // CU-08 Reto de fin de mundo (Ragnarök)
     val retoFinMundoRepository: RetoFinMundoRepository = RetoFinMundoRepositoryImpl(database.retoFinMundoDao())
     val obtenerRetoFinMundoUseCase = ObtenerRetoFinMundoUseCase(roadmapRepository, leccionRepository, moduloHidromiel)
     val registrarErrorRetoUseCase = RegistrarErrorRetoUseCase(historialRepository)
-    val finalizarRetoFinMundoUseCase = FinalizarRetoFinMundoUseCase(retoFinMundoRepository, roadmapRepository, moduloHidromiel)
+    val finalizarRetoFinMundoUseCase = FinalizarRetoFinMundoUseCase(retoFinMundoRepository, roadmapRepository, moduloHidromiel, moduloCarreraSol = moduloCarreraSol)
     val abandonarRetoFinMundoUseCase = AbandonarRetoFinMundoUseCase(retoFinMundoRepository, moduloHidromiel)
 
     // CU-09 Resolver reto de arrastrar y soltar
@@ -242,7 +260,8 @@ class AppContainer(context: Context) {
     val calcularPuntajeRetoUseCase = CalcularPuntajeRetoUseCase()
     val registrarErrorRetoArrastrarUseCase = RegistrarErrorRetoArrastrarUseCase(historialRepository)
     val finalizarRetoUseCase = FinalizarRetoUseCase(
-        retoRepository, calcularPuntajeRetoUseCase, RegistrarLeccionCompletadaUseCase(roadmapRepository), moduloHidromiel
+        retoRepository, calcularPuntajeRetoUseCase, RegistrarLeccionCompletadaUseCase(roadmapRepository), moduloHidromiel,
+        moduloCarreraSol = moduloCarreraSol
     )
     val abandonarRetoUseCase = AbandonarRetoUseCase(moduloHidromiel)
 
@@ -257,8 +276,6 @@ class AppContainer(context: Context) {
     )
     /** MOD-06 Bitácora de errores: guarda en el historial de errores. */
     val moduloBitacora = ModuloBitacora(historialRepository)
-    /** MOD-05 La carrera del sol: todavía no está implementado. */
-    val moduloCarreraSol: ModuloCarreraSol = ModuloCarreraSol.Pendiente
     val validarAccesoForjaUseCase = ValidarAccesoForjaUseCase(forjaRepository, roadmapRepository, moduloHidromiel)
     val obtenerVitrinaUseCase = ObtenerVitrinaUseCase(forjaRepository)
     val asignarArtefactoUseCase = AsignarArtefactoUseCase(forjaRepository, roadmapRepository)

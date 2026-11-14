@@ -36,6 +36,8 @@ import com.aesir.odin.ui.temaintro.TemaIntroScreen
 import androidx.compose.runtime.CompositionLocalProvider
 import com.aesir.odin.ui.flashcards.FlashcardsScreen
 import com.aesir.odin.ui.forja.ForjaBrokkrScreen
+import com.aesir.odin.ui.racha.RachaScreen
+import com.aesir.odin.ui.racha.RachaViewModel
 import com.aesir.odin.ui.forja.ForjaBrokkrViewModel
 import com.aesir.odin.ui.flashcards.FlashcardsViewModel
 import com.aesir.odin.ui.ragnarok.RagnarokScreen
@@ -74,6 +76,8 @@ object OdinNavGraph {
     const val rutaResumenReto = "resumenReto"
     // CU-02 Forjar artefactos en la apuesta de Brokkr
     const val rutaForjaBrokkr = "forjaBrokkr"
+    // MOD-05 La carrera de Sól
+    const val rutaRacha = "racha"
 
     private const val argMundoId = "mundoId"
     private const val argTemaId = "temaId"
@@ -639,6 +643,14 @@ object OdinNavGraph {
             // -------------------------
             // La apuesta de Brokkr (CU-02)
             // -------------------------
+
+            composable(rutaRacha) { entrada ->
+                val viewModel: RachaViewModel = viewModel(factory = RachaViewModel.factory(appContainer))
+                RachaScreen(
+                    viewModel = viewModel,
+                    onVolver = { if (entrada.lifecycle.currentState == Lifecycle.State.RESUMED) nav.popBackStack() }
+                )
+            }
 
             composable(rutaForjaBrokkr) { entrada ->
                 val viewModel: ForjaBrokkrViewModel = viewModel(factory = ForjaBrokkrViewModel.factory(appContainer))

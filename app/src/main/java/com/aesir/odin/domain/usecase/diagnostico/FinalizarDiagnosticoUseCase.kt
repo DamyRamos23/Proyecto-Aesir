@@ -1,5 +1,8 @@
 package com.aesir.odin.domain.usecase.diagnostico
 
+import com.aesir.odin.domain.racha.ActividadTerminada
+import com.aesir.odin.domain.racha.ModuloCarreraSol
+import com.aesir.odin.domain.racha.TipoActividad
 import com.aesir.odin.domain.hidromiel.DiagnosticoCompletado
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
@@ -26,7 +29,9 @@ class FinalizarDiagnosticoUseCase(
     private val diagnosticoRepository: DiagnosticoRepository,
     private val roadmapRepository: RoadmapRepository,
     private val moduloHidromiel: ModuloHidromiel? = null,
-    private val idUsuario: String = USUARIO_LOCAL
+    private val idUsuario: String = USUARIO_LOCAL,
+    /** MOD-05: terminar la actividad sin abandonarla cuenta para la racha. */
+    private val moduloCarreraSol: ModuloCarreraSol? = null
 ) {
     suspend operator fun invoke(
         mundoId: String,
@@ -42,6 +47,7 @@ class FinalizarDiagnosticoUseCase(
                 DiagnosticoCompletado(idUsuario, mundoId, resultado.temasConocidos)
             )
         }
+        moduloCarreraSol?.alTerminarActividad(ActividadTerminada(idUsuario, TipoActividad.EVALUACION_DIAGNOSTICA, abandonada = false, fechaFin = java.time.LocalDate.now()))
         return resultado
     }
 }

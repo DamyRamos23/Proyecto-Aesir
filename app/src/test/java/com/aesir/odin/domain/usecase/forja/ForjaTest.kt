@@ -35,7 +35,6 @@ import com.aesir.odin.domain.model.ResultadoReto
 import com.aesir.odin.domain.model.RetoArrastrar
 import com.aesir.odin.domain.model.Tema
 import com.aesir.odin.domain.model.TipoEtapa
-import com.aesir.odin.domain.racha.ModuloCarreraSol
 import com.aesir.odin.domain.repository.ForjaRepository
 import com.aesir.odin.domain.repository.HistorialRepository
 import com.aesir.odin.domain.repository.RetoRepository
@@ -134,7 +133,7 @@ class ForjaTest {
     private val apostar = ApostarForjaUseCase(modulo, forjaRepo) { ahora }
     private val validarEtapa = ValidarEtapaForjaUseCase(bitacora) { ahora }
     private val enfriar = EnfriarMetalUseCase(bitacora) { ahora }
-    private val finalizar = FinalizarForjaUseCase(forjaRepo, modulo, ModuloCarreraSol.Pendiente) { ahora }
+    private val finalizar = FinalizarForjaUseCase(forjaRepo, modulo, null) { ahora }
     private val abandonar = AbandonarForjaUseCase(forjaRepo) { ahora }
 
     @After

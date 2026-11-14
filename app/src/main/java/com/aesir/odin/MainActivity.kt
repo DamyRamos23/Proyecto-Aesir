@@ -22,6 +22,11 @@ import com.aesir.odin.ui.preguntaflash.PreguntaFlashScreen
 import com.aesir.odin.ui.preguntaflash.PreguntaFlashViewModel
 import com.aesir.odin.ui.theme.ColorNocheOscura
 import com.aesir.odin.ui.theme.ODINTheme
+import com.aesir.odin.ui.racha.AvisosRacha
+import com.aesir.odin.domain.racha.AplicacionAbierta
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 class MainActivity : ComponentActivity() {
 
@@ -66,6 +71,15 @@ class MainActivity : ComponentActivity() {
                             alSuscribir = { appContainer.moduloHidromiel.reclamarRecompensaDiaria(USUARIO_LOCAL) },
                             modifier = Modifier.align(Alignment.TopCenter)
                         )
+                        // MOD-05: avisos de la racha. Al abrir la app se revisa el día (RN-26: no suma racha).
+                        AvisosRacha(
+                            avisos = appContainer.moduloCarreraSol.avisos,
+                            alSuscribir = {
+                                avisosRachaListos = true
+                                registrarAperturaRacha()
+                            },
+                            modifier = Modifier.align(Alignment.BottomCenter)
+                        )
                     }
                 }
 
@@ -74,8 +88,21 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Día en que ya se avisó la apertura al MOD-05 (se repite solo si cambia el día). */
+    private var ultimaAperturaRacha: LocalDate? = null
+    private var avisosRachaListos = false
+
+    private suspend fun registrarAperturaRacha() {
+        val hoy = LocalDate.now()
+        if (ultimaAperturaRacha == hoy) return
+        ultimaAperturaRacha = hoy
+        appContainer.moduloCarreraSol.alAbrirAplicacion(AplicacionAbierta(USUARIO_LOCAL, hoy))
+    }
+
     override fun onStart() {
         super.onStart()
+        // Si la app volvió a primer plano en un nuevo día, el MOD-05 revisa la racha.
+        if (avisosRachaListos) lifecycleScope.launch { registrarAperturaRacha() }
         preguntaFlashViewModel.reanudar()
     }
 
