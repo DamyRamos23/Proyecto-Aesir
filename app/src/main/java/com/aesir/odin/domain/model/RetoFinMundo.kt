@@ -3,7 +3,9 @@ package com.aesir.odin.domain.model
 /** Modelos del CU-08 Resolver reto de fin de mundo (Ragnarök). */
 
 object ReglasReto {
-    const val PREGUNTAS = 10
+    /** RF-106: 20 preguntas, 2 de cada uno de los 10 temas del mundo. */
+    const val PREGUNTAS_POR_TEMA = 2
+    const val PREGUNTAS = PREGUNTAS_POR_TEMA * ArbolHabilidades.TEMAS_POR_MUNDO
     const val PUNTAJE_MINIMO = 70
 }
 

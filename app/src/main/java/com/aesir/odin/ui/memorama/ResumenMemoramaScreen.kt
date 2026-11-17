@@ -1,5 +1,6 @@
 package com.aesir.odin.ui.memorama
 
+import com.aesir.odin.domain.hidromiel.PoliticaCosto
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
@@ -107,6 +108,7 @@ fun ResumenMemoramaScreen(
                     Dato(estilo, "%d:%02d".format(actual.tiempoEmpleadoSeg / 60, actual.tiempoEmpleadoSeg % 60), "tiempo")
                 }
             }
+            LineaSuperado(actual.puntos, estilo)
             Spacer(Modifier.height(28.dp))
             Box(Modifier.widthIn(max = 440.dp).fillMaxWidth()) {
                 BotonOdin(texto = "Volver al roadmap", onClick = onVolverRoadmap, acento = estilo.acento, modifier = Modifier.fillMaxWidth())
@@ -127,4 +129,19 @@ private fun Dato(estilo: EstiloMundo, valor: String, etiqueta: String) {
         Text(valor, color = estilo.acento, fontFamily = FuenteTitulo, fontWeight = FontWeight.Bold, fontSize = 30.sp)
         Text(etiqueta, color = Color(0xFFD8CFBE), fontFamily = FuenteTexto, fontSize = 14.sp)
     }
+}
+
+/** RF-67 / RF-101: el resumen dice si el nivel fue superado (MOD-01, RN-07: 60 puntos o más). */
+@Composable
+private fun LineaSuperado(puntaje: Int, estilo: EstiloMundo) {
+    val superado = puntaje >= PoliticaCosto.PUNTAJE_MINIMO
+    Text(
+        if (superado) "Nivel superado" else "Nivel no superado: necesitas ${PoliticaCosto.PUNTAJE_MINIMO} puntos",
+        color = if (superado) estilo.acento else Color(0xFFE08A7A),
+        fontFamily = FuenteTitulo,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 15.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(top = 14.dp)
+    )
 }

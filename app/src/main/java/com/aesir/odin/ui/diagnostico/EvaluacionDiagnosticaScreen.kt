@@ -391,11 +391,13 @@ private fun CuerpoPregunta(
     val revelada = vista.revelada
     val seleccion = vista.seleccion
 
+    // RF-131 y RF-142: solo se indica si la respuesta fue correcta; nunca se
+    // señala la opción correcta cuando el alumno falla (MOD-06, RN-34).
     fun estadoOpcion(i: Int): EstadoOpcionPozo {
         val elegida = i in seleccion
         if (!revelada) return if (elegida) EstadoOpcionPozo.ELEGIDA else EstadoOpcionPozo.NEUTRA
-        if (i in pregunta.respuestasCorrectas) return EstadoOpcionPozo.CORRECTA
-        return if (elegida) EstadoOpcionPozo.INCORRECTA else EstadoOpcionPozo.APAGADA
+        if (!elegida) return EstadoOpcionPozo.APAGADA
+        return if (vista.correcta == true) EstadoOpcionPozo.CORRECTA else EstadoOpcionPozo.INCORRECTA
     }
 
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -441,7 +443,7 @@ private fun CuerpoPregunta(
                 )
                 TextoAjustable(
                     if (bien) "La ${MI.ordinales[minOf(e.indiceActual, MI.ordinales.size - 1)]} runa se ilumina en tu camino."
-                    else textoRespuesta(pregunta),
+                    else "Tu respuesta no fue correcta. El pozo guarda la respuesta en sus aguas.",
                     alegreya(14.5f * MI.K, italica = true, color = Color(0xFFDCD2C0), alinear = TextAlign.Center),
                     Modifier.padding(top = MI.d(6f).dp).width(MI.d(460f).dp),
                     minEscala = 0.8f,
@@ -459,22 +461,11 @@ private class VistaPregunta {
     var correcta: Boolean? = null
 }
 
-/** «La respuesta era la B: …» (o las letras si hay varias correctas). */
-private fun textoRespuesta(pregunta: PreguntaDiagnostica): String {
-    val correctas = pregunta.respuestasCorrectas.sorted()
-    val letras = correctas.map { "la " + ('A' + it) }
-    if (correctas.size == 1 && correctas[0] in pregunta.opciones.indices) {
-        val texto = pregunta.opciones[correctas[0]]
-        val inicial = texto.take(1).lowercase() + texto.drop(1)
-        return "La respuesta era ${letras[0]}: $inicial" + if (texto.endsWith(".")) "" else "."
-    }
-    val lista = if (letras.size > 1) letras.dropLast(1).joinToString(", ") + " y " + letras.last() else letras.joinToString("")
-    return "Las respuestas eran $lista."
-}
-
 /** Hilera de runas: una por pregunta. Se ilumina al acertar; la actual va en un círculo. */
 @Composable
 private fun RunasSabiduria(total: Int, actual: Int, aciertos: List<Boolean>, revelada: Boolean, acento: Color, modifier: Modifier) {
+    // Con 20 preguntas (2 por tema) las runas se achican para caber en una sola hilera
+    val lado = minOf(40f, 470f / total.coerceAtLeast(1))
     Row(modifier) {
         for (i in 0 until total) {
             val respondida = i < aciertos.size
@@ -494,10 +485,10 @@ private fun RunasSabiduria(total: Int, actual: Int, aciertos: List<Boolean>, rev
             )
             Box(
                 Modifier
-                    .size(MI.d(40f).dp)
+                    .size(MI.d(lado).dp)
                     .drawBehind {
                         if (esActual) {
-                            val r = MI.d(17f).dp.toPx()
+                            val r = MI.d(lado * 0.425f).dp.toPx()
                             if (acierto) drawCircle(acento.copy(alpha = 0.25f), r + 5.dp.toPx())
                             drawCircle(acento, r, style = Stroke(1.4.dp.toPx()))
                         }
@@ -508,7 +499,7 @@ private fun RunasSabiduria(total: Int, actual: Int, aciertos: List<Boolean>, rev
                     MI.runa(i),
                     Modifier.scale(escala),
                     style = TextStyle(
-                        fontSize = MI.d(17f).sp,
+                        fontSize = MI.d(minOf(17f, lado * 0.6f)).sp,
                         color = color,
                         shadow = if (acierto) Shadow(acento.copy(alpha = 0.7f), Offset.Zero, 10f) else null
                     )

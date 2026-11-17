@@ -21,7 +21,7 @@ import com.aesir.odin.data.local.entity.PreguntaFlashEntity
  */
 object BancoPreguntas {
 
-    val preguntas: List<PreguntaFlashEntity> = listOf(
+    private val preguntasBase: List<PreguntaFlashEntity> = listOf(
         // ---- Preguntas originales de CU-06 (2 por tema) ----
         PreguntaFlashEntity("pf_uml_1_1", "tema_uml_1", "¿Qué símbolo indica visibilidad pública en un diagrama de clases?", listOf("~", "-", "+", "#"), listOf(2)),
         PreguntaFlashEntity("pf_uml_1_2", "tema_uml_1", "Selecciona las partes de una clase en UML:", listOf("Atributos", "Operaciones", "Línea de vida", "Nombre"), listOf(0, 1, 3)),
@@ -195,6 +195,17 @@ object BancoPreguntas {
         PreguntaFlashEntity("pf_mt_4_x5", "tema_mt_4", "¿Por qué el modelo incremental reduce el riesgo?", listOf("Porque los problemas aparecen en entregas tempranas", "Porque no se documenta", "Porque todo se entrega al final", "Porque no hay pruebas"), listOf(0)),
         PreguntaFlashEntity("pf_mt_4_x6", "tema_mt_4", "Selecciona situaciones donde conviene el modelo incremental:", listOf("Los requisitos principales se conocen pero pueden crecer", "Se necesita entregar funcionalidad básica pronto", "El equipo es reducido al inicio", "No existe ningún requisito"), listOf(0, 1, 2))
     )
+
+    /** Preguntas de los temas 5 a 10 de cada mundo (cuarto anillo del roadmap). */
+    private val preguntasTemasNuevos: List<PreguntaFlashEntity> = ContenidoTemas.temas.flatMap { t ->
+        t.flash.mapIndexed { i, p ->
+            val id = "pf_${t.sufijo}_${i + 1}"
+            val mezclada = ContenidoTemas.mezclar(id, p)
+            PreguntaFlashEntity(id, t.id, mezclada.enunciado, mezclada.opciones, mezclada.correctas)
+        }
+    }
+
+    val preguntas: List<PreguntaFlashEntity> = preguntasBase + preguntasTemasNuevos
 
     fun insertar(db: SupportSQLiteDatabase) {
         val converters = Converters()

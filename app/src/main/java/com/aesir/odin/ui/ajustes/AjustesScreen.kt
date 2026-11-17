@@ -1,5 +1,15 @@
 package com.aesir.odin.ui.ajustes
 
+import android.app.TimePickerDialog
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.compose.runtime.LaunchedEffect
+import com.aesir.odin.data.notificaciones.NotificadorCuervos
+import com.aesir.odin.domain.notificaciones.PreferenciasCuervos
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -51,6 +61,7 @@ import com.aesir.odin.ui.theme.Text
 fun AjustesScreen(vm: AjustesViewModel, onVolver: () -> Unit) {
     val presentacion by vm.presentacion.collectAsState()
     val sonido by vm.sonido.collectAsState()
+    val cuervos by vm.cuervos.collectAsState()
     var mostrarInfo by remember { mutableStateOf(false) }
     if (mostrarInfo) DialogoInformacion(onCerrar = { mostrarInfo = false })
 
@@ -223,6 +234,14 @@ fun AjustesScreen(vm: AjustesViewModel, onVolver: () -> Unit) {
             }
 
             Spacer(Modifier.height(16.dp))
+            // MOD-04 Cuervos de Odín
+            SeccionCuervos(
+                preferencias = cuervos,
+                onActivar = vm::cambiarCuervosActivados,
+                onCambiarHora = vm::cambiarHoraCuervos
+            )
+
+            Spacer(Modifier.height(16.dp))
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -245,6 +264,103 @@ fun AjustesScreen(vm: AjustesViewModel, onVolver: () -> Unit) {
         )
       }
     }
+}
+
+/**
+ * MOD-04: activar los avisos, elegir la hora del recordatorio y, si el
+ * teléfono no da permiso (E1), ir a su configuración para activarlos.
+ */
+@Composable
+private fun SeccionCuervos(
+    preferencias: PreferenciasCuervos,
+    onActivar: (Boolean) -> Unit,
+    onCambiarHora: (Int, Int) -> Unit
+) {
+    val contexto = LocalContext.current
+    var permiso by remember { mutableStateOf(NotificadorCuervos.tienePermiso(contexto)) }
+    // El alumno puede volver de la configuración del sistema con el permiso ya concedido
+    LaunchedEffect(Unit) {
+        while (true) {
+            permiso = NotificadorCuervos.tienePermiso(contexto)
+            delay(1000)
+        }
+    }
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .toggleable(value = preferencias.activadas, role = Role.Switch, onValueChange = onActivar)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text("Cuervos de Odín", color = OdinPaleta.Hueso, fontFamily = FuenteTitulo, fontSize = 18.sp)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Huginn y Muninn te avisan si tu racha está en riesgo, si tu hidromiel del día te espera " +
+                    "o si llevas días sin entrar. Como máximo un aviso al día.",
+                color = OdinPaleta.HuesoTenue,
+                fontFamily = FuenteTexto,
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Switch(
+            checked = preferencias.activadas,
+            onCheckedChange = null,
+            colors = SwitchDefaults.colors(checkedTrackColor = OdinPaleta.Oro, checkedThumbColor = OdinPaleta.Hollin)
+        )
+    }
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(enabled = preferencias.activadas, role = Role.Button) {
+                TimePickerDialog(contexto, { _, hora, minuto -> onCambiarHora(hora, minuto) }, preferencias.hora, preferencias.minuto, true).show()
+            }
+            .padding(top = 4.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            "Hora del recordatorio",
+            color = if (preferencias.activadas) OdinPaleta.Hueso else OdinPaleta.HuesoTenue,
+            fontFamily = FuenteTexto,
+            fontSize = 15.sp,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            preferencias.textoHora,
+            color = if (preferencias.activadas) OdinPaleta.Oro else OdinPaleta.HuesoTenue,
+            fontFamily = FuenteTitulo,
+            fontSize = 16.sp
+        )
+    }
+    if (preferencias.activadas && !permiso) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clickable(role = Role.Button) { abrirConfiguracionNotificaciones(contexto) }
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "El teléfono tiene bloqueadas las notificaciones de ODÍN. Toca aquí para activarlas en la configuración del sistema.",
+                color = OdinPaleta.Escarcha,
+                fontFamily = FuenteTexto,
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            )
+        }
+    }
+}
+
+/** MOD-04, E1: lleva a la configuración de notificaciones de la app en el sistema operativo. */
+private fun abrirConfiguracionNotificaciones(contexto: Context) {
+    val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, contexto.packageName)
+    } else {
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", contexto.packageName, null))
+    }
+    runCatching { contexto.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
 }
 
 private val INTEGRANTES = listOf(

@@ -18,8 +18,23 @@ class RetoContrarrelojRepositoryImpl(
                 aciertos = resultado.aciertos,
                 respondidas = resultado.respondidas,
                 abandonado = resultado.abandonado,
-                fecha = resultado.fecha
+                fecha = resultado.fecha,
+                hidromiel = resultado.hidromiel,
+                terminado = true
             )
         )
     }
+
+    override suspend fun contarRetosDelDia(inicioDia: Long): Int = dao.contarDesde(inicioDia)
+
+    override suspend fun registrarInicio(id: String, fecha: Long) {
+        dao.insertar(
+            ResultadoContrarrelojEntity(
+                id = id, puntaje = 0, penalizacion = 0, aciertos = 0, respondidas = 0,
+                abandonado = false, fecha = fecha, hidromiel = 0, terminado = false
+            )
+        )
+    }
+
+    override suspend fun retosSinTerminar(): List<String> = dao.sinTerminar()
 }

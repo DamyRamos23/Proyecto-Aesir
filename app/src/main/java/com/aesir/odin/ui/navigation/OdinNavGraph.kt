@@ -13,7 +13,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.aesir.odin.di.AppContainer
-import com.aesir.odin.domain.model.ArbolHabilidades
 import com.aesir.odin.domain.model.Tema
 import com.aesir.odin.ui.crucigrama.CrucigramaScreen
 import com.aesir.odin.ui.crucigrama.CrucigramaViewModel
@@ -181,31 +180,27 @@ object OdinNavGraph {
     private const val patronEvaluacionDiagnostica = "$rutaEvaluacionDiagnostica/{$argMundoId}"
 
     /**
-     * A dónde lleva entrar a un nivel: la introducción del tema; el reto de fin
-     * de mundo si es el Ragnarök; el memorama (CU-04); el reto de arrastrar y
-     * soltar con las lecciones cercanas para repasar (CU-09); o, si el nivel es
-     * un crucigrama o unas flashcards, la actividad con los conceptos de las
-     * dos lecciones que tiene más cerca en el árbol (ArbolHabilidades).
+     * A dónde lleva entrar a un nivel: la introducción del tema si es una
+     * lección; el reto de fin de mundo si es el Ragnarök; y, si es un
+     * minijuego o un reto, la actividad con el contenido del tema al que
+     * pertenece el nivel (SRS v3.2: «Todo nivel pertenece a un tema»): el
+     * memorama (CU-04), el crucigrama (CU-07), las flashcards (CU-03) o el
+     * reto de arrastrar y soltar (CU-09, cuya lección sugerida es la del tema).
      */
     fun rutaNivelCon(tema: Tema, temasDelMundo: List<Tema>): String {
         if (tema.esRagnarok) return rutaRagnarokCon(tema.id)
-        if (tema.esMemorama) return rutaMemoramaCon(tema.mundoId, tema.id)
-        val lecciones = temasDelMundo.filter { !it.esRagnarok && !it.esMinijuego }.sortedBy { it.orden }
-        if (tema.esArrastrar) {
-            // Tercer anillo: las lecciones más cercanas por ángulo son las que se sugiere repasar (A7.2)
-            val retos = temasDelMundo.filter { !it.esRagnarok && it.esReto }.sortedBy { it.orden }
-            val j = retos.indexOfFirst { it.id == tema.id }
-            val cercanas = if (j < 0) lecciones.indices.toList()
-            else ArbolHabilidades.leccionesCercanasAReto(j, retos.size, lecciones.size)
-            return rutaRetoArrastrarCon(tema.id, cercanas.map { lecciones[it].id })
+        if (!tema.esMinijuego) return rutaIntroTemaCon(tema.id)
+        val temaBase = tema.idTema.takeIf { id -> temasDelMundo.any { it.id == id && it.esLeccion } }
+        val temas = listOfNotNull(temaBase).ifEmpty {
+            temasDelMundo.filter { it.esLeccion }.sortedBy { it.orden }.map { it.id }
         }
-        if (!tema.esCrucigrama && !tema.esFlashcards) return rutaIntroTemaCon(tema.id)
-        val minijuegos = temasDelMundo.filter { !it.esRagnarok && it.anillo == ArbolHabilidades.ANILLO_MINIJUEGOS }.sortedBy { it.orden }
-        val k = minijuegos.indexOfFirst { it.id == tema.id }
-        val cercanas = if (k < 0) lecciones.indices.toList()
-        else ArbolHabilidades.leccionesCercanas(k, lecciones.size, minijuegos.size)
-        val temas = cercanas.map { lecciones[it].id }
-        return if (tema.esFlashcards) rutaFlashcardsCon(tema.id, temas) else rutaCrucigramaCon(tema.id, temas)
+        return when {
+            tema.esMemorama -> rutaMemoramaCon(tema.mundoId, tema.id)
+            tema.esArrastrar -> rutaRetoArrastrarCon(tema.id, temas)
+            tema.esFlashcards -> rutaFlashcardsCon(tema.id, temas)
+            tema.esCrucigrama -> rutaCrucigramaCon(tema.id, temas)
+            else -> rutaIntroTemaCon(tema.id)
+        }
     }
 
     private fun argumentoMundoId(): NamedNavArgument =
@@ -278,7 +273,7 @@ object OdinNavGraph {
             // Ajustes (MOD-02, MOD-03 y MOD-04)
             composable(rutaAjustes) {
                 AjustesScreen(
-                    vm = viewModel(factory = AjustesViewModel.factory(appContainer.moduloVisionHeimdall, appContainer.moduloSonido)),
+                    vm = viewModel(factory = AjustesViewModel.factory(appContainer.moduloVisionHeimdall, appContainer.moduloSonido, appContainer.moduloCuervos)),
                     onVolver = { nav.popBackStack() }
                 )
             }

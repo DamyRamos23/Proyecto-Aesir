@@ -48,9 +48,7 @@ class FinalizarCrucigramaUseCase(
         return resultado
     }
 
-    /** Puntaje en escala de 0 a 100, que es la que usa el MOD-01 para el bono. */
-    fun porcentaje(crucigrama: Crucigrama, puntaje: Int): Int {
-        val maximo = crucigrama.palabras.size * ActualizarPuntajeUseCase.PUNTOS_POR_ACIERTO
-        return if (maximo == 0) 0 else (puntaje * 100 / maximo).coerceIn(0, 100)
-    }
+    /** El puntaje del crucigrama ya está en la escala de 0 a 100 que usa el MOD-01 (paso 10). */
+    @Suppress("UNUSED_PARAMETER")
+    fun porcentaje(crucigrama: Crucigrama, puntaje: Int): Int = puntaje.coerceIn(0, 100)
 }

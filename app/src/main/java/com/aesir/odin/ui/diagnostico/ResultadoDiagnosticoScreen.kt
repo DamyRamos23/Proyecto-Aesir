@@ -100,8 +100,11 @@ fun PantallaRevelacion(
         }
     }
 
-    Row(Modifier.enMI(250f, 348f)) {
-        for (i in 0 until total) {
+    // Una runa por pregunta, en filas de 10 (la evaluación tiene 20: 2 por cada uno de los 10 temas)
+    Column(Modifier.enMI(250f, 348f), horizontalAlignment = Alignment.CenterHorizontally) {
+      for (fila in 0 until (total + RUNAS_POR_FILA - 1) / RUNAS_POR_FILA) {
+        Row {
+        for (i in fila * RUNAS_POR_FILA until minOf(total, (fila + 1) * RUNAS_POR_FILA)) {
             val encendida = i < runasEncendidas && i < aciertos.size && aciertos[i]
             val escala by animateFloatAsState(if (encendida) 1f else 0.92f, spring(dampingRatio = 0.55f, stiffness = 300f), label = "runa")
             val color by animateColorAsState(if (encendida) acento else Color(0xFF5C5246).copy(alpha = 0.6f), tween(250), label = "color")
@@ -125,6 +128,8 @@ fun PantallaRevelacion(
                 )
             }
         }
+        }
+      }
     }
 
     Column(
@@ -252,3 +257,6 @@ private fun FilaSaber(
         }
     }
 }
+
+/** Runas por fila en la revelación. */
+private const val RUNAS_POR_FILA = 10

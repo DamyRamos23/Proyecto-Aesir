@@ -61,7 +61,9 @@ enum class TipoMovimiento {
     /** MOD-05: bono por alcanzar un hito de racha. */
     BONO_RACHA,
     /** MOD-05: compra de una ofrenda a Sól. */
-    OFRENDA_SOL
+    OFRENDA_SOL,
+    /** CU-07 A3.1: el nivel no se pudo generar y el alumno regresó al roadmap. */
+    DEVOLUCION_ENTRADA
 }
 
 // ---------------------------------------------------------------------------
@@ -79,8 +81,10 @@ data class NivelInfo(
     val nombre: String,
     val tipo: TipoNivel,
     val esPrimero: Boolean,
-    /** Anillo del árbol (1 lecciones, 2 minijuegos, 3 retos): el diagnóstico reconoce de adentro hacia afuera. */
-    val anillo: Int = 1
+    /** Anillo del árbol (1 y 4 lecciones, 2 minijuegos, 3 retos). */
+    val anillo: Int = 1,
+    /** Tema (lección) al que pertenece el nivel: el diagnóstico reconoce todos los niveles de un tema conocido. */
+    val idTema: String = idNivel
 )
 
 /**
@@ -149,7 +153,11 @@ data class ResultadoApuestaForja(
     val faltante: Int = 0
 )
 
-data class ContrarrelojFinalizado(val idUsuario: String, val aciertos: Int, val fallos: Int = 0)
+/**
+ * CU-11: el reto terminó. [acumulado] es el hidromiel que se juntó durante el
+ * reto, sin bajar de 0 (RF-154); si no se da, se calcula con aciertos y fallos.
+ */
+data class ContrarrelojFinalizado(val idUsuario: String, val aciertos: Int, val fallos: Int = 0, val acumulado: Int? = null)
 
 /** CU-13: el duelo terminó (ganado o perdido) con [sorbosSobrantes] en el cuerno. */
 data class DueloFinalizado(val idUsuario: String, val ganado: Boolean, val sorbosSobrantes: Int)

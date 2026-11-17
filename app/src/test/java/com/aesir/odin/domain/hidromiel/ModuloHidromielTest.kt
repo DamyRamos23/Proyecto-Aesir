@@ -107,18 +107,18 @@ class ModuloHidromielTest {
 
     @Test
     fun `entrar a un nivel disponible descuenta C`() = runBlocking {
-        superar("m1-n1", puntaje = 0) // +20 → 60
+        superar("m1-n1", puntaje = 60) // +20 + 6 → 66
         val r = modulo.cobrarEntrada(U, "m1-n2")
         assertTrue(r.autorizado)
         assertEquals(20, r.costo)
-        assertEquals(40, repo.saldo())
+        assertEquals(46, repo.saldo())
         assertEquals(TipoMovimiento.ENTRADA_NIVEL, repo.historial.last().tipo)
         assertEquals(-20, repo.historial.last().cantidad)
     }
 
     @Test
     fun `E1 con hidromiel insuficiente no inicia e indica cuanto falta`() = runBlocking {
-        superar("m1-n1", puntaje = 0)
+        superar("m1-n1", puntaje = 60)
         repo.fijarSaldo(15)
         val r = modulo.cobrarEntrada(U, "m1-n2")
         assertFalse(r.autorizado)
@@ -139,24 +139,24 @@ class ModuloHidromielTest {
 
     @Test
     fun `volver a entrar a un nivel ya pagado y sin terminar no cobra otra vez`() = runBlocking {
-        superar("m1-n1", puntaje = 0) // 60
-        assertTrue(modulo.cobrarEntrada(U, "m1-n2").autorizado) // 40
+        superar("m1-n1", puntaje = 60) // 66
+        assertTrue(modulo.cobrarEntrada(U, "m1-n2").autorizado) // 46
         val otraVez = modulo.cobrarEntrada(U, "m1-n2")
         assertTrue(otraVez.autorizado)
-        assertEquals(40, repo.saldo())
+        assertEquals(46, repo.saldo())
         assertEquals(0, modulo.obtenerEstadoRoadmap(U, "m1").first { it.idNivel == "m1-n2" }.costo)
 
         // Al terminar (aunque no lo supere) la siguiente entrada vuelve a cobrarse
         modulo.alFinalizarNivel(NivelFinalizado(U, "m1-n2", 0, ResultadoNivel.NO_SUPERADO))
         assertEquals(20, modulo.cobrarEntrada(U, "m1-n2").costo)
-        assertEquals(20, repo.saldo())
+        assertEquals(26, repo.saldo())
     }
 
     // ---------------------------------------------------------------- Recompensa
 
     @Test
     fun `superar un nivel da C mas bono proporcional al puntaje`() = runBlocking {
-        val aviso = superar("m1-n1", puntaje = 55) // 20 + round(5.5) = 26
+        val aviso = superar("m1-n1", puntaje = 65) // 20 + 65 ÷ 10 hacia abajo = 26
         assertEquals(26, aviso.cantidad)
         assertEquals(66, repo.saldo())
         assertEquals(26, repo.superados.getValue(U to "m1-n1").recompensaOtorgada)
@@ -174,22 +174,33 @@ class ModuloHidromielTest {
 
     @Test
     fun `no superar o abandonar pierde la entrada y no da hidromiel`() = runBlocking {
-        superar("m1-n1", puntaje = 0) // 60
-        modulo.cobrarEntrada(U, "m1-n2") // 40
+        superar("m1-n1", puntaje = 60) // 66
+        modulo.cobrarEntrada(U, "m1-n2") // 46
         val noSuperado = modulo.alFinalizarNivel(NivelFinalizado(U, "m1-n2", 40, ResultadoNivel.NO_SUPERADO))
-        assertEquals(40, repo.saldo())
+        assertEquals(46, repo.saldo())
         assertEquals(0, noSuperado.cantidad)
         assertTrue(noSuperado.mensaje.contains("20"))
 
-        modulo.cobrarEntrada(U, "m1-n2") // 20
+        modulo.cobrarEntrada(U, "m1-n2") // 26
         modulo.alFinalizarNivel(NivelFinalizado(U, "m1-n2", 0, ResultadoNivel.ABANDONADO))
-        assertEquals(20, repo.saldo())
+        assertEquals(26, repo.saldo())
         assertNull(repo.superados[U to "m1-n2"])
     }
 
     @Test
+    fun `RN-07 un nivel terminado con menos de 60 no se supera`() = runBlocking {
+        superar("m1-n1", puntaje = 60) // 66
+        modulo.cobrarEntrada(U, "m1-n2") // 46
+        val aviso = modulo.alFinalizarNivel(NivelFinalizado(U, "m1-n2", 59, ResultadoNivel.SUPERADO))
+        assertEquals(0, aviso.cantidad)
+        assertTrue(aviso.mensaje.contains("60"))
+        assertNull(repo.superados[U to "m1-n2"])
+        assertEquals(46, repo.saldo())
+    }
+
+    @Test
     fun `completar los niveles del mundo da 3C mas bono y abre el Ragnarok`() = runBlocking {
-        for (i in 1..5) superar("m1-n$i", puntaje = 0)
+        for (i in 1..5) superar("m1-n$i", puntaje = 60)
         val antes = repo.saldo()!!
         val aviso = superar("m1-n6", puntaje = 100) // entrada 20, recompensa 60 + 10
         assertEquals(70, aviso.cantidad)
@@ -199,7 +210,7 @@ class ModuloHidromielTest {
 
     @Test
     fun `RN-05 el Ragnarok cuesta 3C y superarlo desbloquea el siguiente mundo`() = runBlocking {
-        for (i in 1..6) superar("m1-n$i", puntaje = 0)
+        for (i in 1..6) superar("m1-n$i", puntaje = 60)
         val saldo = repo.saldo()!!
         val entrada = modulo.cobrarEntrada(U, "m1-ragnarok")
         assertEquals(60, entrada.costo)

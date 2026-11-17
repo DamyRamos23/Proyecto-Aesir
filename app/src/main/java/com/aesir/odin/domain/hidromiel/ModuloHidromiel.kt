@@ -3,7 +3,6 @@ package com.aesir.odin.domain.hidromiel
 import com.aesir.odin.domain.sonido.EventoSonido
 import com.aesir.odin.domain.sonido.ModuloSonido
 import com.aesir.odin.domain.hidromiel.regla.ReglaConexionArbol
-import com.aesir.odin.domain.model.ArbolHabilidades
 import com.aesir.odin.domain.hidromiel.regla.ReglaNivelSuperado
 import com.aesir.odin.domain.hidromiel.regla.ReglaPrimerNivel
 import com.aesir.odin.domain.hidromiel.regla.ReglaRagnarok
@@ -110,6 +109,33 @@ class ModuloHidromiel(
         return resultado
     }
 
+    /**
+     * CU-07 A3.1 (RF-103): el nivel no se pudo generar y el alumno regresa al
+     * roadmap: se devuelve la entrada que pagó (DEVOLUCION_ENTRADA). Si no
+     * había entrada pagada (nivel gratuito o superado) no se mueve nada.
+     */
+    suspend fun devolverEntrada(idUsuario: String, idNivel: String): AvisoHidromiel? {
+        var aviso: AvisoHidromiel? = null
+        candado.withLock {
+            repositorio.enTransaccion {
+                if (entradasPagadas[idUsuario] != idNivel) return@enTransaccion
+                val nivel = catalogo.obtener(idNivel)
+                val costo = politica.costoDe(nivel)
+                entradasPagadas.remove(idUsuario)
+                if (costo <= 0) return@enTransaccion
+                val reserva = obtenerOCrearReserva(idUsuario)
+                reserva.abonar(costo, TipoMovimiento.DEVOLUCION_ENTRADA)
+                repositorio.guardarReserva(reserva)
+                aviso = AvisoHidromiel(
+                    TipoMovimiento.DEVOLUCION_ENTRADA, costo, reserva.saldo,
+                    "No se pudo preparar «${nivel.nombre}»: se te devolvieron $costo de hidromiel."
+                )
+            }
+        }
+        aviso?.let(::publicar)
+        return aviso
+    }
+
     /** E5: ayudas del crucigrama. Si no alcanza, se aplica E1 y no se entrega. */
     suspend fun cobrarAyuda(idUsuario: String, tipo: TipoAyuda): ResultadoAcceso {
         if (ModoAdmin.estaActivo) {
@@ -152,16 +178,21 @@ class ModuloHidromiel(
                 val estado = evaluar(e.idUsuario, nivel)
                 if (entradasPagadas[e.idUsuario] == nivel.idNivel) entradasPagadas.remove(e.idUsuario)
 
-                if (e.resultado != ResultadoNivel.SUPERADO) {
+                // Paso 4 y RN-07: el módulo decide si el nivel se superó según el puntaje
+                // mínimo aprobatorio (60, o 70 en el Ragnarök), aunque la actividad se haya terminado.
+                val minimo = politica.minimoAprobatorio(nivel)
+                val bajoElMinimo = e.resultado == ResultadoNivel.SUPERADO && e.puntaje < minimo
+                if (e.resultado != ResultadoNivel.SUPERADO || bajoElMinimo) {
                     // La entrada pagada se pierde; no se otorga hidromiel (paso 6)
                     val pagado = if (estado == EstadoNivel.DISPONIBLE) politica.costoDe(nivel) else 0
                     val verbo = if (e.resultado == ResultadoNivel.ABANDONADO) "Abandonaste" else "No superaste"
+                    val motivo = if (bajoElMinimo) " Necesitas $minimo puntos y obtuviste ${e.puntaje}." else ""
                     return@enTransaccion AvisoHidromiel(
                         tipo = TipoMovimiento.ENTRADA_NIVEL,
                         cantidad = 0, // la entrada ya se descontó al iniciar el nivel
                         saldoActual = reserva.saldo,
-                        mensaje = if (pagado > 0) "$verbo «${nivel.nombre}». La entrada de $pagado de hidromiel se perdió."
-                        else "$verbo «${nivel.nombre}». La entrada era gratuita, no perdiste hidromiel."
+                        mensaje = if (pagado > 0) "$verbo «${nivel.nombre}».$motivo La entrada de $pagado de hidromiel se perdió."
+                        else "$verbo «${nivel.nombre}».$motivo La entrada era gratuita, no perdiste hidromiel."
                     )
                 }
 
@@ -218,10 +249,9 @@ class ModuloHidromiel(
      * Marca como superados los niveles conocidos, sin cobrar ni otorgar (RN-06).
      * El Ragnarök no se puede reconocer por diagnóstico: siempre se juega.
      *
-     * El diagnóstico pregunta por las lecciones; los «niveles de esos temas»
-     * (CU-10, paso 9) son además los minijuegos y retos que dependen solo de
-     * ellas: un minijuego cuenta si todas sus lecciones conectadas son
-     * conocidas, y un reto si todos sus minijuegos conectados lo son.
+     * El diagnóstico pregunta por los temas (sus lecciones); los «niveles de
+     * esos temas» (CU-10, paso 9; RF-134) son la lección y todos los
+     * minijuegos y retos que pertenecen a cada tema conocido (NivelInfo.idTema).
      *
      * A9.1: si con eso quedan superados todos los niveles del mundo, se otorga
      * una vez 3C como BONO_DIAGNOSTICO para cubrir la entrada al Ragnarök.
@@ -257,18 +287,10 @@ class ModuloHidromiel(
         aviso?.let(::publicar)
     }
 
-    /** Lecciones conocidas más los minijuegos y retos que quedan cubiertos por ellas, anillo por anillo. */
-    private suspend fun nivelesReconocidos(lecciones: List<String>, normales: Map<String, NivelInfo>): Set<String> {
-        val conocidos = lecciones.filter { it in normales }.toMutableSet()
-        for (anillo in ArbolHabilidades.ANILLO_MINIJUEGOS..ArbolHabilidades.ANILLO_RETOS) {
-            normales.values
-                .filter { it.anillo == anillo && it.idNivel !in conocidos }
-                .forEach { nivel ->
-                    val base = catalogo.conectados(nivel.idNivel).filter { normales[it]?.anillo == anillo - 1 }
-                    if (base.isNotEmpty() && base.all { it in conocidos }) conocidos += nivel.idNivel
-                }
-        }
-        return conocidos
+    /** Todos los niveles normales cuyo tema fue reconocido como conocido. */
+    private fun nivelesReconocidos(temas: List<String>, normales: Map<String, NivelInfo>): Set<String> {
+        val conocidos = temas.toSet()
+        return normales.values.filter { it.idTema in conocidos }.map { it.idNivel }.toSet()
     }
 
     // -----------------------------------------------------------------------
@@ -415,8 +437,9 @@ class ModuloHidromiel(
     /** Al terminar el reto (sin abandonarlo): +2 por cada correcta y -1 por cada incorrecta (RN-01: nunca baja de 0). */
     suspend fun alFinalizarContrarreloj(e: ContrarrelojFinalizado): AvisoHidromiel =
         moverSaldo(e.idUsuario) { reserva ->
-            val neto = PoliticaCosto.CONTRARRELOJ_CORRECTA * e.aciertos.coerceAtLeast(0) -
-                PoliticaCosto.CONTRARRELOJ_FALLO * e.fallos.coerceAtLeast(0)
+            val neto = e.acumulado?.coerceAtLeast(0)
+                ?: (PoliticaCosto.CONTRARRELOJ_CORRECTA * e.aciertos.coerceAtLeast(0) -
+                    PoliticaCosto.CONTRARRELOJ_FALLO * e.fallos.coerceAtLeast(0))
             val cambio = if (neto >= 0) {
                 if (neto > 0) reserva.abonar(neto, TipoMovimiento.RECOMPENSA_CONTRARRELOJ)
                 neto
@@ -434,9 +457,9 @@ class ModuloHidromiel(
         }
 
     /**
-     * E6: abandonar un reto contrarreloj resta 20. Lo ganado en el reto se descarta,
-     * pero si el saldo del reto es negativo se suma a la penalización (-10 → resta 30).
-     * RN-01: nunca baja de 0.
+     * E6 y CU-11 E7.1: abandonar un reto contrarreloj resta 20; lo ganado en el
+     * reto se descarta. Si llegara un saldo del reto negativo (versiones
+     * anteriores), se suma a la penalización. RN-01: nunca baja de 0.
      */
     suspend fun alAbandonarContrarreloj(e: ContrarrelojAbandonado): AvisoHidromiel =
         moverSaldo(e.idUsuario) { reserva ->

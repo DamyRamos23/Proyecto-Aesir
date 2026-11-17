@@ -71,6 +71,7 @@ class RetoContrarrelojViewModel(
     private val _seleccionadas = MutableStateFlow<Set<Int>>(emptySet())
     private val _tiempoRestanteSeg = MutableStateFlow(RetoContrareloj.DURACION_SEGUNDOS)
     private val _puntaje = MutableStateFlow(0)
+    private val _hidromiel = MutableStateFlow(0)
     private val _resultado = MutableStateFlow<ResultadoContrarreloj?>(null)
 
     val estado: StateFlow<Estado> = _estado.asStateFlow()
@@ -81,6 +82,9 @@ class RetoContrarrelojViewModel(
     val seleccionadas: StateFlow<Set<Int>> = _seleccionadas.asStateFlow()
     val tiempoRestanteSeg: StateFlow<Int> = _tiempoRestanteSeg.asStateFlow()
     val puntaje: StateFlow<Int> = _puntaje.asStateFlow()
+
+    /** RF-152: hidromiel acumulado en el reto (se paga al terminar). */
+    val hidromiel: StateFlow<Int> = _hidromiel.asStateFlow()
     val resultado: StateFlow<ResultadoContrarreloj?> = _resultado.asStateFlow()
     val saldo: StateFlow<Int> = saldoHidromiel.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
     /** En modo admin la entrada es gratis, así que se puede entrar sin hidromiel. */
@@ -91,6 +95,12 @@ class RetoContrarrelojViewModel(
         private set
 
     private var reto: RetoContrareloj? = null
+    /** Id del reto en curso: se registra al pagar la entrada y se completa al terminar (E7.2). */
+    private var idReto: String = java.util.UUID.randomUUID().toString()
+
+    private val _restantesHoy = MutableStateFlow<Int?>(null)
+    /** Paso 2: retos que quedan hoy (RF-147). */
+    val restantesHoy: StateFlow<Int?> = _restantesHoy.asStateFlow()
     private var indicePregunta = 0
     private var aciertos = 0
     private var respondidas = 0
@@ -111,6 +121,7 @@ class RetoContrarrelojViewModel(
             }
             armado
                 .onSuccess { nuevo ->
+                    _restantesHoy.value = runCatching { pagarEntradaUseCase.restantesHoy() }.getOrNull()
                     reto = nuevo
                     duracionSegundos = nuevo.duracionSegundos
                     _tiempoRestanteSeg.value = nuevo.duracionSegundos
@@ -133,7 +144,8 @@ class RetoContrarrelojViewModel(
         viewModelScope.launch {
             _estado.value = Estado.Cargando
             val acceso = try {
-                pagarEntradaUseCase()
+                idReto = java.util.UUID.randomUUID().toString()
+                pagarEntradaUseCase(idReto)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -152,6 +164,8 @@ class RetoContrarrelojViewModel(
         respondidas = 0
         cerrando = false
         _puntaje.value = 0
+        _hidromiel.value = 0
+        pausado = false
         _resultado.value = null
         _seleccionadas.value = emptySet()
         _tiempoRestanteSeg.value = nuevo.duracionSegundos
@@ -178,12 +192,12 @@ class RetoContrarrelojViewModel(
 
         val validacion = validadorUseCase(_seleccionadas.value.sorted(), pregunta.respuestasCorrectas)
         respondidas++
-        if (validacion.estado == EstadoRespuesta.CORRECTA) {
-            aciertos++
-            _puntaje.value += actual.puntosPorAcierto
-        } else {
-            _puntaje.value -= PoliticaCosto.CONTRARRELOJ_FALLO
-        }
+        val correcta = validacion.estado == EstadoRespuesta.CORRECTA
+        if (correcta) aciertos++
+        // RF-154: +10 puntos y +2 de hidromiel, o −5 y −1, sin bajar de 0
+        val (puntos, hidromiel) = RetoContrareloj.acumular(_puntaje.value, _hidromiel.value, correcta)
+        _puntaje.value = puntos
+        _hidromiel.value = hidromiel
 
         indicePregunta++
         _seleccionadas.value = emptySet()
@@ -196,15 +210,28 @@ class RetoContrarrelojViewModel(
         _numeroPregunta.value = respondidas + 1
     }
 
-    /** E3.1: el alumno abandona a mitad del reto. */
+    /** E7.1, paso 2: al pedir salir el contador se detiene mientras se confirma. */
+    @Volatile
+    private var pausado = false
+
+    fun pausarParaConfirmar() {
+        if (enCurso()) pausado = true
+    }
+
+    /** E7.1, paso 3: si cancela, el contador se reanuda. */
+    fun reanudarTrasCancelar() {
+        pausado = false
+    }
+
+    /** E7.1: el alumno abandona a mitad del reto. */
     fun abandonarReto() {
         if (!enCurso()) return
         cerrando = true
         temporizador?.cancel()
         _estado.value = Estado.Guardando
-        val puntajeAcumulado = _puntaje.value
+        // E7.1: se descartan el puntaje y el acumulado; solo se restan los 20 de hidromiel
         viewModelScope.launch {
-            guardar(Estado.Abandonado) { abandonarRetoUseCase(puntajeAcumulado) }
+            guardar(Estado.Abandonado) { abandonarRetoUseCase(idReto = idReto) }
         }
     }
 
@@ -213,6 +240,8 @@ class RetoContrarrelojViewModel(
         temporizador = viewModelScope.launch {
             while (_tiempoRestanteSeg.value > 0) {
                 delay(1000)
+                // E7.1: mientras el alumno confirma si abandona, el contador se detiene
+                if (pausado) continue
                 _tiempoRestanteSeg.value -= 1
                 ModuloSonido.compartido?.avisarTiempoRestante(_tiempoRestanteSeg.value) // MOD-02, disparador 3
             }
@@ -226,9 +255,10 @@ class RetoContrarrelojViewModel(
         temporizador?.cancel()
         _estado.value = Estado.Guardando
         val puntajeFinal = _puntaje.value
+        val hidromielFinal = _hidromiel.value
         // Corrutina aparte: cancelar el temporizador cancela la que lo ejecuta.
         viewModelScope.launch {
-            guardar(Estado.Finalizado) { finalizarRetoUseCase(puntajeFinal, aciertos, respondidas) }
+            guardar(Estado.Finalizado) { finalizarRetoUseCase(puntajeFinal, aciertos, respondidas, hidromielFinal, idReto) }
         }
     }
 

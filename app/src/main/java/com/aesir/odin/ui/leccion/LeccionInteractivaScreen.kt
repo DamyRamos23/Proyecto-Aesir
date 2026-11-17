@@ -322,15 +322,17 @@ private fun ContenidoLeccion(
 
 internal enum class EstadoOpcion { NEUTRA, CORRECTA, INCORRECTA, FALTANTE }
 
+/**
+ * RF-73 y RN-34: se indica si la respuesta fue correcta, incompleta o
+ * incorrecta marcando solo lo que eligió el alumno; nunca se señalan las
+ * opciones correctas que no eligió.
+ */
 private fun estadoOpcion(indice: Int, seleccion: Set<Int>, resultado: ResultadoRespuesta?): EstadoOpcion {
-    if (resultado == null) return EstadoOpcion.NEUTRA
-    val esCorrecta = indice in resultado.opcionesCorrectas
-    val fueSeleccionada = indice in seleccion
-    return when {
-        esCorrecta && fueSeleccionada -> EstadoOpcion.CORRECTA
-        esCorrecta -> EstadoOpcion.FALTANTE
-        fueSeleccionada -> EstadoOpcion.INCORRECTA
-        else -> EstadoOpcion.NEUTRA
+    if (resultado == null || indice !in seleccion) return EstadoOpcion.NEUTRA
+    return when (resultado.estado) {
+        EstadoRespuesta.CORRECTA -> EstadoOpcion.CORRECTA
+        EstadoRespuesta.INCOMPLETA -> EstadoOpcion.FALTANTE
+        EstadoRespuesta.INCORRECTA -> EstadoOpcion.INCORRECTA
     }
 }
 

@@ -21,7 +21,14 @@ object DatosEnigmas {
 
     private data class TemaInfo(val mundo: String, val nombre: String, val enigma: String)
 
-    private val temas = linkedMapOf(
+    private val nombresMundo = mapOf(
+        "mundo_uml" to "UML",
+        "mundo_casos_uso" to "Casos de Uso",
+        "mundo_ciclo_vida" to "Ciclo de Vida",
+        "mundo_modelos_trad" to "Modelos Tradicionales"
+    )
+
+    private val temas: Map<String, TemaInfo> = linkedMapOf(
         "tema_uml_1" to TemaInfo("UML", "Diagramas de Clases", "«Dibujo cajas con nombre, atributos y métodos, pero nunca el paso del tiempo». ¿Vienes de mi taller?"),
         "tema_uml_2" to TemaInfo("UML", "Diagramas de Secuencia", "«Mis líneas bajan como el tiempo y por ellas viajan mensajes». ¿Naciste en mí?"),
         "tema_uml_3" to TemaInfo("UML", "Diagramas de Casos de Uso", "«Pinto óvalos y figuras que miran al sistema desde afuera». ¿Eres de mi aldea?"),
@@ -38,24 +45,27 @@ object DatosEnigmas {
         "tema_mt_2" to TemaInfo("Modelos Tradicionales", "Modelo en Espiral", "«Doy vueltas y en cada una mido el riesgo». ¿Giras conmigo?"),
         "tema_mt_3" to TemaInfo("Modelos Tradicionales", "Modelo en V", "«Bajo diseñando y subo probando, cada lado frente al otro». ¿Eres de mi forma?"),
         "tema_mt_4" to TemaInfo("Modelos Tradicionales", "Modelo Incremental", "«Entrego por partes y cada una suma a la anterior». ¿Eres uno de mis pedazos?")
-    )
+    ) + ContenidoTemas.temas.associate { t ->
+        // Temas 5 a 10 de cada mundo (cuarto anillo)
+        t.id to TemaInfo(nombresMundo.getValue(t.mundoId), t.nombre, t.enigma)
+    }
 
     /** Grupos de conceptos por significado: (directa, enigma, nombres). */
     private val grupos = listOf(
         Triple(
             "¿Es un tipo de prueba o de verificación?",
             "«Busco el error antes de que lo encuentre el usuario». ¿Eres de mi oficio?",
-            setOf("Prueba", "Unitaria", "Integración", "Regresión", "Verificación", "Validación", "Aceptación", "Unidad")
+            setOf("Prueba", "Unitaria", "Integración", "Regresión", "Verificación", "Validación", "Aceptación", "Unidad", "Revisión", "Inspección", "Auditoría")
         ),
         Triple(
             "¿Es una relación entre clases o entre casos de uso?",
             "«No existo solo: siempre ato a dos». ¿Eres un lazo?",
-            setOf("Herencia", "Composición", "Include", "Extend")
+            setOf("Herencia", "Composición", "Include", "Extend", "Asociación", "Agregación", "Dependencia", "Import")
         ),
         Triple(
             "¿Es una persona o un rol que participa?",
             "«Tengo voz y deseos, pero no vivo dentro del sistema». ¿Hablo de ti?",
-            setOf("Actor", "Stakeholder")
+            setOf("Actor", "Stakeholder", "Usuario", "Interesado", "Primario", "Secundario")
         )
     )
 

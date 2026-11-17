@@ -138,7 +138,10 @@ import com.aesir.odin.data.local.entity.VisionEntity
     // v13: CU-02 forja de Brokkr (artefactos, vitrina, forjas, problemas y templados)
     //      y MOD-05 racha (rachas e hitos cobrados). Con migración: solo crea las
     //      tablas nuevas y conserva el progreso y el hidromiel.
-    version = 13,
+    // v14: roadmap de cuatro anillos del SRS v3.2 (18 niveles y 10 temas por
+    //      mundo). Con migración: agrega la columna temas.temaBaseId; los
+    //      temas nuevos y el contenido se siembran en onOpen sin tocar el progreso.
+    version = 14,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -223,6 +226,22 @@ abstract class OdinDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * v13 → v14: el nivel sabe a qué tema pertenece (temas.temaBaseId) y el
+         * contrarreloj guarda el hidromiel ganado aparte del puntaje. Los
+         * temas 5 a 10, los niveles que cambian de anillo y los que se quitan los
+         * pone al día DatosIniciales.sincronizar en onOpen.
+         */
+        val MIGRACION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `temas` ADD COLUMN `temaBaseId` TEXT NOT NULL DEFAULT ''")
+                // CU-11, RF-157: el resultado del contrarreloj guarda también el hidromiel ganado
+                db.execSQL("ALTER TABLE `resultados_contrarreloj` ADD COLUMN `hidromiel` INTEGER NOT NULL DEFAULT 0")
+                // CU-11, RF-147 y E7.2: cada reto queda registrado desde que empieza
+                db.execSQL("ALTER TABLE `resultados_contrarreloj` ADD COLUMN `terminado` INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+
         @Volatile
         private var INSTANCE: OdinDatabase? = null
 
@@ -247,7 +266,9 @@ abstract class OdinDatabase : RoomDatabase() {
                                 }
                                 db.beginTransaction()
                                 try {
-                                    if (vacia) DatosIniciales.insertar(db)
+                                    // Estructura del roadmap y contenido fijo: se ponen al día en cada
+                                    // apertura sin tocar el progreso (temas 5 a 10, anillos del SRS v3.2).
+                                    if (vacia) DatosIniciales.insertar(db) else DatosIniciales.sincronizar(db)
                                     // El banco de preguntas es contenido fijo: se actualiza en cada
                                     // apertura para que las preguntas nuevas lleguen sin borrar datos.
                                     BancoPreguntas.insertar(db)
@@ -263,7 +284,7 @@ abstract class OdinDatabase : RoomDatabase() {
                             }
                         }
                     )
-                    .addMigrations(MIGRACION_9_10, MIGRACION_10_11, MIGRACION_11_12, MIGRACION_12_13)
+                    .addMigrations(MIGRACION_9_10, MIGRACION_10_11, MIGRACION_11_12, MIGRACION_12_13, MIGRACION_13_14)
                     .fallbackToDestructiveMigration()
                     .build()
                     .also {

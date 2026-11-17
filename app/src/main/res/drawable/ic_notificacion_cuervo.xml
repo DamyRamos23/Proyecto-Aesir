@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- MOD-04: silueta de cuervo (Huginn y Muninn) para la barra de notificaciones. Un solo color. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M2.5,14.2L6.8,11.3C7.9,8.1 10.6,6.1 13.6,6.1L15.6,4.2L16.9,5.9L21.5,6.9L17.3,8.2C18.1,11.6 16.7,15.3 13,17.1L14.9,20.8L13.2,20.8L11.2,17.6L9.4,18L10.2,20.8L8.5,20.8L7.3,17.4C5.3,16.9 3.7,15.8 2.5,14.2Z" />
+</vector>

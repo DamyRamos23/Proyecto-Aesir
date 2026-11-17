@@ -13,6 +13,10 @@ class PoliticaCosto {
         else -> C
     }
 
+    /** RN-07: puntaje mínimo aprobatorio, 60 (70 en el Ragnarök). */
+    fun minimoAprobatorio(nivel: NivelInfo): Int =
+        if (nivel.tipo == TipoNivel.RAGNAROK) PUNTAJE_MINIMO_RAGNAROK else PUNTAJE_MINIMO
+
     /** E5 */
     fun costoAyuda(tipo: TipoAyuda): Int = when (tipo) {
         TipoAyuda.REVELAR_LETRA -> AYUDA_LETRA
@@ -68,6 +72,9 @@ class PoliticaCosto {
         const val APUESTA_MAX_VOLVA = 70
         const val DIEZMO_ODIN_PORCIENTO = 10
         const val C = 20
+        /** RN-07: puntaje mínimo para superar un nivel normal y el Ragnarök. */
+        const val PUNTAJE_MINIMO = 60
+        const val PUNTAJE_MINIMO_RAGNAROK = 70
         const val MULT_RAGNAROK = 3
         const val ENTRADAS_DIARIAS = 2
         const val ENTRADAS_INICIALES = 2
@@ -86,6 +93,8 @@ class PoliticaCosto {
         const val APUESTA_DUELO = 24
         const val HIDROMIEL_POR_SORBO = 4
         const val MAX_DUELOS_DIA = 3
+        /** CU-11, RF-147: retos contrarreloj por día real. */
+        const val MAX_CONTRARRELOJ_DIA = 3
 
         /** Paso 12: se recupera la apuesta más 4 por sorbo sobrante, sin diezmo (RF-194). */
         fun premioDuelo(sorbosSobrantes: Int): Int = APUESTA_DUELO + HIDROMIEL_POR_SORBO * sorbosSobrantes

@@ -26,7 +26,8 @@ class ReglasYCalculosTest {
     fun `el bono va de 0 a 10 y se redondea`() {
         assertEquals(0, calculadora.calcularBono(0))
         assertEquals(5, calculadora.calcularBono(50))
-        assertEquals(6, calculadora.calcularBono(55))
+        assertEquals(5, calculadora.calcularBono(55)) // hacia abajo
+        assertEquals(9, calculadora.calcularBono(99))
         assertEquals(10, calculadora.calcularBono(100))
         assertEquals(10, calculadora.calcularBono(250)) // se acota a 100
         assertEquals(0, calculadora.calcularBono(-10))

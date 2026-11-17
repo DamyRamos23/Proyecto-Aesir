@@ -133,7 +133,15 @@ class AccesoYOmisionDiagnosticoTest {
     }
 
     @Test
-    fun `obtiene diez preguntas del mundo`() = runBlocking {
-        assertEquals(ObtenerPreguntasDiagnosticoUseCase.NUM_PREGUNTAS, ObtenerPreguntasDiagnosticoUseCase(repo)("m1").size)
+    fun `obtiene dos preguntas de cada tema del mundo`() = runBlocking {
+        // 10 temas: los dos primeros con una pregunta de reserva
+        val banco = (1..10).flatMap { t ->
+            (1..(if (t <= 2) 3 else 2)).map { i -> PreguntaDiagnostica("p${t}_$i", "m1", "tema_x_$t", "¿$t-$i?", listOf("a", "b"), listOf(0)) }
+        }
+        val preguntas = ObtenerPreguntasDiagnosticoUseCase(FakeDiagnosticoRepository(banco))("m1")
+        assertEquals(ObtenerPreguntasDiagnosticoUseCase.NUM_PREGUNTAS, preguntas.size)
+        assertEquals(20, preguntas.size)
+        assertEquals((1..10).map { "tema_x_$it" }, preguntas.map { it.temaId }.distinct())
+        assertTrue(preguntas.groupBy { it.temaId }.values.all { it.size == 2 })
     }
 }

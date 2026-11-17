@@ -11,5 +11,7 @@ data class ResultadoContrarreloj(
     val aciertos: Int,
     val respondidas: Int,
     val abandonado: Boolean,
-    val fecha: Long
+    val fecha: Long,
+    /** Hidromiel ganado en el reto; el puntaje va aparte (RF-154). */
+    val hidromiel: Int = 0
 )

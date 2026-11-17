@@ -133,6 +133,21 @@ class CrucigramaViewModel(
         }
     }
 
+    /**
+     * A3.1: el crucigrama no se pudo generar y el alumno regresa al roadmap;
+     * el MOD-01 le devuelve la entrada (RF-103).
+     */
+    fun volverConDevolucion(alTerminar: () -> Unit) {
+        viewModelScope.launch {
+            val tema = temaId
+            if (tema != null && _crucigrama.value == null && _mensajeError.value != null) {
+                runCatching { moduloHidromiel.devolverEntrada(idUsuario, tema) }
+            }
+            alTerminar()
+        }
+    }
+
+    /** A3.1: reintentar la generación no cobra otra entrada. */
     fun reintentarGeneracion() {
         val tema = temaId ?: return
         cargarCrucigrama(tema, temasIncluidos)
@@ -240,6 +255,7 @@ class CrucigramaViewModel(
                 _avisoAyuda.value = cobro.motivo
                 return@launch
             }
+            _puntaje.value = actualizarPuntajeUseCase.porAyuda(_puntaje.value, TipoAyuda.REVELAR_LETRA)
             _entradas.value = _entradas.value + (celda to palabra.letraEn(celda)!!)
             _bloqueadas.value = _bloqueadas.value + celda
             _celdaActual.value = primeraEditable(palabra) ?: celda
@@ -257,7 +273,8 @@ class CrucigramaViewModel(
                 _avisoAyuda.value = cobro.motivo
                 return@launch
             }
-            // La palabra revelada se resuelve sin sumar puntos ni contar como acierto
+            // A5.1: la palabra revelada cuenta como resuelta (no como acierto) y resta 10 puntos
+            _puntaje.value = actualizarPuntajeUseCase.porAyuda(_puntaje.value, TipoAyuda.REVELAR_PALABRA)
             marcarResuelta(palabra, revelada = true)
         }
     }

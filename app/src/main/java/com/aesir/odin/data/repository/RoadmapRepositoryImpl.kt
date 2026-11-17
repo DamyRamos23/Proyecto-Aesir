@@ -89,6 +89,7 @@ class RoadmapRepositoryImpl(
         esRagnarok = tipo == "RAGNAROK",
         anillo = anillo,
         actividad = Actividad.desde(actividad),
-        conocido = conocido
+        conocido = conocido,
+        temaBaseId = temaBaseId
     )
 }

@@ -6,21 +6,19 @@ import com.aesir.odin.data.local.entity.TemaEntity
 import com.aesir.odin.domain.hidromiel.CatalogoNiveles
 import com.aesir.odin.domain.hidromiel.NivelInfo
 import com.aesir.odin.domain.hidromiel.TipoNivel
-import com.aesir.odin.domain.model.Actividad
 import com.aesir.odin.domain.model.ArbolHabilidades
 
 /**
  * Catálogo de niveles del MOD-01 sobre las tablas de temas y mundos: cada
  * tema es un nivel.
  *
- * Árbol de habilidades de tres anillos (ArbolHabilidades): las lecciones en
- * el anillo interior, conectadas en círculo; los minijuegos en el segundo,
- * cada uno conectado a las dos lecciones que tiene más cerca; y los retos en
- * el tercero, cada uno conectado a los dos minijuegos que tiene más cerca.
- *
- * Los niveles cuya actividad todavía no se puede jugar (retos por definir)
- * no entran al catálogo: no se cobran, no abren a nadie y no cuentan para el
- * Ragnarök hasta que se programen (Actividad.jugable).
+ * Árbol de habilidades de cuatro anillos (ArbolHabilidades, SRS v3.2): las
+ * lecciones de los temas 1 a 4 en el anillo interior, conectadas en círculo;
+ * los minijuegos en el segundo, cada uno conectado a la lección de su tema;
+ * los retos de arrastrar y soltar en el tercero, cada uno conectado a los dos
+ * minijuegos que tiene más cerca; y las lecciones de los temas 5 a 10 en el
+ * cuarto, conectadas entre sí y con el reto o minijuego que tienen más cerca.
+ * Son 18 niveles por mundo más el Ragnarök.
  */
 class CatalogoNivelesImpl(
     private val temaDao: TemaDao,
@@ -35,7 +33,7 @@ class CatalogoNivelesImpl(
     override suspend fun nivelesDelMundo(idMundo: String): List<NivelInfo> {
         val arbol = arbolDe(idMundo)
         val ragnarok = temaDao.getByMundoId(idMundo).filter { it.tipo == RAGNAROK }
-        return arbol.jugables
+        return arbol.todos
             .plus(ragnarok)
             .map { aNivel(it, arbol) }
     }
@@ -43,13 +41,10 @@ class CatalogoNivelesImpl(
     override suspend fun conectados(idNivel: String): List<String> {
         val tema = temaDao.getById(idNivel)
         val arbol = arbolDe(tema.mundoId)
-        val jugables = arbol.jugables.map { it.id }
-        if (tema.tipo == RAGNAROK) return jugables
-        // La geometría se calcula con todos los niveles, para que coincida con el escudo
-        val vecinos = ArbolHabilidades.conexiones(
-            arbol.lecciones.map { it.id }, arbol.minijuegos.map { it.id }, arbol.retos.map { it.id }
-        )[idNivel].orEmpty()
-        return jugables.filter { it in vecinos }
+        val ids = arbol.todos.map { it.id }
+        if (tema.tipo == RAGNAROK) return ids
+        val vecinos = arbol.conexiones()[idNivel].orEmpty()
+        return ids.filter { it in vecinos }
     }
 
     override suspend fun siguienteMundo(idMundo: String): String? {
@@ -63,20 +58,32 @@ class CatalogoNivelesImpl(
     override suspend fun idsMundos(): List<String> =
         mundoDao.getAll().sortedBy { it.orden }.map { it.id }
 
-    private inner class Arbol(val lecciones: List<TemaEntity>, val minijuegos: List<TemaEntity>, val retos: List<TemaEntity>) {
-        val jugables: List<TemaEntity> get() = (lecciones + minijuegos + retos).filter { it.jugable() }
+    private class Arbol(
+        val lecciones: List<TemaEntity>,
+        val minijuegos: List<TemaEntity>,
+        val retos: List<TemaEntity>,
+        val cuarto: List<TemaEntity>
+    ) {
+        val todos: List<TemaEntity> get() = lecciones + minijuegos + retos + cuarto
+
+        fun conexiones(): Map<String, Set<String>> {
+            val temaDe = minijuegos.associate { it.id to it.temaBaseId }
+            return ArbolHabilidades.conexiones(
+                lecciones.map { it.id }, minijuegos.map { it.id }, retos.map { it.id }, cuarto.map { it.id }
+            ) { temaDe[it]?.ifEmpty { null } }
+        }
     }
 
     private suspend fun arbolDe(idMundo: String): Arbol {
         val normales = temaDao.getByMundoId(idMundo).filter { it.tipo != RAGNAROK }
+        fun delAnillo(anillo: Int) = normales.filter { it.anillo == anillo }.sortedBy { it.orden }
         return Arbol(
-            lecciones = normales.filter { it.anillo < ArbolHabilidades.ANILLO_MINIJUEGOS }.sortedBy { it.orden },
-            minijuegos = normales.filter { it.anillo == ArbolHabilidades.ANILLO_MINIJUEGOS }.sortedBy { it.orden },
-            retos = normales.filter { it.anillo == ArbolHabilidades.ANILLO_RETOS }.sortedBy { it.orden }
+            lecciones = normales.filter { it.anillo <= ArbolHabilidades.ANILLO_LECCIONES }.sortedBy { it.orden },
+            minijuegos = delAnillo(ArbolHabilidades.ANILLO_MINIJUEGOS),
+            retos = delAnillo(ArbolHabilidades.ANILLO_RETOS),
+            cuarto = delAnillo(ArbolHabilidades.ANILLO_LECCIONES_NUEVAS)
         )
     }
-
-    private fun TemaEntity.jugable() = Actividad.desde(actividad).jugable
 
     private fun aNivel(tema: TemaEntity, arbol: Arbol) = NivelInfo(
         idNivel = tema.id,
@@ -85,7 +92,8 @@ class CatalogoNivelesImpl(
         tipo = if (tema.tipo == RAGNAROK) TipoNivel.RAGNAROK else TipoNivel.NORMAL,
         // La entrada gratuita es la primera lección del anillo interior
         esPrimero = tema.tipo != RAGNAROK && tema.id == arbol.lecciones.firstOrNull()?.id,
-        anillo = tema.anillo.coerceAtLeast(ArbolHabilidades.ANILLO_LECCIONES)
+        anillo = tema.anillo.coerceAtLeast(ArbolHabilidades.ANILLO_LECCIONES),
+        idTema = tema.temaBaseId.ifEmpty { tema.id }
     )
 
     private companion object {

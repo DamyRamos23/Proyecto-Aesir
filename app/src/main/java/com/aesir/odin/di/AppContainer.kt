@@ -46,6 +46,7 @@ import com.aesir.odin.data.repository.PreguntaFlashRepositoryImpl
 import com.aesir.odin.data.repository.HidromielFlashRepositoryImpl
 import com.aesir.odin.data.repository.RetoContrarrelojRepositoryImpl
 import com.aesir.odin.data.repository.MemoramaRepositoryImpl
+import com.aesir.odin.data.notificaciones.ReceptorCuervos
 import com.aesir.odin.data.repository.RoadmapRepositoryImpl
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.repository.CrucigramaRepository
@@ -89,6 +90,7 @@ import com.aesir.odin.domain.usecase.roadmap.ObtenerIntroduccionTemaUseCase
 import com.aesir.odin.domain.usecase.roadmap.RegistrarIntroduccionVistaUseCase
 import com.aesir.odin.domain.usecase.reto.AbandonarRetoContrarrelojUseCase
 import com.aesir.odin.domain.usecase.reto.ArmarRetoContrarrelojUseCase
+import com.aesir.odin.domain.usecase.reto.CerrarContrarrelojSinTerminarUseCase
 import com.aesir.odin.domain.usecase.reto.FinalizarRetoContrarrelojUseCase
 import com.aesir.odin.domain.usecase.reto.PagarEntradaRetoContrarrelojUseCase
 import com.aesir.odin.domain.usecase.shared.ValidarRespuestaUseCase
@@ -159,6 +161,9 @@ class AppContainer(context: Context) {
         ReproductorMusicaMediaPlayer(context.applicationContext),
         registrarError = { Log.w("ModuloSonido", it) }
     ).also { ModuloSonido.compartido = it }
+
+    /** MOD-04 Cuervos de Odín: recordatorios de estudio fuera de la aplicación. */
+    val moduloCuervos = ReceptorCuervos.crearModulo(context.applicationContext)
 
     /** Juegos ocultos (easter eggs) que ya se descubrieron en Mundos. */
     val almacenEastereggs: AlmacenEastereggs = AlmacenEastereggsImpl(preferencias)
@@ -252,13 +257,16 @@ class AppContainer(context: Context) {
     val armarRetoContrarrelojUseCase =
         ArmarRetoContrarrelojUseCase(roadmapRepository, preguntaFlashRepository)
     val pagarEntradaRetoContrarrelojUseCase =
-        PagarEntradaRetoContrarrelojUseCase(moduloHidromiel)
+        PagarEntradaRetoContrarrelojUseCase(moduloHidromiel, retoContrarrelojRepository)
     val finalizarRetoContrarrelojUseCase =
         FinalizarRetoContrarrelojUseCase(retoContrarrelojRepository, moduloHidromiel, moduloCarreraSol = moduloCarreraSol)
     val abandonarRetoContrarrelojUseCase =
         AbandonarRetoContrarrelojUseCase(retoContrarrelojRepository, moduloHidromiel)
+    /** CU-11, E7.2: el reto que quedó en curso al cerrarse la app cuenta como abandono. */
+    val cerrarContrarrelojSinTerminarUseCase =
+        CerrarContrarrelojSinTerminarUseCase(retoContrarrelojRepository, abandonarRetoContrarrelojUseCase)
     // CU-04 Resolver memorama de conceptos
-    val memoramaRepository: MemoramaRepository = MemoramaRepositoryImpl(database.memoramaDao())
+    val memoramaRepository: MemoramaRepository = MemoramaRepositoryImpl(database.memoramaDao(), database.temaDao(), database.conceptoCrucigramaDao())
     val validarAccesoMemoramaUseCase = ValidarAccesoMemoramaUseCase(roadmapRepository, memoramaRepository)
     val generarMemoramaUseCase = GenerarMemoramaUseCase(memoramaRepository)
     val verificarParejaUseCase = VerificarParejaUseCase()

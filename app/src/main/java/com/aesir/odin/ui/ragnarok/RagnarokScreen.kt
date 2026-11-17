@@ -173,12 +173,15 @@ fun RagnarokScreen(
 
 /** A2.1: lista los temas que faltan para despertar el Ragnarök. */
 private fun textoBloqueado(pendientes: List<String>): String {
-    val base = "Completa todos los temas del mundo para despertarlo."
+    val base = "Supera los 18 niveles del mundo para despertarlo."
     return if (pendientes.isEmpty()) base else base + "\n\nTe faltan: " + pendientes.joinToString(", ") + "."
 }
 
 private fun numeroEnLetra(n: Int): String {
-    val palabras = listOf("cero", "una", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez")
+    val palabras = listOf(
+        "cero", "una", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez",
+        "once", "doce", "trece", "catorce", "quince", "dieciséis", "diecisiete", "dieciocho", "diecinueve", "veinte"
+    )
     return palabras.getOrNull(n) ?: "$n"
 }
 
@@ -236,14 +239,18 @@ private fun Separador(y: Float, desde: Float = 92f, hasta: Float = 495f) {
 
 private enum class EstadoOpcionBatalla { NEUTRA, SELECCIONADA, CORRECTA, INCORRECTA, FALTO, APAGADA }
 
-private fun estadoOpcion(indice: Int, elegida: Boolean, correctas: List<Int>, respondida: Boolean): EstadoOpcionBatalla {
-    if (!respondida) return if (elegida) EstadoOpcionBatalla.SELECCIONADA else EstadoOpcionBatalla.NEUTRA
-    val esCorrecta = indice in correctas
+/**
+ * RF-108 y RN-34: al responder solo se marca lo que eligió el alumno (bien si
+ * la respuesta fue correcta, mal si no); nunca se señalan las opciones
+ * correctas que no eligió.
+ */
+@Suppress("UNUSED_PARAMETER")
+private fun estadoOpcion(indice: Int, elegida: Boolean, correctas: List<Int>, resultado: EstadoRespuesta?): EstadoOpcionBatalla {
+    if (resultado == null) return if (elegida) EstadoOpcionBatalla.SELECCIONADA else EstadoOpcionBatalla.NEUTRA
     return when {
-        esCorrecta && elegida -> EstadoOpcionBatalla.CORRECTA
-        esCorrecta -> EstadoOpcionBatalla.FALTO
-        elegida -> EstadoOpcionBatalla.INCORRECTA
-        else -> EstadoOpcionBatalla.APAGADA
+        !elegida -> EstadoOpcionBatalla.APAGADA
+        resultado == EstadoRespuesta.CORRECTA -> EstadoOpcionBatalla.CORRECTA
+        else -> EstadoOpcionBatalla.INCORRECTA
     }
 }
 
@@ -288,7 +295,7 @@ private fun PantallaBatalla(
             OpcionBatalla(
                 texto = texto,
                 multiple = pregunta.esSeleccionMultiple,
-                estado = estadoOpcion(i, i in elegidas, pregunta.respuestasCorrectas, respuesta != null),
+                estado = estadoOpcion(i, i in elegidas, pregunta.respuestasCorrectas, respuesta?.estado),
                 bloqueada = respuesta != null,
                 modifier = Modifier.enRG(270f, 499f + i * 100f)
             ) {
@@ -506,20 +513,15 @@ private fun Retroalimentacion(estado: EstadoRespuesta, opciones: List<String>, c
         EstadoRespuesta.INCOMPLETA -> RG.Turquesa
         EstadoRespuesta.INCORRECTA -> Color(0xFFE0684A)
     }
-    val lista: (List<Int>) -> String = { indices -> indices.filter { it < opciones.size }.joinToString(" y ") { "«${opciones[it]}»" } }
     val titulo = when (estado) {
         EstadoRespuesta.CORRECTA -> "¡Golpe certero!"
-        EstadoRespuesta.INCOMPLETA -> {
-            val bien = correctas.count { it in elegidas }
-            "Elegiste ${numeroEnLetra(bien)} de las ${numeroEnLetra(correctas.size)} correctas."
-        }
+        EstadoRespuesta.INCOMPLETA -> "Tu respuesta quedó incompleta."
         EstadoRespuesta.INCORRECTA -> "Ese golpe no alcanzó."
     }
     val detalle = when (estado) {
         EstadoRespuesta.CORRECTA -> "Bien peleado: sigue adelante, el mundo aún resiste."
-        EstadoRespuesta.INCOMPLETA -> "Faltó: ${lista(correctas.filter { it !in elegidas })}. Este tema se anotará para repasar."
-        EstadoRespuesta.INCORRECTA ->
-            (if (correctas.size > 1) "Las correctas eran " else "La correcta era ") + "${lista(correctas)}. Este tema se anotará para repasar."
+        EstadoRespuesta.INCOMPLETA -> "Faltó elegir alguna opción correcta. Este tema se anotará para repasar."
+        EstadoRespuesta.INCORRECTA -> "Este tema se anotará para repasar en su lección."
     }
     PanelCortado(Modifier.enRG(270f, 930f).tamRG(496f, 150f), borde = color.copy(alpha = 0.9f), cortePx = 12f, opacidad = 0.93f)
     Box(Modifier.enRG(55f, 886f).tamRG(27f, 27f).background(color, CircleShape), contentAlignment = Alignment.Center) {

@@ -6,21 +6,21 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 import java.time.LocalDate
 
-/** CU-10 paso 9 y A9.1: el diagnóstico reconoce los niveles de los temas conocidos, anillo por anillo. */
+/** CU-10 paso 9, RF-134 y A9.1: el diagnóstico reconoce todos los niveles de los temas conocidos. */
 class DiagnosticoArbolTest {
 
     /**
-     * Lecciones L1-L3 en anillo; M1 conecta L1 y L2, M2 conecta L2 y L3;
-     * R1 conecta M1 y M2.
+     * Lecciones L1-L3 en anillo; M1 es del tema L1, M2 del tema L2 y R1 (el
+     * reto, conectado a M1 y M2) del tema L3.
      */
     private class CatalogoAnillos : CatalogoNiveles {
         private val niveles = listOf(
             NivelInfo("L1", "m", "L1", TipoNivel.NORMAL, esPrimero = true, anillo = 1),
             NivelInfo("L2", "m", "L2", TipoNivel.NORMAL, esPrimero = false, anillo = 1),
             NivelInfo("L3", "m", "L3", TipoNivel.NORMAL, esPrimero = false, anillo = 1),
-            NivelInfo("M1", "m", "M1", TipoNivel.NORMAL, esPrimero = false, anillo = 2),
-            NivelInfo("M2", "m", "M2", TipoNivel.NORMAL, esPrimero = false, anillo = 2),
-            NivelInfo("R1", "m", "R1", TipoNivel.NORMAL, esPrimero = false, anillo = 3),
+            NivelInfo("M1", "m", "M1", TipoNivel.NORMAL, esPrimero = false, anillo = 2, idTema = "L1"),
+            NivelInfo("M2", "m", "M2", TipoNivel.NORMAL, esPrimero = false, anillo = 2, idTema = "L2"),
+            NivelInfo("R1", "m", "R1", TipoNivel.NORMAL, esPrimero = false, anillo = 3, idTema = "L3"),
             NivelInfo("RAG", "m", "Ragnarök", TipoNivel.RAGNAROK, esPrimero = false)
         )
         private val conexiones = mapOf(
@@ -41,7 +41,7 @@ class DiagnosticoArbolTest {
         modulo.alCompletarDiagnostico(DiagnosticoCompletado(U, "m", lecciones.toList()))
 
     @Test
-    fun `todas las lecciones conocidas reconocen minijuegos y retos y dan el bono A9_1`() = runBlocking {
+    fun `todos los temas conocidos reconocen minijuegos y retos y dan el bono A9_1`() = runBlocking {
         diagnosticar("L1", "L2", "L3")
         listOf("L1", "L2", "L3", "M1", "M2", "R1").forEach {
             assertEquals(OrigenSuperado.DIAGNOSTICO, repo.superados.getValue(U to it).origen)
@@ -53,11 +53,21 @@ class DiagnosticoArbolTest {
     }
 
     @Test
-    fun `un minijuego solo cuenta si todas sus lecciones son conocidas`() = runBlocking {
+    fun `se reconocen los niveles que pertenecen a cada tema conocido`() = runBlocking {
         diagnosticar("L1", "L2")
-        assertEquals(OrigenSuperado.DIAGNOSTICO, repo.superados.getValue(U to "M1").origen)
-        assertNull(repo.superados[U to "M2"])
-        assertNull("R1 necesita M1 y M2", repo.superados[U to "R1"])
+        listOf("L1", "L2", "M1", "M2").forEach {
+            assertEquals(OrigenSuperado.DIAGNOSTICO, repo.superados.getValue(U to it).origen)
+        }
+        assertNull("L3 no es conocido", repo.superados[U to "L3"])
+        assertNull("R1 es del tema L3", repo.superados[U to "R1"])
         assertEquals("Sin bono si falta algún nivel", 40, repo.saldo())
+    }
+
+    @Test
+    fun `un tema conocido reconoce su reto aunque sus minijuegos vecinos no lo sean`() = runBlocking {
+        diagnosticar("L3")
+        assertEquals(OrigenSuperado.DIAGNOSTICO, repo.superados.getValue(U to "R1").origen)
+        assertNull(repo.superados[U to "M1"])
+        assertNull(repo.superados[U to "M2"])
     }
 }

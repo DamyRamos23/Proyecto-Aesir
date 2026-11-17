@@ -56,25 +56,50 @@ Con el modo admin:
 No se guarda: cada apertura de la app inicia sin modo admin (se borra el valor `odin` / `modo_admin` de versiones anteriores).
 Código: `domain/hidromiel/ModoAdmin.kt`; prueba: `ModoAdminTest`.
 
-## Tercer anillo y retos de arrastrar y soltar (CU-09)
+## Roadmap de cuatro anillos (SRS v3.2)
 
-El escudo de cada mundo tiene ahora tres anillos alrededor del Ragnarök:
-1. lecciones (círculos), 2. minijuegos (rombos) y 3. **retos** (hexágonos, 8 por mundo).
-Cada reto se conecta con los dos minijuegos del anillo 2 que tiene más cerca (`ArbolHabilidades`).
+Cada mundo tiene ahora **10 temas** y **18 niveles** alrededor del Ragnarök (`ArbolHabilidades`):
 
-- Posición 1 del anillo 3: **Ordenar el proceso** (modalidad `ORDENAR_PROCESO`).
-- Posición 5: **Completar el diagrama** (modalidad `COMPLETAR_DIAGRAMA`).
-- Las otras 6: **Por definir** (se ven atenuadas y no se pueden jugar ni cuentan para el Ragnarök).
+| Anillo | Niveles | Conexiones |
+|---|---|---|
+| 1 · interior | 4 lecciones (temas 1 a 4) | en círculo, la última con la primera |
+| 2 · exterior | 6 minijuegos: crucigrama, memorama y flashcards, 2 de cada uno | cada uno con **la lección de su tema** (`ArbolHabilidades.TEMA_DE_MINIJUEGO` = temas 1, 2, 3, 3, 4, 1) |
+| 3 | 2 retos de arrastrar y soltar (CU-09) | cada uno con los dos minijuegos que tiene más cerca |
+| 4 | 6 lecciones (temas 5 a 10) | con sus vecinas del anillo y con el reto o minijuego que tienen más cerca |
+| centro | Ragnarök | se habilita al superar los 18 niveles |
 
+- **Todo nivel pertenece a un tema** (`temas.temaBaseId`): el crucigrama (6 a 8 palabras), el memorama (6 pares) y las flashcards usan solo los conceptos de su tema; el reto de arrastrar sugiere repasar la lección de su tema; el diagnóstico reconoce como superados todos los niveles de cada tema conocido.
+- Se quitaron las 6 piedras «por definir» del antiguo tercer anillo. Los dos retos conservan sus ids (`rt_<mundo>_1` y `rt_<mundo>_5`) para no perder el progreso.
+- Contenido de los temas 5 a 10 en `data/local/ContenidoTemas.kt` (lección con 5 ejercicios, 7 conceptos, 2 preguntas diagnósticas, 3 preguntas flash y el enigma del gigante), más 2 conceptos nuevos para cada tema 1 a 4:
+  - UML: Estados, Objetos, Componentes, Despliegue, Paquetes y Comunicación.
+  - Casos de Uso: Generalización, Tipos de actores, Escenarios, Niveles de objetivo, Trazabilidad y De casos de uso a pruebas.
+  - Ciclo de Vida: Viabilidad, Planificación, Despliegue e implantación, Gestión de la configuración, Aseguramiento de la calidad y Retiro.
+  - Modelos Tradicionales: Prototipos, Evolutivo, RAD, Proceso Unificado, Iterativo y Basado en componentes.
+- Ragnarök: 20 preguntas, 2 al azar de cada uno de los 10 temas. Evaluación diagnóstica: 20 preguntas, 2 por tema.
+- Base de datos v14 (`MIGRACION_13_14`): columna `temas.temaBaseId` y, en el contrarreloj, `hidromiel` y `terminado`. `DatosIniciales.sincronizar` pone al día la estructura y el contenido en cada apertura sin tocar el progreso.
+- Pruebas: `ArbolHabilidadesTest` y `ContenidoRoadmapTest` (18 niveles, 10 temas, contenido completo y crucigrama armable en los 40 temas).
+
+## Reto de arrastrar y soltar (CU-09)
+
+Posición 1 del anillo 3: **Ordenar el proceso** (`ORDENAR_PROCESO`); posición 2: **Completar el diagrama** (`COMPLETAR_DIAGRAMA`).
 Contenido en `data/local/DatosArrastrar.kt`; diagramas en `ui/retoarrastrar/DiagramasReto.kt`.
-Capas según los diagramas de CU-09: `RetoArrastrarScreen` (+ `OrdenarProcesoContent` / `CompletarDiagramaContent`),
-`ResumenRetoScreen`, `RetoArrastrarViewModel`, casos de uso en `domain/usecase/retoarrastrar`,
-`RetoRepository(Impl)` y los DAOs `RetoDao`, `ElementoArrastrableDao`, `PosicionDestinoDao`.
-Base de datos v7 (se vuelve a sembrar al actualizar).
 
 Reglas: empieza en 100, −20 por confirmación incorrecta; las piedras mal colocadas se señalan y tiemblan;
-al tercer fallo termina sin puntaje, muestra la solución y sugiere repasar la lección más cercana.
+al tercer fallo termina sin puntaje y **sin mostrar la solución** (RN-34) y sugiere repasar la lección del tema.
 Las piedras se pueden arrastrar o tocar (piedra y luego lugar).
+
+## Ajustes al SRS v3.2 (revisión de noviembre)
+
+- **MOD-01, RN-07:** el módulo decide si un nivel se supera con el puntaje mínimo (60, o 70 en el Ragnarök); antes el crucigrama, el memorama y las flashcards se daban por superados con cualquier puntaje. Sus resúmenes dicen si el nivel quedó superado.
+- **MOD-01, bono B:** puntaje ÷ 10 redondeado hacia abajo (antes se redondeaba al más cercano).
+- **CU-07 crucigrama:** empieza en 100; −5 por respuesta incorrecta, −2 por letra revelada y −10 por palabra revelada; mínimo 0. Si no se puede generar y el alumno regresa al roadmap, se devuelve la entrada (`DEVOLUCION_ENTRADA`).
+- **CU-11 contrarreloj:** hasta 20 preguntas; acierto +10 puntos y +2 de hidromiel, error −5 y −1, sin bajar de 0; máximo 3 por día; el contador se detiene mientras se confirma el abandono; abandonar resta 20; si la app se cierra durante el reto, al volver a abrirla cuenta como abandono.
+
+## MOD-04 · Cuervos de Odín (notificaciones)
+
+- Dominio: `domain/notificaciones/ModuloCuervos.kt` (tipos, prioridad, una al día, inactividad a los 3 días y una sola vez por periodo, nada con la app abierta). Prueba: `ModuloCuervosTest`.
+- Android: `data/notificaciones/` — alarma diaria inexacta con `AlarmManager` a la hora configurada (19:00 por defecto), `ReceptorCuervos` (también reprograma al reiniciar el teléfono), canal «Cuervos de Odín» e ícono `ic_notificacion_cuervo`. Al tocar el aviso se abre la app en Mundos.
+- La primera vez que se abre la app se pide el permiso (Android 13+). En **Ajustes** se activan o desactivan los avisos y se elige la hora; si el teléfono los tiene bloqueados, un enlace lleva a la configuración del sistema.
 
 ## Ragnarök animado
 
@@ -99,7 +124,7 @@ Las texturas de madera están en `res/drawable-nodpi/madera_veta_*.png`.
 
 ## Pozo de Mímir (CU-10) y repaso
 
-- **Evaluación diagnóstica** en tres fases: el llamado (Mímir despierta), la prueba (10 preguntas con el
+- **Evaluación diagnóstica** en tres fases: el llamado (Mímir despierta), la prueba (20 preguntas, 2 por tema, con el
   rostro animado) y la revelación (temas conocidos marcados en el árbol).
 - **Repaso**: la fuente del pozo aparece bajo el escudo del roadmap. Duerme hasta superar el Ragnarök del
   mundo (o con el modo admin) y entonces late; al tocarla abre un repaso de 10 preguntas repartidas entre las
@@ -156,9 +181,11 @@ visiones en `data/local/DatosVolva.kt`. Movimientos de hidromiel `APUESTA_VOLVA`
 
 ## Base de datos
 
-Versión 11, con migraciones que conservan el progreso y el hidromiel:
+Versión 14, con migraciones que conservan el progreso y el hidromiel:
 - `MIGRACION_9_10`: tablas del duelo de enigmas (CU-13).
 - `MIGRACION_10_11`: tablas de la Völva (`visiones_volva`, `runas_obtenidas`, `consultas_volva`).
+- `MIGRACION_11_12` y `MIGRACION_12_13`: Hasta el Alba, la forja y la racha.
+- `MIGRACION_13_14`: roadmap de cuatro anillos (`temas.temaBaseId`) y contrarreloj (`hidromiel`, `terminado`).
 
 ## Pantallas de inicio de los modos del Valhalla
 

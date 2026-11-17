@@ -7,36 +7,40 @@ import com.aesir.odin.data.local.entity.RetoArrastrarEntity
 import com.aesir.odin.data.local.entity.TemaEntity
 
 /**
- * Tercer anillo del árbol (8 niveles por mundo) y contenido del CU-09.
+ * Tercer anillo del árbol (2 niveles por mundo) y contenido del CU-09.
  *
- * Por mundo: 2 retos de arrastrar y soltar (uno de ordenar un proceso y otro
- * de completar un diagrama) y 6 niveles "por definir" que se verán en el
- * escudo pero todavía no se pueden jugar. Los de arrastrar van en las
- * posiciones 1 y 5 del anillo (arriba y abajo), donde sus minijuegos
- * cercanos del anillo 2 son jugables (crucigrama y flashcards).
+ * Por mundo: 2 retos de arrastrar y soltar, uno de ordenar un proceso y otro
+ * de completar un diagrama. Van arriba y abajo del anillo, cada uno entre los
+ * dos minijuegos del anillo 2 que tiene más cerca (ArbolHabilidades). Cada
+ * reto pertenece al tema de su contenido ([Contenido.temaOrdenar] y
+ * [Contenido.temaDiagrama]), que es la lección que se sugiere repasar.
+ *
+ * Los ids conservan el número de piedra que tenían cuando el anillo era de 8
+ * (1 y 5) para no perder el progreso de quien ya los había superado.
  */
 object DatosArrastrar {
 
-    const val NIVELES_POR_MUNDO = 8
+    const val NIVELES_POR_MUNDO = 2
 
-    /** Posiciones (orden 1..8) del anillo 3 que son de arrastrar y soltar. */
-    private val POSICIONES_ARRASTRAR = mapOf(1 to Modalidad.ORDENAR, 5 to Modalidad.DIAGRAMA)
+    /** (número del id, orden en el anillo, modalidad) de cada reto del tercer anillo. */
+    private val POSICIONES_ARRASTRAR = listOf(
+        Triple(1, 1, Modalidad.ORDENAR),
+        Triple(5, 2, Modalidad.DIAGRAMA)
+    )
 
     private enum class Modalidad { ORDENAR, DIAGRAMA }
 
-    fun idNivel(mundoId: String, orden: Int) = "rt_${mundoId}_$orden"
+    fun idNivel(mundoId: String, numero: Int) = "rt_${mundoId}_$numero"
 
     fun niveles(mundos: List<MundoEntity>): List<TemaEntity> = mundos.flatMap { mundo ->
         val contenido = CONTENIDO.getValue(mundo.id)
-        (1..NIVELES_POR_MUNDO).map { orden ->
-            val modalidad = POSICIONES_ARRASTRAR[orden]
-            val (nombre, descripcion, actividad) = when (modalidad) {
-                Modalidad.ORDENAR -> Triple("Ordenar el proceso", contenido.ordenar.descripcionNivel, "ARRASTRAR")
-                Modalidad.DIAGRAMA -> Triple("Completar el diagrama", contenido.diagrama.descripcionNivel, "ARRASTRAR")
-                null -> Triple("Reto por definir", "Un nuevo minijuego llegará a esta piedra rúnica.", "POR_DEFINIR")
+        POSICIONES_ARRASTRAR.map { (numero, orden, modalidad) ->
+            val (nombre, descripcion, tema) = when (modalidad) {
+                Modalidad.ORDENAR -> Triple("Ordenar el proceso", contenido.ordenar.descripcionNivel, contenido.temaOrdenar)
+                Modalidad.DIAGRAMA -> Triple("Completar el diagrama", contenido.diagrama.descripcionNivel, contenido.temaDiagrama)
             }
             TemaEntity(
-                id = idNivel(mundo.id, orden),
+                id = idNivel(mundo.id, numero),
                 mundoId = mundo.id,
                 nombre = nombre,
                 descripcion = descripcion,
@@ -45,8 +49,9 @@ object DatosArrastrar {
                 introduccionVista = false,
                 completado = false,
                 tipo = "NORMAL",
-                actividad = actividad,
-                anillo = 3
+                actividad = "ARRASTRAR",
+                anillo = 3,
+                temaBaseId = DatosIniciales.idTema(mundo.id, tema)
             )
         }
     }
@@ -67,7 +72,8 @@ object DatosArrastrar {
         val huecos: List<Hueco>
     )
 
-    private class Contenido(val ordenar: Proceso, val diagrama: Diagrama)
+    /** [temaOrdenar] y [temaDiagrama]: número de tema (1 a 10) al que pertenece cada reto. */
+    private class Contenido(val ordenar: Proceso, val diagrama: Diagrama, val temaOrdenar: Int, val temaDiagrama: Int)
 
     private val CONTENIDO: Map<String, Contenido> = mapOf(
         "mundo_uml" to Contenido(
@@ -92,7 +98,9 @@ object DatosArrastrar {
                     Hueco("Métodos", 0.5f, 0.88f),
                     Hueco("Herencia", 0.76f, 0.41f)
                 )
-            )
+            ),
+            temaOrdenar = 1,
+            temaDiagrama = 1
         ),
         "mundo_casos_uso" to Contenido(
             ordenar = Proceso(
@@ -118,7 +126,9 @@ object DatosArrastrar {
                     Hueco("«include»", 0.69f, 0.36f),
                     Hueco("«extend»", 0.69f, 0.66f)
                 )
-            )
+            ),
+            temaOrdenar = 3,
+            temaDiagrama = 2
         ),
         "mundo_ciclo_vida" to Contenido(
             ordenar = Proceso(
@@ -136,7 +146,9 @@ object DatosArrastrar {
                     Hueco("Pruebas de integración", 0.5f, 0.69f),
                     Hueco("Pruebas unitarias", 0.5f, 0.87f)
                 )
-            )
+            ),
+            temaOrdenar = 1,
+            temaDiagrama = 4
         ),
         "mundo_modelos_trad" to Contenido(
             ordenar = Proceso(
@@ -154,7 +166,9 @@ object DatosArrastrar {
                     Hueco("Pruebas de integración", 0.71f, 0.54f),
                     Hueco("Pruebas unitarias", 0.67f, 0.74f)
                 )
-            )
+            ),
+            temaOrdenar = 1,
+            temaDiagrama = 3
         )
     )
 
@@ -162,7 +176,7 @@ object DatosArrastrar {
     // Entidades
     // ---------------------------------------------------------------------
 
-    private fun idReto(mundoId: String, orden: Int) = "reto_${mundoId}_$orden"
+    private fun idReto(mundoId: String, numero: Int) = "reto_${mundoId}_$numero"
 
     val retos: List<RetoArrastrarEntity>
     val elementos: List<ElementoArrastrableEntity>
@@ -173,9 +187,9 @@ object DatosArrastrar {
         val elementos = mutableListOf<ElementoArrastrableEntity>()
         val posiciones = mutableListOf<PosicionDestinoEntity>()
         for ((mundoId, contenido) in CONTENIDO) {
-            for ((orden, modalidad) in POSICIONES_ARRASTRAR) {
-                val retoId = idReto(mundoId, orden)
-                val temaId = idNivel(mundoId, orden)
+            for ((numero, _, modalidad) in POSICIONES_ARRASTRAR) {
+                val retoId = idReto(mundoId, numero)
+                val temaId = idNivel(mundoId, numero)
                 when (modalidad) {
                     Modalidad.ORDENAR -> {
                         val proceso = contenido.ordenar

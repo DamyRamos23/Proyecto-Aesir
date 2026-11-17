@@ -109,7 +109,7 @@ class MemoramaViewModel(
         this.nivelId = nivelId
         viewModelScope.launch {
             cargarContexto()
-            val tarjetas = generarMemoramaUseCase(mundoId)
+            val tarjetas = generarMemoramaUseCase(mundoId, nivelId)
             if (tarjetas.isEmpty()) {
                 _mensajeError.value = "Este mundo todavía no tiene suficientes conceptos para armar el memorama."
                 return@launch

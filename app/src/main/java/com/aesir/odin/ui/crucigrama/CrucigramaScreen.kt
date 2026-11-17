@@ -185,7 +185,7 @@ fun CrucigramaScreen(
                 estilo = estilo,
                 mensaje = mensajeError ?: "",
                 onReintentar = viewModel::reintentarGeneracion,
-                onVolver = onSalir,
+                onVolver = { viewModel.volverConDevolucion(onSalir) },
                 modifier = Modifier.align(Alignment.Center)
             )
             actual == null -> CircularProgressIndicator(color = estilo.acento, modifier = Modifier.align(Alignment.Center))
@@ -729,7 +729,7 @@ private fun GloboPista(
         if (resultado != null) {
             Text(
                 when (resultado.estado) {
-                    EstadoRespuesta.CORRECTA -> "¡Correcto! +${ActualizarPuntajeUseCase.PUNTOS_POR_ACIERTO} puntos."
+                    EstadoRespuesta.CORRECTA -> "¡Correcto!"
                     EstadoRespuesta.INCOMPLETA -> "Incompleta. −${ActualizarPuntajeUseCase.PENALIZACION} puntos. Inténtalo de nuevo."
                     EstadoRespuesta.INCORRECTA -> "Incorrecta. −${ActualizarPuntajeUseCase.PENALIZACION} puntos. Inténtalo de nuevo."
                 },

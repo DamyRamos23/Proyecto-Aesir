@@ -172,10 +172,9 @@ class RetoArrastrarViewModel(
                     val textos = reto.elementos.filter { it.id in incorrectos }.map { it.texto }
                     val limiteAlcanzado = registrarErrorUseCase(reto.id, textos, intentos)
                     if (limiteAlcanzado) {
-                        // A7.2: termina sin puntaje y se muestra la solución
+                        // A8.2: termina sin puntaje y sin mostrar la solución (RF-125, RN-34)
                         _puntaje.value = 0
                         finalizar(reto, aprobado = false)
-                        _colocaciones.value = reto.solucion
                     }
                 }
             } finally {
