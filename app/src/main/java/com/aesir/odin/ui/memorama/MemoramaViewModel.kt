@@ -33,12 +33,12 @@ import kotlinx.coroutines.launch
 /**
  * CU-04 Resolver memorama de conceptos (MemoramaViewModel del diagrama de clases).
  *
- * - iniciar: genera el tablero de 6 pares y registra el inicio (RF-06, RF-07).
- * - seleccionarTarjeta: voltea la primera y la segunda tarjeta (RF-08, RF-09),
- *   verifica si son pareja (RF-10) y las deja descubiertas (RF-11) o las
- *   vuelve a ocultar tras [TIEMPO_VISTA_MS] (A7.1, RF-12).
- * - Al encontrar todos los pares registra el fin y finaliza (RF-13 a RF-17).
- * - abandonar: descarta el intento sin puntos ni registro (A9.1, RF-18).
+ * - iniciar: genera el tablero de 6 pares y registra el inicio (RF-58, RF-59).
+ * - seleccionarTarjeta: voltea la primera y la segunda tarjeta (RF-60),
+ *   verifica si son pareja (RF-61) y las deja descubiertas (RF-62) o las
+ *   vuelve a ocultar tras [TIEMPO_VISTA_MS] (A7.1, RF-63).
+ * - Al encontrar todos los pares registra el fin y finaliza (RF-64 a RF-67).
+ * - abandonar: descarta el intento sin puntos ni registro (A9.1, RF-68).
  *
  * Además del diagrama: [nivelId] (el memorama es un nivel del árbol), el
  * contexto para el encabezado y el aviso de abandono al MOD-01.
@@ -96,7 +96,7 @@ class MemoramaViewModel(
     private var finalizando = false
     private var abandonado = false
 
-    /** Momento de inicio (RF-07). Lo usa la pantalla para mostrar el cronómetro. */
+    /** Momento de inicio (RF-59). Lo usa la pantalla para mostrar el cronómetro. */
     var tiempoInicio: Long = 0L
         private set
 
@@ -129,7 +129,7 @@ class MemoramaViewModel(
 
         val primera = primeraSeleccion
         if (primera == null) {
-            // Primera tarjeta (RF-08)
+            // Primera tarjeta (RF-60)
             primeraSeleccion = indice
             ModuloSonido.avisar(EventoSonido.VOLTEO_CARTA) // MOD-02
             cambiarEstado(EstadoTarjeta.VISIBLE, indice)
@@ -137,7 +137,7 @@ class MemoramaViewModel(
             return
         }
 
-        // Segunda tarjeta (RF-09) y verificación (RF-10)
+        // Segunda tarjeta (RF-60) y verificación (RF-61)
         bloqueado = true
         ModuloSonido.avisar(EventoSonido.VOLTEO_CARTA) // MOD-02
         cambiarEstado(EstadoTarjeta.VISIBLE, indice)
@@ -148,7 +148,7 @@ class MemoramaViewModel(
                 // Se deja terminar el giro antes de marcarlas como encontradas
                 delay(360)
                 if (abandonado) return@launch
-                cambiarEstado(EstadoTarjeta.ENCONTRADA, primera, indice) // RF-11
+                cambiarEstado(EstadoTarjeta.ENCONTRADA, primera, indice) // RF-62
                 _paresEncontrados.value += 1
                 val completo = _paresEncontrados.value == _tarjetas.value.size / 2
                 _aviso.value = if (completo) Aviso.COMPLETO else Aviso.PAREJA
@@ -160,7 +160,7 @@ class MemoramaViewModel(
                 _aviso.value = Aviso.NO_SON_PAREJA
                 delay(TIEMPO_VISTA_MS) // A7.1: el alumno las ve un momento
                 if (abandonado) return@launch
-                cambiarEstado(EstadoTarjeta.OCULTA, primera, indice) // RF-12
+                cambiarEstado(EstadoTarjeta.OCULTA, primera, indice) // RF-63
                 _aviso.value = Aviso.ELIGE_UNA
             }
             primeraSeleccion = null
@@ -171,7 +171,7 @@ class MemoramaViewModel(
     }
 
     /**
-     * A9.1 / RF-18: descarta el intento (tarjetas, selección, pares y tiempo),
+     * A9.1 / RF-68: descarta el intento (tarjetas, selección, pares y tiempo),
      * no guarda resultado ni da puntos. Para el MOD-01 el nivel queda
      * abandonado, igual que en el crucigrama: si se pagó entrada, se pierde.
      */
@@ -198,7 +198,7 @@ class MemoramaViewModel(
     private suspend fun finalizar() {
         if (finalizando) return
         finalizando = true
-        val tiempoFin = reloj() // RF-13
+        val tiempoFin = reloj() // RF-64
         _resultado.value = finalizarUseCase(mundoId, nivelId, tiempoInicio, tiempoFin)
     }
 
@@ -214,7 +214,7 @@ class MemoramaViewModel(
     }
 
     companion object {
-        const val TIEMPO_VISTA_MS = 1_100L
+        const val TIEMPO_VISTA_MS = 1_500L // RF-63: las dos cartas se ven 1.5 s
 
         fun factory(container: AppContainer): ViewModelProvider.Factory = viewModelFactory {
             initializer {

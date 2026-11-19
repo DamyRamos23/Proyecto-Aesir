@@ -1,5 +1,6 @@
 package com.aesir.odin.ui.eastereggs
 
+import com.aesir.odin.domain.hidromiel.PoliticaCosto
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -54,7 +55,7 @@ private fun Placa(texto: String, estilo: EstiloMundo, resaltada: Boolean = false
 
 @Composable
 fun BlackjackJuego(vm: JuegoOcultoViewModel, estilo: EstiloMundo) {
-    var apuesta by remember { mutableIntStateOf(10) }
+    var apuesta by remember { mutableIntStateOf(PoliticaCosto.CARTAS_MIN) }
     var juego by remember { mutableStateOf<Blackjack?>(null) }
     var pagado by remember { mutableStateOf(false) }
     var resultado by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
@@ -108,7 +109,7 @@ fun BlackjackJuego(vm: JuegoOcultoViewModel, estilo: EstiloMundo) {
     Spacer(Modifier.height(16.dp))
 
     if (j == null || j.terminado) {
-        SelectorApuesta(apuesta, 10, 50, 5, true, estilo) { apuesta = it }
+        SelectorApuesta(apuesta, PoliticaCosto.CARTAS_MIN, PoliticaCosto.CARTAS_MAX, PoliticaCosto.CARTAS_PASO, true, estilo) { apuesta = it }
         Spacer(Modifier.height(14.dp))
         BotonOdin("Repartir", {
             vm.apostar(apuesta) {
@@ -163,7 +164,7 @@ private fun ManoVista(mano: ManoJugador, estilo: EstiloMundo, activa: Boolean, v
 
 @Composable
 fun MayorMenorJuego(vm: JuegoOcultoViewModel, estilo: EstiloMundo) {
-    var apuesta by remember { mutableIntStateOf(10) }
+    var apuesta by remember { mutableIntStateOf(PoliticaCosto.CARTAS_MIN) }
     var juego by remember { mutableStateOf<MayorMenor?>(null) }
     var resultado by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
     var jugadas by remember { mutableIntStateOf(0) } // ver BlackjackJuego: fuerza redibujar la carta y el bote
@@ -196,7 +197,7 @@ fun MayorMenorJuego(vm: JuegoOcultoViewModel, estilo: EstiloMundo) {
     Spacer(Modifier.height(16.dp))
 
     if (j == null || j.terminado) {
-        SelectorApuesta(apuesta, 10, 50, 5, true, estilo) { apuesta = it }
+        SelectorApuesta(apuesta, PoliticaCosto.CARTAS_MIN, PoliticaCosto.CARTAS_MAX, PoliticaCosto.CARTAS_PASO, true, estilo) { apuesta = it }
         Spacer(Modifier.height(14.dp))
         BotonOdin("Sacar carta", {
             vm.apostar(apuesta) {

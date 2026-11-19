@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.aesir.odin.domain.hidromiel.EstadoNivel
-import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.hidromiel.ResultadoAcceso
 import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
@@ -66,11 +65,11 @@ class RoadmapViewModel(
 
     /**
      * El pozo de Mímir se abre como repaso al completar el mundo (superar su
-     * Ragnarök). En modo admin siempre está despierto.
+     * Ragnarök).
      */
-    val pozoDespierto: StateFlow<Boolean> = combine(_accesos, _ragnarok, ModoAdmin.activo) { accesos, ragnarok, admin ->
-        admin || (ragnarok != null && accesos[ragnarok.id]?.estado == EstadoNivel.SUPERADO)
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, ModoAdmin.estaActivo)
+    val pozoDespierto: StateFlow<Boolean> = combine(_accesos, _ragnarok) { accesos, ragnarok ->
+        ragnarok != null && accesos[ragnarok.id]?.estado == EstadoNivel.SUPERADO
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private var mundoIdActual: String? = null
 
@@ -104,7 +103,7 @@ class RoadmapViewModel(
         if (tema.esMemorama) intentarAbrirMemorama(tema.mundoId, tema.id) else intentarAbrirTema(tema.id)
 
     /**
-     * CU-04, RF-05: valida que el mundo esté desbloqueado y tenga memorama y,
+     * CU-04, RF-57: valida que el mundo esté desbloqueado y tenga memorama y,
      * si es así, pide al MOD-01 que autorice (y cobre) la entrada al nivel.
      */
     suspend fun intentarAbrirMemorama(mundoId: String, nivelId: String): Boolean {

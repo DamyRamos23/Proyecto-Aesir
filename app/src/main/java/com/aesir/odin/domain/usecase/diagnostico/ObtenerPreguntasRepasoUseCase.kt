@@ -8,8 +8,7 @@ import com.aesir.odin.domain.repository.RoadmapRepository
 import kotlin.random.Random
 
 /**
- * Repaso del mundo en el pozo de Mímir (se abre al superar el Ragnarök, o en
- * modo admin). Toma [NUM_PREGUNTAS] preguntas al azar del banco compartido,
+ * Repaso del mundo en el pozo de Mímir (se abre al superar el Ragnarök). Toma [NUM_PREGUNTAS] preguntas al azar del banco compartido,
  * repartidas entre las lecciones del mundo; si el banco no alcanza, usa las
  * de la evaluación diagnóstica. No registra nada ni da hidromiel.
  */

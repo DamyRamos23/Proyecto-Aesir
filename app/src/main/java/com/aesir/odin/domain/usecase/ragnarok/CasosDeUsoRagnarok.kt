@@ -12,7 +12,6 @@ import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
 import com.aesir.odin.domain.model.DisponibilidadReto
 import com.aesir.odin.domain.model.Ejercicio
 import com.aesir.odin.domain.model.EstadoRespuesta
-import com.aesir.odin.domain.model.HistorialError
 import com.aesir.odin.domain.model.IntentoRetoFinMundo
 import com.aesir.odin.domain.model.Mundo
 import com.aesir.odin.domain.model.PreguntaReto
@@ -21,18 +20,20 @@ import com.aesir.odin.domain.model.ResultadoRetoFinMundo
 import com.aesir.odin.domain.model.RetoFinMundo
 import com.aesir.odin.domain.model.Tema
 import com.aesir.odin.domain.model.TemaConErrores
-import com.aesir.odin.domain.repository.HistorialRepository
+import com.aesir.odin.domain.bitacora.FalloBitacora
+import com.aesir.odin.domain.bitacora.ModuloBitacora
+import com.aesir.odin.domain.bitacora.OrigenError
+import com.aesir.odin.domain.bitacora.opcionesElegidas
 import com.aesir.odin.domain.repository.LeccionRepository
 import com.aesir.odin.domain.repository.RetoFinMundoRepository
 import com.aesir.odin.domain.repository.RoadmapRepository
-import java.util.UUID
 import kotlin.random.Random
 
 /**
  * Pasos 2 y 3 del CU-08: verifica que se pueda enfrentar el reto y lo arma.
  *
  * - A2.1: si el MOD-01 dice que el Ragnarök sigue bloqueado, regresa los
- *   temas que faltan por completar (RF-54, RF-55).
+ *   temas que faltan por completar (RF-104, RF-105).
  * - Arma el reto con [ReglasReto.PREGUNTAS] preguntas al azar:
  *   [ReglasReto.PREGUNTAS_POR_TEMA] de cada uno de los 10 temas del mundo
  *   (RF-106). Si un tema tuviera menos, el resto se completa al azar con
@@ -106,36 +107,33 @@ class ObtenerRetoFinMundoUseCase(
 
 /**
  * A7.1: registra en el historial de errores la respuesta incorrecta o
- * incompleta, indicando el tema de la pregunta (RF-59).
+ * incompleta, indicando el tema de la pregunta (RF-109).
  */
 class RegistrarErrorRetoUseCase(
-    private val repository: HistorialRepository,
+    private val moduloBitacora: ModuloBitacora,
     private val reloj: () -> Long = System::currentTimeMillis
 ) {
-    companion object {
-        const val TIPO_RETO_FIN_MUNDO = "RETO_FIN_MUNDO"
-    }
-
-    suspend operator fun invoke(pregunta: PreguntaReto, estado: EstadoRespuesta) {
-        val como = if (estado == EstadoRespuesta.INCOMPLETA) "incompleta" else "incorrecta"
-        repository.registrarError(
-            HistorialError(
-                id = UUID.randomUUID().toString(),
-                tipoDesafio = TIPO_RETO_FIN_MUNDO,
-                actividadId = pregunta.id,
-                descripcion = "Reto de fin de mundo, tema «${pregunta.temaNombre}»: respuesta $como",
-                fecha = reloj()
-            )
+    operator fun invoke(pregunta: PreguntaReto, seleccion: List<Int>) = moduloBitacora.registrarFallo(
+        FalloBitacora(
+            origen = OrigenError.RETO_FIN_MUNDO,
+            preguntaId = pregunta.id,
+            temaId = pregunta.temaId,
+            enunciado = pregunta.enunciado,
+            opciones = pregunta.opciones,
+            respuestaCorrecta = pregunta.respuestasCorrectas.joinToString(", ") { pregunta.opciones[it] },
+            respuestaAlumno = opcionesElegidas(pregunta.opciones, seleccion),
+            pista = pregunta.temaNombre,
+            fecha = reloj()
         )
-    }
+    )
 }
 
 /**
  * Pasos 9 a 11 del CU-08 (y A10.1, A10.2):
- * 1. Calcula el puntaje: porcentaje de preguntas respondidas correctamente (RF-60).
- * 2. El reto se supera con [ReglasReto.PUNTAJE_MINIMO] o más (RF-61).
- * 3. Guarda el intento (RF-66) y avisa al MOD-01: él otorga la recompensa y,
- *    al superar el Ragnarök, desbloquea el siguiente mundo (RF-62).
+ * 1. Calcula el puntaje: porcentaje de preguntas respondidas correctamente (RF-110).
+ * 2. El reto se supera con [ReglasReto.PUNTAJE_MINIMO] o más (RF-111).
+ * 3. Guarda el intento (RF-116) y avisa al MOD-01: él otorga la recompensa y,
+ *    al superar el Ragnarök, desbloquea el siguiente mundo (RF-112).
  * 4. Si se superó, el tema de fin de mundo queda marcado como completado.
  *
  * [respuestas] lleva el estado de cada pregunta contestada; una incompleta no

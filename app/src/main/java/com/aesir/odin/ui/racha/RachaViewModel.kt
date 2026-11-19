@@ -91,7 +91,7 @@ class RachaViewModel(
     private fun motivo(r: ResultadoOfrenda): String = when (r.motivo) {
         MotivoRechazo.LIMITE_OFRENDAS -> "Ya tienes 2 ofrendas guardadas: es el máximo."
         MotivoRechazo.HIDROMIEL_INSUFICIENTE -> "Te faltan ${(r.costo - saldo.value).coerceAtLeast(1)} de hidromiel para la ofrenda."
-        null -> "No se pudo comprar la ofrenda."
+        null -> com.aesir.odin.domain.hidromiel.ModuloHidromiel.NO_SE_PUDO_GUARDAR
     }
 
     companion object {

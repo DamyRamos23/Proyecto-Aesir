@@ -1,5 +1,7 @@
 package com.aesir.odin.domain.usecase.retoarrastrar
 
+import com.aesir.odin.domain.usecase.leccion.bitacoraInmediata
+import com.aesir.odin.domain.bitacora.OrigenError
 import com.aesir.odin.domain.hidromiel.EstadoNivel
 import com.aesir.odin.domain.hidromiel.FakeCatalogo
 import com.aesir.odin.domain.hidromiel.FakeHidromielRepository
@@ -86,7 +88,7 @@ class ObtenerRetoTest {
     }
 
     @Test
-    fun `RF-70 compara contra la solucion aunque la base devuelva los elementos desordenados`() = runBlocking {
+    fun `RF-119 compara contra la solucion aunque la base devuelva los elementos desordenados`() = runBlocking {
         // La consulta no tiene ORDER BY: simulamos que la base los devuelve en otro orden
         val base = reto()
         val r = base.copy(elementos = base.elementos.reversed())
@@ -99,7 +101,7 @@ class ObtenerRetoTest {
     }
 
     @Test
-    fun `RF-70 con dos etapas que llegan invertidas nunca devuelve la solucion`() = runBlocking {
+    fun `RF-119 con dos etapas que llegan invertidas nunca devuelve la solucion`() = runBlocking {
         // Con dos etapas la única mezcla válida es la inversa de la solución,
         // sin importar el orden en que las devuelva la base de datos
         val base = reto(2)
@@ -114,15 +116,18 @@ class ObtenerRetoTest {
 class RegistrarErrorRetoTest {
 
     @Test
-    fun `registra cada intento y avisa al tercero`() = runBlocking {
+    fun `cada intento suma un fallo al mismo error y avisa al tercero`() {
         val historial = FakeHistorialRepository()
-        val registrar = RegistrarErrorRetoArrastrarUseCase(historial) { 0L }
-        assertFalse(registrar("r1", listOf("Diseño"), 1))
-        assertFalse(registrar("r1", listOf("Diseño"), 2))
-        assertTrue(registrar("r1", listOf("Diseño"), 3))
-        assertEquals(3, historial.errores.size)
-        assertTrue(historial.errores.all { it.tipoDesafio == RegistrarErrorRetoArrastrarUseCase.TIPO_ARRASTRAR && it.actividadId == "r1" })
-        assertTrue(historial.errores.first().descripcion.contains("Diseño"))
+        val registrar = RegistrarErrorRetoArrastrarUseCase(bitacoraInmediata(historial)) { 0L }
+        val r = reto()
+        assertFalse(registrar(r, listOf("Diseño"), 1))
+        assertFalse(registrar(r, listOf("Diseño"), 2))
+        assertTrue(registrar(r, listOf("Diseño"), 3))
+        // RN-32: es un solo registro con 3 fallos; E1: sin opciones, con una descripción
+        val error = historial.errores.single()
+        assertEquals(3, error.fallos)
+        assertEquals(OrigenError.ARRASTRAR_SOLTAR, error.origen)
+        assertTrue(error.opciones.isEmpty() && error.enunciado.contains("Diseño"))
     }
 }
 

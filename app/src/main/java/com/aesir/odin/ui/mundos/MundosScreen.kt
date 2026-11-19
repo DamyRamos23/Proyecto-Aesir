@@ -42,14 +42,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TextButton
-import androidx.compose.ui.text.input.KeyboardType
 import com.aesir.odin.ui.theme.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -92,8 +86,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.compose.ui.res.painterResource
-import com.aesir.odin.R
 import com.aesir.odin.di.AppContainer
 import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
 import com.aesir.odin.ui.components.odin.ContadorHidromiel
@@ -122,17 +114,12 @@ import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.ui.input.pointer.pointerInput
 import com.aesir.odin.domain.eastereggs.JuegoOculto
 import com.aesir.odin.ui.eastereggs.MenuEastereggs
-import kotlinx.coroutines.delay
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import com.aesir.odin.domain.hidromiel.CombinacionSecreta
-import com.aesir.odin.domain.hidromiel.ModoAdmin
+import com.aesir.odin.domain.eastereggs.CombinacionSecreta
 import com.aesir.odin.ui.components.odin.rememberTiempo
 import com.aesir.odin.ui.components.odin.PuntosProgreso
 import com.aesir.odin.ui.moneda.CaraMoneda
@@ -150,8 +137,7 @@ import androidx.compose.ui.text.font.FontStyle
 @Composable
 fun MundosScreen(
     navController: NavHostController,
-    appContainer: AppContainer,
-    onInvocarPreguntaFlash: () -> Unit = {}
+    appContainer: AppContainer
 ) {
     val viewModel: MundosViewModel = viewModel(
         factory = MundosViewModel.factory(
@@ -171,15 +157,6 @@ fun MundosScreen(
     }
 
     var seleccionadoId by rememberSaveable { mutableStateOf<String?>(null) }
-    val adminActivo by ModoAdmin.activo.collectAsState()
-    /**
-     * Combinación secreta del modo admin: tocar los cuatro mundos en el
-     * sentido del reloj (arriba-izq → arriba-der → abajo-der → abajo-izq), dos
-     * vueltas seguidas, sin pausas de más de 1.5 s. Lo mismo lo apaga.
-     */
-    val combinacion = remember { CombinacionSecreta(listOf(0, 1, 3, 2, 0, 1, 3, 2)) }
-    var avisoAdmin by remember { mutableStateOf<String?>(null) }
-    var editandoSaldo by remember { mutableStateOf(false) }
     // Easter eggs: una combinación por juego oculto y 7 toques al contador para el menú.
     val combinacionesJuegos = remember { JuegoOculto.entries.associateWith { CombinacionSecreta(it.combinacion) } }
     val sieteToques = remember { CombinacionSecreta(List(7) { 0 }) }
@@ -192,7 +169,6 @@ fun MundosScreen(
     if (mostrarMenuJuegos) {
         MenuEastereggs(
             descubiertos = remember { appContainer.almacenEastereggs.descubiertos() },
-            todosVisibles = adminActivo,
             onElegir = { juego ->
                 mostrarMenuJuegos = false
                 navController.navigate(OdinNavGraph.rutaJuegoOcultoCon(juego))
@@ -200,36 +176,7 @@ fun MundosScreen(
             onCerrar = { mostrarMenuJuegos = false }
         )
     }
-    if (editandoSaldo) {
-        var texto by remember { mutableStateOf(saldo.toString()) }
-        AlertDialog(
-            onDismissRequest = { editandoSaldo = false },
-            title = { Text("Hidromiel (admin)") },
-            text = {
-                OutlinedTextField(
-                    value = texto,
-                    onValueChange = { nuevo -> texto = nuevo.filter(Char::isDigit).take(6) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val cantidad = texto.toIntOrNull()
-                    if (cantidad != null) scope.launch { appContainer.moduloHidromiel.establecerSaldoAdmin(USUARIO_LOCAL, cantidad) }
-                    editandoSaldo = false
-                }) { Text("Guardar") }
-            },
-            dismissButton = { TextButton(onClick = { editandoSaldo = false }) { Text("Cancelar") } }
-        )
-    }
     val vibrar = LocalHapticFeedback.current
-    LaunchedEffect(avisoAdmin) {
-        if (avisoAdmin != null) {
-            delay(2500)
-            avisoAdmin = null
-        }
-    }
     // El escudo es una moneda: cae del cielo al abrir la app y al girarlo muestra los casos de uso.
     val giro = rememberGiroEscudo()
     val caraActual = giro.cara
@@ -272,58 +219,7 @@ fun MundosScreen(
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
             Row(Modifier.fillMaxWidth().alpha(alfaUi), verticalAlignment = Alignment.CenterVertically) {
-                TextoAjustable(
-                    caraActual.titulo.uppercase(),
-                    estiloTitulo(36.sp, brillo = if (enMundos) null else caraActual.acento),
-                    // Ocupa todo el espacio libre de la fila (antes compartía la mitad con un Spacer y se cortaba).
-                    Modifier.weight(1f),
-                    minEscala = 0.5f,
-                    maxLineas = 2
-                )
-                if (adminActivo) {
-                    Text(
-                        "ADMIN",
-                        color = OdinPaleta.Hollin,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Black,
-                        fontFamily = FontFamily.Monospace,
-                        modifier = Modifier
-                            .padding(start = 8.dp)
-                            .clip(CircleShape)
-                            .background(OdinPaleta.Brasa)
-                            .padding(horizontal = 6.dp, vertical = 3.dp)
-                    )
-                }
-                if (adminActivo) {
-                    // Modo admin: editar el hidromiel con un toque (además de mantener presionado el contador).
-                    Icon(
-                        Icons.Filled.Edit,
-                        contentDescription = "Editar hidromiel",
-                        tint = OdinPaleta.Hollin,
-                        modifier = Modifier
-                            .padding(end = 10.dp)
-                            .size(34.dp)
-                            .clip(CircleShape)
-                            .background(OdinPaleta.Oro)
-                            .clickable(role = Role.Button) { editandoSaldo = true }
-                            .padding(7.dp)
-                    )
-                }
-                if (adminActivo) {
-                    // Modo admin: saca una pregunta flash a voluntad.
-                    Icon(
-                        painterResource(R.drawable.ic_rayo),
-                        contentDescription = "Invocar pregunta flash",
-                        tint = OdinPaleta.Hollin,
-                        modifier = Modifier
-                            .padding(end = 10.dp)
-                            .size(34.dp)
-                            .clip(CircleShape)
-                            .background(OdinPaleta.Brasa)
-                            .clickable(role = Role.Button, onClick = onInvocarPreguntaFlash)
-                            .padding(6.dp)
-                    )
-                }
+                Spacer(Modifier.weight(1f))
                 Icon(
                     Icons.Filled.Settings,
                     contentDescription = "Ajustes",
@@ -340,25 +236,26 @@ fun MundosScreen(
                     onClick = { navController.navigate(OdinNavGraph.rutaRacha) },
                     modifier = Modifier.padding(end = 8.dp)
                 )
-                // 7 toques: menú de easter eggs. Modo admin: mantener 3 s permite fijar el hidromiel.
+                // 7 toques: menú de easter eggs.
                 ContadorHidromiel(
                     saldo = saldo,
-                    modifier = Modifier.pointerInput(adminActivo) {
+                    modifier = Modifier.pointerInput(Unit) {
                         awaitEachGesture {
                             awaitFirstDown()
-                            val soltado = withTimeoutOrNull(PRESION_ADMIN_MS) { waitForUpOrCancellation() }
-                            if (soltado == null) {
-                                if (adminActivo) {
-                                    vibrar.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    editandoSaldo = true
-                                }
-                            } else if (sieteToques.registrar(0)) {
+                            if (waitForUpOrCancellation() != null && sieteToques.registrar(0)) {
                                 mostrarMenuJuegos = true
                             }
                         }
                     }
                 )
             }
+            // El título va en su propia línea a todo el ancho: junto a los contadores no cabía en teléfonos angostos.
+            TextoAjustable(
+                caraActual.titulo.uppercase(),
+                estiloTitulo(36.sp, brillo = if (enMundos) null else caraActual.acento),
+                Modifier.fillMaxWidth().padding(top = 6.dp).alpha(alfaUi),
+                minEscala = 0.4f
+            )
             Spacer(Modifier.height(6.dp))
             Text(
                 if (enMundos) "Cada mundo es un tema de Ingeniería de Software. Supera su Ragnarök para abrir el siguiente."
@@ -392,7 +289,7 @@ fun MundosScreen(
                     seleccionadoId = seleccionado?.id,
                     onSeleccionar = { id ->
                         // Tocar otra vez el mundo ya elegido también entra (además del botón).
-                        // Se compara con la selección explícita para no estorbar la combinación admin.
+                        // Se compara con la selección explícita para no estorbar las combinaciones.
                         val tocado = visibles.firstOrNull { it.id == id }
                         if (id == seleccionadoId && tocado != null && tocado.desbloqueado) {
                             entrar(tocado)
@@ -406,12 +303,6 @@ fun MundosScreen(
                             vibrar.performHapticFeedback(HapticFeedbackType.LongPress)
                             abrirJuego(juego)
                             return@EscudoMundos
-                        }
-                        if (i >= 0 && combinacion.registrar(i)) {
-                            ModoAdmin.alternar()
-                            viewModel.cargarMundos()
-                            vibrar.performHapticFeedback(HapticFeedbackType.LongPress)
-                            avisoAdmin = if (ModoAdmin.estaActivo) "ᛟ Modo admin activado: todo abierto y gratis" else "Modo admin desactivado"
                         }
                     },
                     // CU-11: el reto mezcla preguntas de todos los temas ya
@@ -483,24 +374,6 @@ fun MundosScreen(
             }
 
         }
-    }
-    AnimatedVisibility(
-        visible = avisoAdmin != null,
-        modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
-        enter = slideInVertically { -it } + fadeIn(),
-        exit = slideOutVertically { -it } + fadeOut()
-    ) {
-        Text(
-            avisoAdmin.orEmpty(),
-            color = OdinPaleta.Hollin,
-            fontFamily = FuenteTexto,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 15.sp,
-            modifier = Modifier
-                .clip(CircleShape)
-                .background(OdinPaleta.Brasa)
-                .padding(horizontal = 16.dp, vertical = 10.dp)
-        )
     }
     }
 }
@@ -927,6 +800,3 @@ private fun PanelCasoUso(cara: CaraMoneda, enMovimiento: Boolean, onEntrar: () -
         onEntrar = onEntrar
     )
 }
-
-/** Mantener presionado el contador este tiempo abre el editor de hidromiel (modo admin). */
-private const val PRESION_ADMIN_MS = 3_000L

@@ -1,8 +1,10 @@
 package com.aesir.odin.domain.usecase.alba
 
+import com.aesir.odin.domain.usecase.leccion.FakeHistorialRepository
+import com.aesir.odin.domain.usecase.leccion.bitacoraInmediata
+import com.aesir.odin.domain.bitacora.OrigenError
 import com.aesir.odin.domain.hidromiel.FakeCatalogo
 import com.aesir.odin.domain.hidromiel.FakeHidromielRepository
-import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.hidromiel.PagoValhalla
 import com.aesir.odin.domain.hidromiel.PoliticaCosto
@@ -40,12 +42,9 @@ class HastaElAlbaTest {
 
     private val politica = PoliticaCosto()
     private val alba = AlbaFalso()
-    private val historial = HistorialFalso()
-    private val responder = ResponderPreguntaAlbaUseCase(ValidarRespuestaUseCase(), historial, alba) { 0 }
+    private val historial = FakeHistorialRepository()
+    private val responder = ResponderPreguntaAlbaUseCase(ValidarRespuestaUseCase(), bitacoraInmediata(historial), alba) { 0 }
     private val pregunta = PreguntaFlash("p1", "tema_1", "¿Cuáles?", listOf("A", "B", "C", "D"), listOf(0, 2))
-
-    @Before
-    fun sinModoAdmin() = ModoAdmin.cargar(false)
 
     // ---------------------------------------------------------------- Oleadas y pago
 
@@ -98,7 +97,7 @@ class HastaElAlbaTest {
         assertFalse(r.golpeAcertado)
         assertEquals(2, r.noche.escudos)
         assertEquals(Enemigo.DRAUGR.golpes, r.noche.golpesRestantes)
-        assertEquals(ResponderPreguntaAlbaUseCase.TIPO_HASTA_EL_ALBA, historial.errores.single().tipoDesafio)
+        assertEquals(OrigenError.HASTA_EL_ALBA, historial.errores.single().origen)
         assertEquals(listOf("p1"), r.noche.preguntasFalladas)
     }
 
@@ -232,13 +231,6 @@ class HastaElAlbaTest {
     }
 
     // ---------------------------------------------------------------- Apoyo
-
-    private class HistorialFalso : HistorialRepository {
-        val errores = mutableListOf<HistorialError>()
-        override suspend fun obtenerErrores() = errores.toList()
-        override suspend fun obtenerErroresParaRepaso() = errores.toList()
-        override suspend fun registrarError(error: HistorialError) { errores += error }
-    }
 
     /** Un solo tema de lección superado: tema_1. */
     private class RoadmapFalso : RoadmapRepository {

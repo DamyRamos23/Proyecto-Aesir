@@ -14,8 +14,8 @@ import com.aesir.odin.domain.repository.RoadmapRepository
 
 /**
  * Cierra el memorama cuando se encontraron todos los pares:
- * 1. Calcula el tiempo empleado (RF-14) y los puntos (RF-15).
- * 2. Guarda el resultado y marca el nivel como completado (RF-17).
+ * 1. Calcula el tiempo empleado (RF-64) y los puntos (RF-65).
+ * 2. Guarda el resultado y marca el nivel como completado (RF-66).
  * 3. Notifica el resultado al MOD-01 (postcondición del CU-04), que otorga
  *    el hidromiel y decide qué niveles se abren.
  *

@@ -63,7 +63,7 @@ data class ResultadoRetoFinMundo(
     val ultimoMundo: Boolean
 )
 
-/** Intento guardado en el historial de resultados (RF-66). */
+/** Intento guardado en el historial de resultados (RF-116). */
 data class IntentoRetoFinMundo(
     val mundoId: String,
     val puntaje: Int,

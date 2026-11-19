@@ -119,7 +119,6 @@ fun JuegoOcultoScreen(juego: JuegoOculto, appContainer: AppContainer, onVolver: 
 @Composable
 fun MenuEastereggs(
     descubiertos: Set<JuegoOculto>,
-    todosVisibles: Boolean,
     onElegir: (JuegoOculto) -> Unit,
     onCerrar: () -> Unit
 ) {
@@ -130,7 +129,7 @@ fun MenuEastereggs(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 JuegoOculto.entries.forEach { juego ->
-                    val visible = todosVisibles || juego in descubiertos
+                    val visible = juego in descubiertos
                     val estilo = estiloDe(juego)
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                         BotonOdin(
@@ -144,7 +143,6 @@ fun MenuEastereggs(
                         Text(
                             when {
                                 juego in descubiertos -> juego.textoCombinacion()
-                                visible -> "Modo admin: aún no lo descubres"
                                 else -> "Descúbrelo tocando los mundos del escudo"
                             },
                             color = OdinPaleta.HuesoTenue,

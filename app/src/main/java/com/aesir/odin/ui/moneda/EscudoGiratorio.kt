@@ -111,7 +111,7 @@ fun rememberGiroEscudo(): GiroEscudo = rememberSaveable(saver = GiroEscudo.Saver
  *   cae en la siguiente cara y hacia arriba en la anterior;
  * - quieto, cada pocos segundos hace un amago de voltearse (pista de que se puede girar).
  *
- * [caraMundos] es el escudo de siempre (cuadrantes, combinación admin y Valknut);
+ * [caraMundos] es el escudo de siempre (cuadrantes y Valknut);
  * las otras caras se dibujan con el mismo aro rúnico.
  */
 @Composable

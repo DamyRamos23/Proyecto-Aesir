@@ -1,5 +1,6 @@
 package com.aesir.odin.ui.forja
 
+import com.aesir.odin.domain.hidromiel.PoliticaCosto
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.widthIn
@@ -254,7 +255,7 @@ private fun InicioForjaContent(
     onComenzar: () -> Unit,
     onVerVitrina: () -> Unit
 ) {
-    val porDia = ValidarAccesoForjaUseCase.FORJAS_POR_DIA
+    val porDia = PoliticaCosto.FORJAS_POR_DIA
     val usadas = porDia - (acceso?.forjasRestantes ?: porDia)
     val apagada = estado != EstadoForja.ELIGIENDO_APUESTA
     val aviso = if (!apagada) null else when (estado) {
@@ -296,7 +297,7 @@ private fun InicioForjaContent(
         comoSeJuega = {
             Pergamino(Modifier.fillMaxWidth()) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    TextoPergamino("Apuesta de ${RangoApuestaForja.MINIMO} a ${RangoApuestaForja.MAXIMO}", 17, negrita = true)
+                    TextoPergamino("Apuesta de ${PoliticaCosto.APUESTA_FORJA_MIN} a ${PoliticaCosto.APUESTA_FORJA_MAX}", 17, negrita = true)
                     TextoPergamino("Tres etapas: calentar, martillar y templar", 14)
                     TextoPergamino("0 errores: el artefacto sale completo · ganas tu apuesta ×3", 14)
                     TextoPergamino("1 error: el artefacto se rompe · pierdes tu apuesta", 14)
@@ -330,7 +331,7 @@ private fun PrepararForjaContent(
     onApostar: (Int) -> Unit,
     onVerVitrina: () -> Unit
 ) {
-    var cantidad by rememberSaveable { mutableIntStateOf(RangoApuestaForja.MINIMO) }
+    var cantidad by rememberSaveable { mutableIntStateOf(PoliticaCosto.APUESTA_FORJA_MIN) }
     val valida = rango.contiene(cantidad)
     val artefacto = asignacion.artefacto
     val enum = artefacto?.let { Artefacto.deIdForja(it.id) }

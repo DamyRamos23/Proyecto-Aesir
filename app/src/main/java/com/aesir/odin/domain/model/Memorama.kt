@@ -5,7 +5,7 @@ package com.aesir.odin.domain.model
  * CU-04, paquete Models).
  */
 
-/** Par del banco del memorama: un concepto y su definición (RF-06). */
+/** Par del banco del memorama: un concepto y su definición (RF-58). */
 data class ParConcepto(
     val id: String,
     val mundoId: String,
@@ -17,8 +17,8 @@ enum class TipoTarjeta { CONCEPTO, DEFINICION }
 
 /**
  * - OCULTA: boca abajo.
- * - VISIBLE: volteada mientras el alumno elige su pareja (RF-08, RF-09).
- * - ENCONTRADA: forma parte de un par ya descubierto (RF-11).
+ * - VISIBLE: volteada mientras el alumno elige su pareja (RF-60).
+ * - ENCONTRADA: forma parte de un par ya descubierto (RF-62).
  */
 enum class EstadoTarjeta { OCULTA, VISIBLE, ENCONTRADA }
 
@@ -32,7 +32,7 @@ data class TarjetaMemorama(
 )
 
 /**
- * Resultado de un memorama terminado (RF-13 a RF-17).
+ * Resultado de un memorama terminado (RF-64 a RF-67).
  * [nivelId] no aparece en el diagrama de clases: el memorama es un nivel del
  * árbol de habilidades y el MOD-01 necesita saber cuál se terminó.
  */

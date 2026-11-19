@@ -51,10 +51,10 @@ import com.aesir.odin.ui.ragnarok.cinzel
 import kotlinx.coroutines.delay
 
 /**
- * CU-10, RF-91: «Lo que el pozo ha reconocido», la revelación del diagnóstico
+ * CU-10, RF-135: «Lo que el pozo ha reconocido», la revelación del diagnóstico
  * (mockup «El pozo de Mímir», tercera pantalla). Muestra los ecos
  * reconocidos, la hilera de runas encendidas y cada tema del mundo: los que
- * ya domina (superados por diagnóstico, sin hidromiel, RF-99) y los que
+ * ya domina (superados por diagnóstico, sin hidromiel, RF-139) y los que
  * quedan por despertar, marcando dónde comienza.
  */
 @Composable

@@ -1,6 +1,5 @@
 package com.aesir.odin.domain.usecase.reto
 
-import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.model.RetoContrareloj
 import com.aesir.odin.domain.repository.PreguntaFlashRepository
 import com.aesir.odin.domain.repository.RoadmapRepository
@@ -14,7 +13,7 @@ class SinPreguntasDisponiblesException : Exception("No hay preguntas disponibles
 /**
  * CU-11, paso 5 (RF-149): arma el reto con hasta 20 preguntas del banco de
  * Pregunta Flash, solo de temas cuya lección fue superada y sin repetir
- * preguntas. En modo admin se encienden todas las runas: entran todas las lecciones.
+ * preguntas.
  */
 class ArmarRetoContrarrelojUseCase(
     private val roadmapRepository: RoadmapRepository,
@@ -22,7 +21,7 @@ class ArmarRetoContrarrelojUseCase(
 ) {
     suspend operator fun invoke(): Result<RetoContrareloj> {
         val temas = roadmapRepository.obtenerTemas()
-        val temasEstudiados = (if (ModoAdmin.estaActivo) temas.filter { it.esLeccion } else temas.filter { it.esLeccion && it.completado })
+        val temasEstudiados = temas.filter { it.esLeccion && it.completado }
             .map { it.id }
         if (temasEstudiados.isEmpty()) return Result.failure(SinTemasEstudiadosException())
 

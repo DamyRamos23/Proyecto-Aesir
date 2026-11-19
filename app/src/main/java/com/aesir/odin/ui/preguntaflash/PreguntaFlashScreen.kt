@@ -138,7 +138,7 @@ fun PreguntaFlashScreen(viewModel: PreguntaFlashViewModel) {
 /**
  * Diálogo de la pregunta flash: interrumpe la pantalla actual (Mundos o Roadmap),
  * no se puede cerrar con atrás ni tocando fuera, y al continuar el alumno regresa
- * a donde estaba (RF-77, RF-81).
+ * a donde estaba (RF-91).
  */
 @Composable
 fun PreguntaFlashDialogo(

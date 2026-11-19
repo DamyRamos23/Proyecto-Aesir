@@ -1,5 +1,6 @@
 package com.aesir.odin.domain.racha
 
+import com.aesir.odin.domain.hidromiel.PoliticaCosto
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -116,7 +117,7 @@ class ModuloCarreraSol(
         val racha = leerOCrear(idUsuario)
         val motivo = reglas.validarCompra(racha, moduloHidromiel.saldo(idUsuario))
         ResultadoOfrenda(
-            costo = ReglasRacha.COSTO_OFRENDA,
+            costo = PoliticaCosto.COSTO_OFRENDA,
             puedeComprar = motivo == null,
             comprada = false,
             motivo = motivo,
@@ -127,13 +128,14 @@ class ModuloCarreraSol(
     /** Solo se llama si el alumno confirmó: el MOD-01 cobra OFRENDA_SOL y se guarda la ofrenda. */
     suspend fun comprarOfrenda(idUsuario: String): ResultadoOfrenda = candado.withLock {
         val racha = leerOCrear(idUsuario)
-        val costo = ReglasRacha.COSTO_OFRENDA
+        val costo = PoliticaCosto.COSTO_OFRENDA
         if (racha.ofrendas >= ReglasRacha.MAX_OFRENDAS) {
             return@withLock ResultadoOfrenda(costo, false, false, MotivoRechazo.LIMITE_OFRENDAS, racha.ofrendas)
         }
         val cobro = moduloHidromiel.cobrarOfrendaSol(idUsuario, costo)
         if (!cobro.autorizado) {
-            return@withLock ResultadoOfrenda(costo, false, false, MotivoRechazo.HIDROMIEL_INSUFICIENTE, racha.ofrendas)
+            // E8 del MOD-01: sin faltante es que no se pudo guardar, no que falte hidromiel
+            return@withLock ResultadoOfrenda(costo, false, false, MotivoRechazo.HIDROMIEL_INSUFICIENTE.takeIf { cobro.faltante > 0 }, racha.ofrendas)
         }
         racha.agregarOfrenda()
         almacen.guardar(racha)

@@ -220,7 +220,7 @@ class CrucigramaViewModel(
         _ultimoResultado.value = null
     }
 
-    /** RF-50 a RF-53: valida, actualiza el puntaje y marca la palabra si es correcta. */
+    /** RF-96 a RF-98: valida, actualiza el puntaje y marca la palabra si es correcta. */
     fun responder(palabraId: String, respuesta: String) {
         val crucigrama = _crucigrama.value ?: return
         val palabra = crucigrama.palabras.firstOrNull { it.id == palabraId } ?: return

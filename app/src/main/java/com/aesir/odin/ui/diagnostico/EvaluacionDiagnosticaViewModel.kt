@@ -34,10 +34,10 @@ import kotlinx.coroutines.launch
  * - [Fase.LLAMADO]: presentación y reglas; se puede omitir (A1.1 / A1.2).
  * - [Fase.PRUEBA]: «Prueba de sabiduría», una pregunta a la vez. El alumno
  *   elige, revela la respuesta (el pozo dice si el eco coincide) y pasa a la
- *   siguiente. Al revelar la última se registra el resultado (RF-86 a RF-91).
+ *   siguiente. Al revelar la última se registra el resultado (RF-131 a RF-135).
  * - [Fase.REVELACION]: lo que el pozo reconoció, tema por tema.
  *
- * Salir antes de terminar descarta todo sin registrar nada (A6.1, RF-96, RF-97).
+ * Salir antes de terminar descarta todo sin registrar nada (A6.1, RF-138).
  *
  * Con [repaso] es el repaso libre del mundo en el pozo: preguntas al azar del
  * banco y no se registra nada (ni omisión, ni resultado, ni temas conocidos).
@@ -175,7 +175,7 @@ class EvaluacionDiagnosticaViewModel(
     }
 
     /**
-     * «Revelar respuesta» (RF-83, RF-84): guarda la elección y muestra si el
+     * «Revelar respuesta» (RF-131): guarda la elección y muestra si el
      * eco coincide. Con la última pregunta se registra el resultado.
      */
     fun revelar() {
@@ -217,7 +217,7 @@ class EvaluacionDiagnosticaViewModel(
 
     /**
      * A6.1: descarta las respuestas y el avance. No se registra nada, así que
-     * al volver a entrar la evaluación empieza desde la primera pregunta (RF-97).
+     * al volver a entrar la evaluación empieza desde la primera pregunta (RF-138).
      */
     fun abandonar() {
         if (_estado.value.resultado != null) return

@@ -8,7 +8,7 @@ import kotlin.random.Random
 
 /**
  * Fase 1 del CU-09: obtiene el reto registrado para el tema y revuelve sus
- * elementos (RF-70: las etapas se muestran en orden aleatorio y nunca ya
+ * elementos (RF-119: las etapas se muestran en orden aleatorio y nunca ya
  * ordenadas).
  */
 class ObtenerRetoUseCase(

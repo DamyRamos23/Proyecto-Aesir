@@ -1,5 +1,6 @@
 package com.aesir.odin.domain.eastereggs
 
+import com.aesir.odin.domain.hidromiel.PoliticaCosto
 import kotlin.random.Random
 
 enum class Palo(val glifo: String, val rojo: Boolean) {
@@ -219,6 +220,6 @@ class MayorMenor(private val apuesta: Int, private val baraja: Baraja) {
     }
 
     companion object {
-        const val TOPE_VECES = 10
+        const val TOPE_VECES = PoliticaCosto.MAYOR_MENOR_TOPE_VECES
     }
 }

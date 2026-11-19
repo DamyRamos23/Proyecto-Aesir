@@ -6,6 +6,7 @@ import com.aesir.odin.domain.hidromiel.regla.ReglaConexionArbol
 import com.aesir.odin.domain.hidromiel.regla.ReglaNivelSuperado
 import com.aesir.odin.domain.hidromiel.regla.ReglaPrimerNivel
 import com.aesir.odin.domain.hidromiel.regla.ReglaRagnarok
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -79,7 +80,7 @@ class ModuloHidromiel(
     // Fase 2 · Seleccionar un nivel y pagar la entrada (pasos 2 y 3)
     // -----------------------------------------------------------------------
 
-    suspend fun cobrarEntrada(idUsuario: String, idNivel: String): ResultadoAcceso {
+    suspend fun cobrarEntrada(idUsuario: String, idNivel: String): ResultadoAcceso = e8({ ResultadoAcceso(idNivel, EstadoNivel.DISPONIBLE, false, 0, 0, NO_SE_PUDO_GUARDAR) }) {
         var aviso: AvisoHidromiel? = null
         val resultado = candado.withLock {
             repositorio.enTransaccion {
@@ -106,7 +107,7 @@ class ModuloHidromiel(
             }
         }
         aviso?.let(::publicar)
-        return resultado
+        resultado
     }
 
     /**
@@ -137,10 +138,7 @@ class ModuloHidromiel(
     }
 
     /** E5: ayudas del crucigrama. Si no alcanza, se aplica E1 y no se entrega. */
-    suspend fun cobrarAyuda(idUsuario: String, tipo: TipoAyuda): ResultadoAcceso {
-        if (ModoAdmin.estaActivo) {
-            return ResultadoAcceso(tipo.name, EstadoNivel.DISPONIBLE, true, 0, 0, "Modo admin: ayuda gratuita.")
-        }
+    suspend fun cobrarAyuda(idUsuario: String, tipo: TipoAyuda): ResultadoAcceso = e8({ ResultadoAcceso(tipo.name, EstadoNivel.DISPONIBLE, false, 0, 0, NO_SE_PUDO_GUARDAR) }) {
         var aviso: AvisoHidromiel? = null
         val resultado = candado.withLock {
             repositorio.enTransaccion {
@@ -163,7 +161,7 @@ class ModuloHidromiel(
             }
         }
         aviso?.let(::publicar)
-        return resultado
+        resultado
     }
 
     // -----------------------------------------------------------------------
@@ -313,7 +311,7 @@ class ModuloHidromiel(
 
     /** Cobra la apuesta de un juego oculto si no deja el saldo debajo del piso (RN-01, RN-08). */
     suspend fun apostarJuegoOculto(idUsuario: String, cantidad: Int): ResultadoAcceso =
-        candado.withLock {
+        e8({ ResultadoAcceso(ID_JUEGO_OCULTO, EstadoNivel.DISPONIBLE, false, 0, 0, NO_SE_PUDO_GUARDAR) }) { candado.withLock {
             repositorio.enTransaccion {
                 val reserva = obtenerOCrearReserva(idUsuario)
                 val piso = piso(idUsuario)
@@ -327,10 +325,10 @@ class ModuloHidromiel(
                 repositorio.guardarReserva(reserva)
                 ResultadoAcceso(ID_JUEGO_OCULTO, EstadoNivel.DISPONIBLE, true, cantidad, 0, "Apuesta aceptada.")
             }
-        }
+        } }
 
     /** CU-13 paso 4: descuenta 24 como APUESTA_DUELO si el saldo no queda debajo del piso (RN-08). */
-    suspend fun cobrarApuestaDuelo(idUsuario: String): ResultadoApuesta {
+    suspend fun cobrarApuestaDuelo(idUsuario: String): ResultadoApuesta = e8({ ResultadoApuesta(false, 0, NO_SE_PUDO_GUARDAR) }) {
         var aviso: AvisoHidromiel? = null
         val resultado = candado.withLock {
             repositorio.enTransaccion {
@@ -352,7 +350,7 @@ class ModuloHidromiel(
             }
         }
         aviso?.let(::publicar)
-        return resultado
+        resultado
     }
 
     /** CU-13 paso 12: si ganó, abona 24 + 4 × sorbos sobrantes como PREMIO_DUELO, sin diezmo. Si perdió, nada. */
@@ -390,7 +388,7 @@ class ModuloHidromiel(
                 }
                 ResultadoFlash.INCORRECTA, ResultadoFlash.INCOMPLETA, ResultadoFlash.SIN_RESPUESTA -> {
                     val real = reserva.descontarHastaCero(PoliticaCosto.FLASH_FALLO, TipoMovimiento.PREGUNTA_FLASH)
-                    // A7.2 / RF-37: el aviso distingue la respuesta incompleta de la incorrecta
+                    // A7.2 / RF-87: el aviso distingue la respuesta incompleta de la incorrecta
                     val motivo = when (e.resultado) {
                         ResultadoFlash.SIN_RESPUESTA -> "Se agotó el tiempo."
                         ResultadoFlash.INCOMPLETA -> "Respuesta incompleta: te faltó alguna opción."
@@ -404,11 +402,8 @@ class ModuloHidromiel(
             }
         }
 
-    /** Entrada al reto contrarreloj (10). Si no alcanza, se aplica E1 y no se cobra. En modo admin es gratis. */
-    suspend fun cobrarEntradaContrarreloj(idUsuario: String): ResultadoAcceso {
-        if (ModoAdmin.estaActivo) {
-            return ResultadoAcceso(ID_CONTRARRELOJ, EstadoNivel.DISPONIBLE, true, 0, 0, "Modo admin: entrada gratuita.")
-        }
+    /** Entrada al reto contrarreloj (10). Si no alcanza, se aplica E1 y no se cobra. */
+    suspend fun cobrarEntradaContrarreloj(idUsuario: String): ResultadoAcceso = e8({ ResultadoAcceso(ID_CONTRARRELOJ, EstadoNivel.DISPONIBLE, false, 0, 0, NO_SE_PUDO_GUARDAR) }) {
         var aviso: AvisoHidromiel? = null
         val resultado = candado.withLock {
             repositorio.enTransaccion {
@@ -431,7 +426,7 @@ class ModuloHidromiel(
             }
         }
         aviso?.let(::publicar)
-        return resultado
+        resultado
     }
 
     /** Al terminar el reto (sin abandonarlo): +2 por cada correcta y -1 por cada incorrecta (RN-01: nunca baja de 0). */
@@ -477,7 +472,7 @@ class ModuloHidromiel(
 
     /**
      * CU-12 (RF-163): la apuesta va de 15 al menor valor entre 70 y el saldo
-     * menos el piso. En modo admin la apuesta es gratuita: no hay piso.
+     * menos el piso.
      */
     suspend fun rangoApuestaVolva(idUsuario: String, mundosDesbloqueados: List<String>): com.aesir.odin.domain.model.RangoApuesta =
         candado.withLock {
@@ -485,10 +480,7 @@ class ModuloHidromiel(
         }
 
     /** CU-12 (RF-164): descuenta la apuesta y la registra como APUESTA_VOLVA. Si no está en el rango, no cobra (E1). */
-    suspend fun cobrarApuestaVolva(idUsuario: String, apuesta: Int, mundosDesbloqueados: List<String>): ResultadoAcceso {
-        if (ModoAdmin.estaActivo) {
-            return ResultadoAcceso(ID_VOLVA, EstadoNivel.DISPONIBLE, true, 0, 0, "Modo admin: apuesta gratuita.")
-        }
+    suspend fun cobrarApuestaVolva(idUsuario: String, apuesta: Int, mundosDesbloqueados: List<String>): ResultadoAcceso = e8({ ResultadoAcceso(ID_VOLVA, EstadoNivel.DISPONIBLE, false, 0, 0, NO_SE_PUDO_GUARDAR) }) {
         var aviso: AvisoHidromiel? = null
         val resultado = candado.withLock {
             repositorio.enTransaccion {
@@ -512,7 +504,7 @@ class ModuloHidromiel(
             }
         }
         aviso?.let(::publicar)
-        return resultado
+        resultado
     }
 
     /** CU-12 (pasos 12 y 13, A12.1 a A12.3): abona el pago de la lectura como PREMIO_VOLVA. */
@@ -532,7 +524,7 @@ class ModuloHidromiel(
 
     /**
      * CU-01 (RF-03, RF-04): la apuesta va de 10 al menor valor entre 60 y el
-     * saldo menos el piso. En modo admin la apuesta es gratuita: no hay piso.
+     * saldo menos el piso.
      */
     suspend fun rangoApuestaAlba(idUsuario: String, mundosDesbloqueados: List<String>): com.aesir.odin.domain.model.RangoApuesta =
         candado.withLock {
@@ -542,10 +534,7 @@ class ModuloHidromiel(
         }
 
     /** CU-01 (paso 6, RF-05, A6.1): descuenta la apuesta y la registra como APUESTA_ALBA. Fuera del rango no cobra (E1). */
-    suspend fun cobrarApuestaAlba(idUsuario: String, apuesta: Int, mundosDesbloqueados: List<String>): ResultadoAcceso {
-        if (ModoAdmin.estaActivo) {
-            return ResultadoAcceso(ID_ALBA, EstadoNivel.DISPONIBLE, true, 0, 0, "Modo admin: apuesta gratuita.")
-        }
+    suspend fun cobrarApuestaAlba(idUsuario: String, apuesta: Int, mundosDesbloqueados: List<String>): ResultadoAcceso = e8({ ResultadoAcceso(ID_ALBA, EstadoNivel.DISPONIBLE, false, 0, 0, NO_SE_PUDO_GUARDAR) }) {
         var aviso: AvisoHidromiel? = null
         val resultado = candado.withLock {
             repositorio.enTransaccion {
@@ -569,7 +558,7 @@ class ModuloHidromiel(
             }
         }
         aviso?.let(::publicar)
-        return resultado
+        resultado
     }
 
     /** CU-01 (paso 20, A16.1, RF-17): abona el premio neto de la noche como PREMIO_ALBA. */
@@ -593,7 +582,7 @@ class ModuloHidromiel(
         candado.withLock { repositorio.enTransaccion { obtenerOCrearReserva(idUsuario).saldo } }
 
     /** RF-33: descuenta la apuesta y la registra como APUESTA_FORJA. Si no alcanza, no cobra nada (E1). */
-    suspend fun cobrarApuestaForja(apuesta: Int, idUsuario: String = USUARIO_LOCAL): ResultadoApuestaForja {
+    suspend fun cobrarApuestaForja(apuesta: Int, idUsuario: String = USUARIO_LOCAL): ResultadoApuestaForja = e8({ ResultadoApuestaForja(false, 0, motivo = NO_SE_PUDO_GUARDAR) }) {
         require(apuesta > 0) { "La apuesta debe ser positiva" }
         var aviso: AvisoHidromiel? = null
         val resultado = candado.withLock {
@@ -611,7 +600,7 @@ class ModuloHidromiel(
             }
         }
         aviso?.let(::publicar)
-        return resultado
+        resultado
     }
 
     /**
@@ -652,7 +641,7 @@ class ModuloHidromiel(
         }
 
     /** Cobra una ofrenda a Sól (OFRENDA_SOL). Si no alcanza, se aplica E1 y no se cobra. */
-    suspend fun cobrarOfrendaSol(idUsuario: String, costo: Int): ResultadoAcceso {
+    suspend fun cobrarOfrendaSol(idUsuario: String, costo: Int): ResultadoAcceso = e8({ ResultadoAcceso(ID_OFRENDA_SOL, EstadoNivel.DISPONIBLE, false, 0, 0, NO_SE_PUDO_GUARDAR) }) {
         var aviso: AvisoHidromiel? = null
         val resultado = candado.withLock {
             repositorio.enTransaccion {
@@ -674,18 +663,7 @@ class ModuloHidromiel(
             }
         }
         aviso?.let(::publicar)
-        return resultado
-    }
-
-    /** Modo admin: fija el saldo a [cantidad] (mínimo 0). Fuera del modo admin no hace nada. */
-    suspend fun establecerSaldoAdmin(idUsuario: String, cantidad: Int): AvisoHidromiel? {
-        if (!ModoAdmin.estaActivo) return null
-        return moverSaldo(idUsuario) { reserva ->
-            val diferencia = cantidad.coerceAtLeast(0) - reserva.saldo
-            if (diferencia > 0) reserva.abonar(diferencia, TipoMovimiento.AJUSTE_ADMIN)
-            else if (diferencia < 0) reserva.descontar(-diferencia, TipoMovimiento.AJUSTE_ADMIN)
-            AvisoHidromiel(TipoMovimiento.AJUSTE_ADMIN, diferencia, reserva.saldo, "Modo admin: hidromiel ajustado a ${reserva.saldo}.")
-        }
+        resultado
     }
 
     /**
@@ -720,16 +698,12 @@ class ModuloHidromiel(
      * La diaria de ese mismo día ya va incluida en la inicial, así que la
      * primera recompensa diaria llega al día siguiente.
      */
-    private suspend fun evaluar(idUsuario: String, nivel: NivelInfo): EstadoNivel {
-        val estado = controlAcceso.evaluar(idUsuario, nivel)
-        // Modo admin: todo lo que no está superado queda abierto y gratis (incluido el Ragnarök)
-        return if (ModoAdmin.estaActivo && (estado == EstadoNivel.BLOQUEADO || estado == EstadoNivel.DISPONIBLE)) EstadoNivel.GRATUITO
-        else estado
-    }
+    private suspend fun evaluar(idUsuario: String, nivel: NivelInfo): EstadoNivel =
+        controlAcceso.evaluar(idUsuario, nivel)
 
     /**
      * RN-08 para la Völva: igual que [piso], pero con los mundos que ve el alumno
-     * (en modo admin, todos) y sin contar el nivel cuya entrada ya se pagó.
+     * y sin contar el nivel cuya entrada ya se pagó.
      */
     private suspend fun pisoApuesta(idUsuario: String, mundosDesbloqueados: List<String>): Int =
         mundosDesbloqueados
@@ -745,8 +719,8 @@ class ModuloHidromiel(
         idUsuario: String, mundosDesbloqueados: List<String>, minimo: Int, tope: Int
     ): com.aesir.odin.domain.model.RangoApuesta {
         val saldo = obtenerOCrearReserva(idUsuario).saldo
-        val piso = if (ModoAdmin.estaActivo) 0 else pisoApuesta(idUsuario, mundosDesbloqueados)
-        val maximo = if (ModoAdmin.estaActivo) tope else minOf(tope, saldo - piso)
+        val piso = pisoApuesta(idUsuario, mundosDesbloqueados)
+        val maximo = minOf(tope, saldo - piso)
         return com.aesir.odin.domain.model.RangoApuesta(minimo, maximo, saldo, piso)
     }
 
@@ -780,7 +754,7 @@ class ModuloHidromiel(
         }
         EstadoNivel.GRATUITO -> ResultadoAcceso(
             nivel.idNivel, estado, true, 0, 0,
-            if (ModoAdmin.estaActivo) "Modo admin: entrada gratuita." else "Primer nivel del mundo: entrada gratuita."
+            "Primer nivel del mundo: entrada gratuita."
         )
         EstadoNivel.SUPERADO -> ResultadoAcceso(nivel.idNivel, estado, true, 0, 0, "Ya lo superaste: repetirlo es gratis, pero no da hidromiel.")
         EstadoNivel.DISPONIBLE -> if (entradasPagadas[idUsuario] == nivel.idNivel) {
@@ -795,6 +769,19 @@ class ModuloHidromiel(
             )
         }
     }
+
+    /**
+     * E8: el saldo y su movimiento van en una sola transacción. Si la escritura
+     * falla no se aplica ninguno y se devuelve [siFalla] para que la acción no se complete.
+     */
+    private inline fun <T> e8(siFalla: () -> T, accion: () -> T): T =
+        try {
+            accion()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            siFalla()
+        }
 
     private suspend fun moverSaldo(
         idUsuario: String,
@@ -829,5 +816,8 @@ class ModuloHidromiel(
 
         /** Identificador de la ofrenda a Sól (MOD-05) en los [ResultadoAcceso]. */
         const val ID_OFRENDA_SOL = "OFRENDA_SOL"
+
+        /** E8: lo que ve el alumno si no se pudo guardar un cobro. */
+        const val NO_SE_PUDO_GUARDAR = "No se pudo guardar. Intenta de nuevo."
     }
 }

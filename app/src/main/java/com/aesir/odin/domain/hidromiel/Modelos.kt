@@ -45,7 +45,6 @@ enum class TipoMovimiento {
     APUESTA_DUELO,
     PREMIO_DUELO,
     PREMIO_OCULTO,
-    AJUSTE_ADMIN,
     /** CU-12: apuesta de la consulta a la Völva (RF-164). */
     APUESTA_VOLVA,
     /** CU-12: premio o devolución de la consulta a la Völva (RF-173 a RF-175). */
@@ -150,7 +149,9 @@ data class ForjaFinalizada(
 data class ResultadoApuestaForja(
     val cobrada: Boolean,
     val saldoActual: Int,
-    val faltante: Int = 0
+    val faltante: Int = 0,
+    /** E8: por qué no se cobró cuando no es por falta de hidromiel. */
+    val motivo: String? = null
 )
 
 /**

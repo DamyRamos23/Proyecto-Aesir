@@ -1,5 +1,6 @@
 package com.aesir.odin.data.repository
 
+import com.aesir.odin.domain.hidromiel.PoliticaCosto
 import com.aesir.odin.data.local.dao.AlbaDao
 import com.aesir.odin.data.local.dao.VitrinaDao
 import com.aesir.odin.data.local.entity.LogroEntity
@@ -22,7 +23,7 @@ class AlbaRepositoryImpl(
     private val vitrinaDao: VitrinaDao? = null
 ) : AlbaRepository {
 
-    override suspend fun jugoNocheEnElDia(inicio: Long, fin: Long): Boolean = dao.contarNochesEntre(inicio, fin) > 0
+    override suspend fun jugoNocheEnElDia(inicio: Long, fin: Long): Boolean = dao.contarNochesEntre(inicio, fin) >= PoliticaCosto.NOCHES_ALBA_DIA
 
     override suspend fun resultadoDelDia(inicio: Long, fin: Long): ResultadoNoche? =
         dao.getTerminadaEntre(inicio, fin)?.aResultado()

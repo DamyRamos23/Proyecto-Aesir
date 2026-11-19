@@ -37,25 +37,6 @@ El ícono de la app es la moneda dorada: adaptativo en Android 8+ (`ic_launcher_
 `ic_launcher_fondo_moneda.xml`), PNG por densidad para Android 7 (`mipmap-*/ic_launcher*.png`) y
 `drawable-nodpi/ic_launcher_ios.png` (1024 px) para el proyecto de iOS.
 
-## Modo admin oculto
-
-En la pantalla **Mundos**, toca los mundos en este orden, sin pausas de más de 1.5 s:
-
-**1 → 2 → 4 → 3 → 1 → 2 → 4 → 3**
-
-(arriba-izq, arriba-der, abajo-der, abajo-izq, dos veces). Vibra, aparece un aviso y
-la insignia **ADMIN** junto al título. La misma combinación lo desactiva.
-
-Con el modo admin:
-- todos los mundos y niveles se abren, incluido el Ragnarök (reto de fin de mundo);
-- las entradas y las ayudas del crucigrama no cobran hidromiel;
-- el **pozo de Mímir** del roadmap despierta sin superar el Ragnarök (para probar el repaso);
-- el **reto contrarreloj** enciende todas las runas: toma preguntas de todas las lecciones;
-- superar niveles se registra normalmente.
-
-No se guarda: cada apertura de la app inicia sin modo admin (se borra el valor `odin` / `modo_admin` de versiones anteriores).
-Código: `domain/hidromiel/ModoAdmin.kt`; prueba: `ModoAdminTest`.
-
 ## Roadmap de cuatro anillos (SRS v3.2)
 
 Cada mundo tiene ahora **10 temas** y **18 niveles** alrededor del Ragnarök (`ArbolHabilidades`):
@@ -76,7 +57,7 @@ Cada mundo tiene ahora **10 temas** y **18 niveles** alrededor del Ragnarök (`A
   - Ciclo de Vida: Viabilidad, Planificación, Despliegue e implantación, Gestión de la configuración, Aseguramiento de la calidad y Retiro.
   - Modelos Tradicionales: Prototipos, Evolutivo, RAD, Proceso Unificado, Iterativo y Basado en componentes.
 - Ragnarök: 20 preguntas, 2 al azar de cada uno de los 10 temas. Evaluación diagnóstica: 20 preguntas, 2 por tema.
-- Base de datos v14 (`MIGRACION_13_14`): columna `temas.temaBaseId` y, en el contrarreloj, `hidromiel` y `terminado`. `DatosIniciales.sincronizar` pone al día la estructura y el contenido en cada apertura sin tocar el progreso.
+- Base de datos v14 (`MIGRACION_13_14`, hoy v15): columna `temas.temaBaseId` y, en el contrarreloj, `hidromiel` y `terminado`. `DatosIniciales.sincronizar` pone al día la estructura y el contenido en cada apertura sin tocar el progreso.
 - Pruebas: `ArbolHabilidadesTest` y `ContenidoRoadmapTest` (18 niveles, 10 temas, contenido completo y crucigrama armable en los 40 temas).
 
 ## Reto de arrastrar y soltar (CU-09)
@@ -127,7 +108,7 @@ Las texturas de madera están en `res/drawable-nodpi/madera_veta_*.png`.
 - **Evaluación diagnóstica** en tres fases: el llamado (Mímir despierta), la prueba (20 preguntas, 2 por tema, con el
   rostro animado) y la revelación (temas conocidos marcados en el árbol).
 - **Repaso**: la fuente del pozo aparece bajo el escudo del roadmap. Duerme hasta superar el Ragnarök del
-  mundo (o con el modo admin) y entonces late; al tocarla abre un repaso de 10 preguntas repartidas entre las
+  mundo y entonces late; al tocarla abre un repaso de 10 preguntas repartidas entre las
   lecciones del mundo. No cobra ni da hidromiel. Código: `ObtenerPreguntasRepasoUseCase`, `ui/roadmap/FuenteMimir.kt`.
 
 ## Memorama por mundo (CU-04)
@@ -158,8 +139,7 @@ Si no están, la app usa la serif del sistema con versalitas simuladas.
 - **La Völva** → `VolvaScreen` (CU-12, ruta `volva`).
 - La cuarta cara (`POR_REVELAR`) es ahora el **Duelo de enigmas** → `DueloEnigmasScreen` (CU-13, ruta `dueloEnigmas`).
 - *Hasta el Alba* y *La Apuesta de Brokkr* siguen abriendo `CaraMonedaScreen` hasta que existan.
-- El engrane junto al contador abre **Ajustes** (Visión de Heimdall). Tocar 7 veces el contador abre el menú de juegos ocultos;
-  en modo admin, mantenerlo 3 s permite fijar el hidromiel.
+- El engrane junto al contador abre **Ajustes** (Visión de Heimdall). Tocar 7 veces el contador abre el menú de juegos ocultos.
 
 ## Duelo de enigmas contra el gigante (CU-13)
 
@@ -171,7 +151,7 @@ Código: `ui/duelo/`, `domain/model/DueloEnigmas.kt`, `domain/usecase/duelo/`, `
 ## Retar a la bruja — La Völva (CU-12)
 
 Consulta de seis visiones (dos por cada Norna) sobre temas ya superados, con 15 s por visión.
-- Apuesta de 15 a 70 de hidromiel, sin bajar del piso que asegura poder pagar el siguiente nivel (en modo admin es gratis).
+- Apuesta de 15 a 70 de hidromiel, sin bajar del piso que asegura poder pagar el siguiente nivel.
 - Lecturas del caldero: **Profecía cumplida** ×2.5 y **Lectura clara** ×1.5 (menos el diezmo de Odín del 10 %),
   **Humo del caldero** devuelve la apuesta y **Maldición** no paga.
 - Cada consulta puede dar la siguiente de las 24 runas del Futhark antiguo.
@@ -181,11 +161,26 @@ visiones en `data/local/DatosVolva.kt`. Movimientos de hidromiel `APUESTA_VOLVA`
 
 ## Base de datos
 
-Versión 14, con migraciones que conservan el progreso y el hidromiel:
+Versión 15, con migraciones que conservan el progreso y el hidromiel:
 - `MIGRACION_9_10`: tablas del duelo de enigmas (CU-13).
 - `MIGRACION_10_11`: tablas de la Völva (`visiones_volva`, `runas_obtenidas`, `consultas_volva`).
 - `MIGRACION_11_12` y `MIGRACION_12_13`: Hasta el Alba, la forja y la racha.
 - `MIGRACION_13_14`: roadmap de cuatro anillos (`temas.temaBaseId`) y contrarreloj (`hidromiel`, `terminado`).
+- `MIGRACION_14_15`: `historial_errores` con la forma del MOD-06 (una fila por pregunta, `preguntaId` único) y se
+  borran los movimientos de ajuste manual de versiones de prueba. La versión final no tiene modo administrador.
+
+## MOD-06 Bitácora de errores (los hilos de Urd)
+
+- `domain/bitacora/ModuloBitacora.kt`: `registrarFallo(fallo)` regresa de inmediato y guarda en una corrutina
+  propia. Si la pregunta del banco ya está, suma un fallo y actualiza origen, respuesta y fecha (RN-32); si no,
+  la registra como `PENDIENTE` con un fallo. Si la base falla, el registro se descarta y la actividad sigue (E2).
+- Le avisan CU-01, 02, 03, 05, 06 (también al acabarse el tiempo), 08, 09, 11, 12 y 13. No le avisan CU-04, CU-07,
+  CU-10 ni los juegos ocultos (MOD-07). No hay operación de borrado (RN-35).
+- Ninguna actividad muestra la respuesta correcta al fallar (RN-34), salvo el duelo perdido.
+
+Todos los valores de la economía (costos, apuestas, premios, límites por día, oleadas, racha y juegos ocultos)
+están en `domain/hidromiel/PoliticaCosto.kt`. Si un cobro del MOD-01 no se puede guardar, el alumno ve
+«No se pudo guardar. Intenta de nuevo.», la actividad no empieza y el saldo queda igual (E8).
 
 ## Pantallas de inicio de los modos del Valhalla
 
@@ -249,7 +244,7 @@ Implementa el CU-01 del SRS v3.2 (RF-01 a RF-29). Se entra desde la cara «Hasta
 
 - CU-02 La apuesta de Brokkr: se entra por la cara de la moneda; el inicio usa la pantalla aprobada (escena de Brokkr). Tres etapas (calentar, martillar, templar en 60 s), apuesta de 20 a 80, dos forjas por día; perfecta paga ×3 menos el diezmo. La vitrina es la misma que usa Hasta el Alba.
 - MOD-05 La carrera de Sól: contador en Mundos, pantalla de la racha, ofrendas (40, máximo 2), hitos con bono. Cuentan lecciones, minijuegos, retos, diagnóstico, repaso de Mímir, contrarreloj, duelo, Völva, Hasta el Alba y la forja. Sus sonidos pasan por el MOD-02.
-- MOD-06 Bitácora: los fallos de la forja quedan en el historial de errores (repaso de Mímir).
+- MOD-06 Bitácora: ver la sección «MOD-06 Bitácora de errores».
 - La moneda ya no gira al tocarla: tocar una cara entra a su modo; solo gira al arrastrarla.
 - Vitrina del salón: una sola pantalla que cambia según el modo. Desde la forja (tema de la forja) muestra la colección; desde Hasta el Alba (tema del banquete) sirve para elegir qué artefactos llevar a la noche.
 - Selección de la forja: el artefacto que tocó al azar aparece sobre el yunque con su mundo y su poder, y ahí se elige la apuesta.

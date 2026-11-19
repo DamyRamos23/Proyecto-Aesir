@@ -97,7 +97,6 @@ import com.aesir.odin.domain.usecase.shared.ValidarRespuestaUseCase
 import com.aesir.odin.data.repository.FlashcardsRepositoryImpl
 import com.aesir.odin.data.repository.RetoFinMundoRepositoryImpl
 import com.aesir.odin.data.repository.RetoRepositoryImpl
-import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.repository.FlashcardsRepository
 import com.aesir.odin.domain.repository.RetoFinMundoRepository
 import com.aesir.odin.domain.repository.RetoRepository
@@ -168,13 +167,6 @@ class AppContainer(context: Context) {
     /** Juegos ocultos (easter eggs) que ya se descubrieron en Mundos. */
     val almacenEastereggs: AlmacenEastereggs = AlmacenEastereggsImpl(preferencias)
 
-    init {
-        // Modo admin oculto: cada apertura de la app inicia sin él.
-        // Se borra el valor que guardaban las versiones anteriores.
-        ModoAdmin.cargar(false)
-        preferencias.edit().remove(CLAVE_MODO_ADMIN).apply()
-    }
-
     val roadmapRepository: RoadmapRepository =
         RoadmapRepositoryImpl(database.mundoDao(), database.temaDao(), database.retoFinMundoDao())
 
@@ -183,6 +175,9 @@ class AppContainer(context: Context) {
 
     val historialRepository: HistorialRepository =
         HistorialRepositoryImpl(database.historialErrorDao())
+
+    /** MOD-06 Bitácora de errores: las actividades le avisan cada fallo. */
+    val moduloBitacora = ModuloBitacora(historialRepository)
 
     /**
      * MOD-01 Sistema de Hidromiel. Una sola instancia para toda la app: es la
@@ -213,7 +208,7 @@ class AppContainer(context: Context) {
     val obtenerLeccionUseCase = ObtenerLeccionUseCase(leccionRepository)
     val validarRespuestaEjercicioUseCase =
         ValidarRespuestaEjercicioUseCase(ValidarRespuestaUseCase())
-    val registrarErrorLeccionUseCase = RegistrarErrorLeccionUseCase(historialRepository)
+    val registrarErrorLeccionUseCase = RegistrarErrorLeccionUseCase(moduloBitacora)
     val finalizarLeccionUseCase = FinalizarLeccionUseCase(leccionRepository, moduloHidromiel, moduloCarreraSol = moduloCarreraSol)
     val registrarNivelSinSuperarUseCase = RegistrarNivelSinSuperarUseCase(leccionRepository, moduloHidromiel, moduloCarreraSol = moduloCarreraSol)
 
@@ -244,10 +239,10 @@ class AppContainer(context: Context) {
     val obtenerPreguntaFlashUseCase =
         ObtenerPreguntaFlashUseCase(roadmapRepository, preguntaFlashRepository)
     val validarRespuestaPreguntaFlashUseCase = ValidarRespuestaPreguntaFlashUseCase(
-        preguntaFlashRepository, hidromielFlashRepository, historialRepository, validarRespuestaUseCase
+        preguntaFlashRepository, hidromielFlashRepository, moduloBitacora, validarRespuestaUseCase
     )
     val registrarTiempoAgotadoPreguntaFlashUseCase =
-        RegistrarTiempoAgotadoPreguntaFlashUseCase(preguntaFlashRepository, hidromielFlashRepository)
+        RegistrarTiempoAgotadoPreguntaFlashUseCase(preguntaFlashRepository, hidromielFlashRepository, moduloBitacora)
     val observarHidromielUseCase = ObservarHidromielUseCase(hidromielFlashRepository)
 
     // ---- Reto Contrarreloj (CU-11): reutiliza el banco de Pregunta Flash ----
@@ -296,7 +291,7 @@ class AppContainer(context: Context) {
     val flashcardsRepository: FlashcardsRepository =
         FlashcardsRepositoryImpl(database.conceptoCrucigramaDao(), database.resultadoFlashcardsDao())
     val generarFlashcardsUseCase = GenerarFlashcardsUseCase(flashcardsRepository, roadmapRepository)
-    val registrarErrorFlashcardUseCase = RegistrarErrorFlashcardUseCase(historialRepository)
+    val registrarErrorFlashcardUseCase = RegistrarErrorFlashcardUseCase(moduloBitacora)
     val finalizarFlashcardsUseCase = FinalizarFlashcardsUseCase(
         flashcardsRepository,
         RegistrarLeccionCompletadaUseCase(roadmapRepository),
@@ -308,7 +303,7 @@ class AppContainer(context: Context) {
     // CU-08 Reto de fin de mundo (Ragnarök)
     val retoFinMundoRepository: RetoFinMundoRepository = RetoFinMundoRepositoryImpl(database.retoFinMundoDao())
     val obtenerRetoFinMundoUseCase = ObtenerRetoFinMundoUseCase(roadmapRepository, leccionRepository, moduloHidromiel)
-    val registrarErrorRetoUseCase = RegistrarErrorRetoUseCase(historialRepository)
+    val registrarErrorRetoUseCase = RegistrarErrorRetoUseCase(moduloBitacora)
     val finalizarRetoFinMundoUseCase = FinalizarRetoFinMundoUseCase(retoFinMundoRepository, roadmapRepository, moduloHidromiel, moduloCarreraSol = moduloCarreraSol)
     val abandonarRetoFinMundoUseCase = AbandonarRetoFinMundoUseCase(retoFinMundoRepository, moduloHidromiel)
 
@@ -319,7 +314,7 @@ class AppContainer(context: Context) {
     val obtenerRetoUseCase = ObtenerRetoUseCase(retoRepository)
     val validarColocacionUseCase = ValidarColocacionUseCase()
     val calcularPuntajeRetoUseCase = CalcularPuntajeRetoUseCase()
-    val registrarErrorRetoArrastrarUseCase = RegistrarErrorRetoArrastrarUseCase(historialRepository)
+    val registrarErrorRetoArrastrarUseCase = RegistrarErrorRetoArrastrarUseCase(moduloBitacora)
     val finalizarRetoUseCase = FinalizarRetoUseCase(
         retoRepository, calcularPuntajeRetoUseCase, RegistrarLeccionCompletadaUseCase(roadmapRepository), moduloHidromiel,
         moduloCarreraSol = moduloCarreraSol
@@ -331,7 +326,7 @@ class AppContainer(context: Context) {
     val validarAccesoVolvaUseCase = ValidarAccesoVolvaUseCase(roadmapRepository, volvaRepository, moduloHidromiel)
     val apostarVolvaUseCase = ApostarVolvaUseCase(moduloHidromiel, volvaRepository, roadmapRepository)
     val armarConsultaVolvaUseCase = ArmarConsultaVolvaUseCase(roadmapRepository, volvaRepository)
-    val resolverVisionUseCase = ResolverVisionUseCase(historialRepository)
+    val resolverVisionUseCase = ResolverVisionUseCase(moduloBitacora)
     val finalizarConsultaVolvaUseCase = FinalizarConsultaVolvaUseCase(volvaRepository, moduloHidromiel, moduloCarreraSol = moduloCarreraSol)
     val abandonarConsultaVolvaUseCase = AbandonarConsultaVolvaUseCase(volvaRepository)
 
@@ -345,7 +340,7 @@ class AppContainer(context: Context) {
     )
     val apostarAlbaUseCase = ApostarAlbaUseCase(moduloHidromiel, albaRepository, roadmapRepository)
     val obtenerPreguntaAlbaUseCase = ObtenerPreguntaAlbaUseCase(roadmapRepository, preguntaFlashRepository)
-    val responderPreguntaAlbaUseCase = ResponderPreguntaAlbaUseCase(validarRespuestaUseCase, historialRepository, albaRepository)
+    val responderPreguntaAlbaUseCase = ResponderPreguntaAlbaUseCase(validarRespuestaUseCase, moduloBitacora, albaRepository)
     val usarArtefactoAlbaUseCase = UsarArtefactoAlbaUseCase(albaRepository)
     val seguirPeleandoAlbaUseCase = SeguirPeleandoAlbaUseCase(albaRepository)
 
@@ -361,15 +356,13 @@ class AppContainer(context: Context) {
     val validarAccesoDueloUseCase = ValidarAccesoDueloUseCase(roadmapRepository, dueloRepository, moduloHidromiel)
     val armarDueloUseCase = ArmarDueloUseCase(roadmapRepository, dueloRepository)
     val apostarDueloUseCase = ApostarDueloUseCase(moduloHidromiel, dueloRepository)
-    val finalizarDueloUseCase = FinalizarDueloUseCase(dueloRepository, moduloHidromiel, historialRepository, moduloCarreraSol = moduloCarreraSol)
+    val finalizarDueloUseCase = FinalizarDueloUseCase(dueloRepository, moduloHidromiel, moduloBitacora, moduloCarreraSol = moduloCarreraSol)
     val abandonarDueloUseCase = AbandonarDueloUseCase(dueloRepository)
 
     // CU-02 Forjar artefactos en la apuesta de Brokkr
     val forjaRepository: ForjaRepository = ForjaRepositoryImpl(
         database.artefactoDao(), database.vitrinaDao(), database.forjaDao(), database.etapaForjaDao(), database.mundoDao()
     )
-    /** MOD-06 Bitácora de errores: guarda en el historial de errores. */
-    val moduloBitacora = ModuloBitacora(historialRepository)
     val validarAccesoForjaUseCase = ValidarAccesoForjaUseCase(forjaRepository, roadmapRepository, moduloHidromiel)
     val obtenerVitrinaUseCase = ObtenerVitrinaUseCase(forjaRepository)
     val asignarArtefactoUseCase = AsignarArtefactoUseCase(forjaRepository, roadmapRepository)
@@ -381,8 +374,4 @@ class AppContainer(context: Context) {
     val finalizarForjaUseCase = FinalizarForjaUseCase(forjaRepository, moduloHidromiel, moduloCarreraSol)
     val abandonarForjaUseCase = AbandonarForjaUseCase(forjaRepository)
     val cerrarForjasInconclusasUseCase = CerrarForjasInconclusasUseCase(forjaRepository)
-
-    private companion object {
-        const val CLAVE_MODO_ADMIN = "modo_admin"
-    }
 }

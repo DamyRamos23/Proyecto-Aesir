@@ -28,9 +28,9 @@ import kotlinx.coroutines.launch
 /**
  * CU-05 Realizar una lección interactiva.
  *
- * Presenta los ejercicios en orden (RF-14), valida cada respuesta (RF-16),
- * cuenta los errores (RF-17) y termina la lección al tercer error (RF-18),
- * o la finaliza con su resultado al completar todos los ejercicios (RF-21 a RF-24).
+ * Presenta los ejercicios en orden (RF-71), valida cada respuesta (RF-73),
+ * cuenta los errores (RF-74) y termina la lección al tercer error (RF-75),
+ * o la finaliza con su resultado al completar todos los ejercicios (RF-77 a RF-79).
  *
  * Al terminar avisa al MOD-01 (Sistema de Hidromiel): superada, con
  * FinalizarLeccionUseCase; con el límite de errores (NO_SUPERADO) o al salir
@@ -117,10 +117,8 @@ class LeccionInteractivaViewModel(
             // Se interrumpe de inmediato, sin esperar a que termine de guardarse el error.
             val fallida = errores >= RegistrarErrorLeccionUseCase.LIMITE_ERRORES
             if (fallida) _leccionFallida.value = true
-            viewModelScope.launch {
-                registrarErrorUseCase(leccion.id, ejercicio.id, errores)
-                if (fallida) reportarSinSuperar(ResultadoNivel.NO_SUPERADO)
-            }
+            registrarErrorUseCase(leccion, ejercicio, opciones, errores)
+            if (fallida) viewModelScope.launch { reportarSinSuperar(ResultadoNivel.NO_SUPERADO) }
         }
     }
 

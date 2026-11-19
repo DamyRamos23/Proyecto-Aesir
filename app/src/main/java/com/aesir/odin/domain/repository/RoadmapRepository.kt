@@ -24,11 +24,11 @@ interface RoadmapRepository {
 
     // CU-04 Resolver memorama de conceptos
     suspend fun mundoDesbloqueado(mundoId: String): Boolean
-    /** Marca el nivel de memorama [nivelId] como completado (RF-17). */
+    /** Marca el nivel de memorama [nivelId] como completado (RF-66). */
     suspend fun marcarMemoramaCompletado(nivelId: String)
 
     // CU-10 Realizar evaluación diagnóstico
-    /** Registra como conocidos los temas demostrados en el diagnóstico (RF-87). */
+    /** Registra como conocidos los temas demostrados en el diagnóstico (RF-133). */
     suspend fun marcarTemasConocidos(mundoId: String, temaIds: List<String>)
 
     // CU-13 Duelo de enigmas

@@ -1,5 +1,7 @@
 package com.aesir.odin.domain.usecase.duelo
 
+import com.aesir.odin.domain.usecase.leccion.bitacoraInmediata
+import com.aesir.odin.domain.bitacora.OrigenError
 import com.aesir.odin.data.local.DatosEnigmas
 import com.aesir.odin.domain.hidromiel.FakeCatalogo
 import com.aesir.odin.domain.hidromiel.FakeHidromielRepository
@@ -173,22 +175,25 @@ class DueloEnigmasTest {
         val duelo = tablero("c1")
         ApostarDueloUseCase(modulo, repo, reloj = { ahora })(duelo)
         PreguntarGiganteUseCase()(duelo, "p_t1")
-        val cierre = FinalizarDueloUseCase(repo, modulo, historial, reloj = { ahora })(duelo, ganado = true)
+        val cierre = FinalizarDueloUseCase(repo, modulo, bitacoraInmediata(historial), reloj = { ahora })(duelo, ganado = true)
         assertEquals(24 + 4 * 5, cierre.resultado.hidromielObtenido)
         assertEquals(16 + 44, hidromiel.saldo(USUARIO_LOCAL))
         assertEquals(EstadoFinalDuelo.GANADO, repo.guardados.getValue("d1").resultado)
-        assertTrue(historial.obtenerErrores().isEmpty())
+        assertTrue(historial.errores.isEmpty())
     }
 
     @Test
     fun `perder revela el concepto y lo manda a la bitacora (E12_1)`() = runBlocking {
         val duelo = tablero("c3")
-        val cierre = FinalizarDueloUseCase(repo, modulo, historial, reloj = { ahora })(duelo, ganado = false, tarjetaElegida = "c4")
+        val cierre = FinalizarDueloUseCase(repo, modulo, bitacoraInmediata(historial), reloj = { ahora })(duelo, ganado = false, tarjetaElegida = "c4")
         assertEquals("c3", cierre.conceptoVerdadero.id)
         assertNull(cierre.aviso)
-        val error = historial.obtenerErrores().single()
-        assertEquals(FinalizarDueloUseCase.TIPO_BITACORA, error.tipoDesafio)
-        assertTrue(error.descripcion.contains("Concepto 3") && error.descripcion.contains("Concepto 4"))
+        // Disparador 3 y E1: el concepto escondido, sin opciones
+        val error = historial.errores.single()
+        assertEquals(OrigenError.DUELO_ENIGMAS, error.origen)
+        assertEquals("c3", error.preguntaId)
+        assertTrue(error.opciones.isEmpty())
+        assertTrue(error.respuestaCorrecta.contains("Concepto 3") && error.respuestaAlumno!!.contains("Concepto 4"))
     }
 
     @Test

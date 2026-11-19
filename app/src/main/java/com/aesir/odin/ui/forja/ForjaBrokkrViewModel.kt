@@ -160,7 +160,7 @@ class ForjaBrokkrViewModel(
                 val nueva = armarForja(asignacion, cantidad)
                 val cobro = apostar(nueva, rango)
                 if (!cobro.cobrada) {
-                    _aviso.value = "Te faltan ${cobro.faltante} de hidromiel para esta apuesta."
+                    _aviso.value = cobro.motivo ?: "Te faltan ${cobro.faltante} de hidromiel para esta apuesta."
                     return@ejecutar
                 }
                 _aviso.value = null

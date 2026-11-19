@@ -1,5 +1,6 @@
 package com.aesir.odin.data.repository
 
+import com.aesir.odin.domain.hidromiel.PoliticaCosto
 import com.aesir.odin.data.local.dao.VolvaDao
 import com.aesir.odin.data.local.entity.ConsultaVolvaEntity
 import com.aesir.odin.data.local.entity.RunaObtenidaEntity
@@ -27,7 +28,7 @@ class VolvaRepositoryImpl(private val dao: VolvaDao) : VolvaRepository {
         dao.insertarRuna(RunaObtenidaEntity(runa.orden, fecha))
 
     override suspend fun consultoEnElDia(inicio: Long, fin: Long): Boolean =
-        dao.contarConsultasEntre(inicio, fin) > 0
+        dao.contarConsultasEntre(inicio, fin) >= PoliticaCosto.CONSULTAS_VOLVA_DIA
 
     override suspend fun registrarConsultaIniciada(consulta: ConsultaVolva) =
         dao.guardarConsulta(

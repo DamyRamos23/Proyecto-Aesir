@@ -1,5 +1,6 @@
 package com.aesir.odin.domain.model
 
+import com.aesir.odin.domain.hidromiel.PoliticaCosto
 import com.aesir.odin.domain.hidromiel.AvisoHidromiel
 import java.text.Normalizer
 import kotlin.random.Random
@@ -66,21 +67,16 @@ data class ResultadoAccesoForja(
 )
 
 /**
- * Rango de apuesta (RF-32): de [MINIMO] al menor entre [MAXIMO] y el
+ * Rango de apuesta (RF-32): de [PoliticaCosto.APUESTA_FORJA_MIN] al menor entre [PoliticaCosto.APUESTA_FORJA_MAX] y el
  * hidromiel menos el piso de apuesta (MOD-01, RN-08).
  */
 data class RangoApuestaForja(
     val pisoApuesta: Int,
     val maximoPermitido: Int
 ) {
-    val minimo: Int get() = MINIMO
+    val minimo: Int get() = PoliticaCosto.APUESTA_FORJA_MIN
 
-    fun contiene(cantidad: Int): Boolean = cantidad in MINIMO..maximoPermitido
-
-    companion object {
-        const val MINIMO = 20
-        const val MAXIMO = 80
-    }
+    fun contiene(cantidad: Int): Boolean = cantidad in PoliticaCosto.APUESTA_FORJA_MIN..maximoPermitido
 }
 
 // ---------------------------------------------------------------------------

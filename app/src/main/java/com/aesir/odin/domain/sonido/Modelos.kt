@@ -66,7 +66,7 @@ data class PreferenciasSonido(
     val activado: Boolean = true,
     /** Volumen de efectos, de 0 a 1 (80 % por defecto). */
     val volumen: Float = VOLUMEN_PREDETERMINADO,
-    /** Tema principal de fondo (no está en el SRS: se agrega junto al MOD-02). */
+    /** Tema principal de fondo (MOD-02). */
     val musica: Boolean = true,
     val volumenMusica: Float = VOLUMEN_MUSICA_PREDETERMINADO
 ) {

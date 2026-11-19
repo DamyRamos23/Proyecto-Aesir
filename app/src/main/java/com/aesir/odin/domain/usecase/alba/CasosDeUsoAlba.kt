@@ -7,7 +7,6 @@ import com.aesir.odin.domain.racha.ModuloCarreraSol
 import com.aesir.odin.domain.sonido.EventoSonido
 import com.aesir.odin.domain.sonido.ModuloSonido
 import com.aesir.odin.domain.sonido.eventoDeRespuesta
-import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.hidromiel.NocheAlbaCobrada
 import com.aesir.odin.domain.hidromiel.PoliticaCosto
@@ -20,13 +19,14 @@ import com.aesir.odin.domain.model.Desenlace
 import com.aesir.odin.domain.model.EfectoArtefacto
 import com.aesir.odin.domain.model.EstadoRespuesta
 import com.aesir.odin.domain.model.FaseNoche
-import com.aesir.odin.domain.model.HistorialError
 import com.aesir.odin.domain.model.MotivoBloqueoAlba
 import com.aesir.odin.domain.model.NocheAlba
 import com.aesir.odin.domain.model.PreguntaFlash
 import com.aesir.odin.domain.model.ResultadoNoche
 import com.aesir.odin.domain.repository.AlbaRepository
-import com.aesir.odin.domain.repository.HistorialRepository
+import com.aesir.odin.domain.bitacora.ModuloBitacora
+import com.aesir.odin.domain.bitacora.OrigenError
+import com.aesir.odin.domain.bitacora.comoFallo
 import com.aesir.odin.domain.repository.PreguntaFlashRepository
 import com.aesir.odin.domain.repository.RoadmapRepository
 import com.aesir.odin.domain.usecase.shared.ValidarRespuestaUseCase
@@ -70,8 +70,8 @@ class ValidarAccesoAlbaUseCase(
         val temas = roadmapRepository.obtenerTemas()
         val rango = moduloHidromiel.rangoApuestaAlba(idUsuario, mundosDesbloqueados(roadmapRepository))
         val (inicio, fin) = limitesDelDia(reloj(), zona)
-        val ragnarokSuperado = ModoAdmin.estaActivo || temas.any { it.esRagnarok && it.completado }
-        val jugada = !ModoAdmin.estaActivo && albaRepository.jugoNocheEnElDia(inicio, fin)
+        val ragnarokSuperado = temas.any { it.esRagnarok && it.completado }
+        val jugada = albaRepository.jugoNocheEnElDia(inicio, fin)
         val superados = temasSuperados(temas)
 
         val motivo = when {
@@ -141,7 +141,7 @@ class ApostarAlbaUseCase(
         if (!acceso.autorizado) return ApuestaAlba(acceso, null)
         val noche = NocheAlba(
             id = UUID.randomUUID().toString(),
-            apuesta = if (ModoAdmin.estaActivo) 0 else apuesta,
+            apuesta = apuesta,
             fecha = reloj(),
             artefactos = albaRepository.obtenerArtefactos().filter { llevar == null || it.artefacto in llevar }
         )
@@ -192,7 +192,7 @@ data class RespuestaAlba(
  */
 class ResponderPreguntaAlbaUseCase(
     private val validarRespuesta: ValidarRespuestaUseCase,
-    private val historialRepository: HistorialRepository,
+    private val moduloBitacora: ModuloBitacora,
     private val albaRepository: AlbaRepository,
     private val reloj: () -> Long = System::currentTimeMillis
 ) {
@@ -213,29 +213,9 @@ class ResponderPreguntaAlbaUseCase(
         return RespuestaAlba(nueva, estado, acierto, superada, nueva.cayo)
     }
 
-    /** RF-13 y MOD-06, E2: si no se puede guardar, la batalla sigue sin interrupción. */
-    private suspend fun registrarEnBitacora(pregunta: PreguntaFlash, seleccion: List<Int>?) {
-        val elegidas = seleccion?.takeIf { it.isNotEmpty() }?.joinToString(", ") { pregunta.opciones.getOrNull(it) ?: "?" }
-            ?: "sin respuesta (se acabó el tiempo)"
-        runCatching {
-            historialRepository.registrarError(
-                HistorialError(
-                    id = UUID.randomUUID().toString(),
-                    tipoDesafio = TIPO_HASTA_EL_ALBA,
-                    actividadId = pregunta.id,
-                    descripcion = "Hasta el Alba (tema ${pregunta.temaId}): ${pregunta.enunciado} " +
-                        "Opciones: ${pregunta.opciones.joinToString(" | ")}. " +
-                        "Correctas: ${pregunta.respuestasCorrectas.joinToString(", ") { pregunta.opciones[it] }}. " +
-                        "Elegidas: $elegidas.",
-                    fecha = reloj()
-                )
-            )
-        }
-    }
-
-    companion object {
-        const val TIPO_HASTA_EL_ALBA = "HASTA_EL_ALBA"
-    }
+    /** RF-13 y MOD-06: [seleccion] es null si se acabó el tiempo; la batalla no espera a que se guarde. */
+    private fun registrarEnBitacora(pregunta: PreguntaFlash, seleccion: List<Int>?) =
+        moduloBitacora.registrarFallo(pregunta.comoFallo(OrigenError.HASTA_EL_ALBA, seleccion, reloj()))
 }
 
 /**
@@ -269,7 +249,7 @@ class UsarArtefactoAlbaUseCase(
             }
             Artefacto.DRAUPNIR -> {
                 if (noche.fase != FaseNoche.EN_DECISION) return noche to EfectoArtefacto.NoDisponible("Draupnir se activa al decidir si vuelves al banquete.")
-                val bono = NocheAlba.BONO_DRAUPNIR_PERFECTO
+                val bono = PoliticaCosto.BONO_DRAUPNIR
                 noche.copy(bonoDraupnir = bono) to EfectoArtefacto.BonoDraupnir(bono)
             }
         }

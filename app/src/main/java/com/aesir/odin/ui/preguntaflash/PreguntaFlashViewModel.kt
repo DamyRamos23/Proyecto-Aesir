@@ -7,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.aesir.odin.di.AppContainer
-import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.model.EstadoPreguntaFlash
 import com.aesir.odin.domain.model.Mundo
 import com.aesir.odin.domain.model.PreguntaFlash
@@ -33,10 +32,10 @@ import kotlinx.coroutines.launch
  * CU-06 Responder pregunta flash.
  *
  * Vive a nivel de la actividad (no de una pantalla): cuenta cada [INTERVALO_MS]
- * de uso de la app (RF-31), espera a que el alumno esté en Mundos o Roadmap
- * (RF-39), muestra la pregunta con un contador de [TIEMPO_LIMITE_S] segundos
- * (RF-40), valida o registra el tiempo agotado, y al cerrar reinicia el
- * temporizador (RF-43, RF-44).
+ * de uso de la app (RF-81), espera a que el alumno esté en Mundos o Roadmap
+ * (RF-83), muestra la pregunta con un contador de [TIEMPO_LIMITE_S] segundos
+ * (RF-84), valida o registra el tiempo agotado, y al cerrar reinicia el
+ * temporizador (RF-91).
  *
  * El tiempo "de uso" se detiene mientras la app está en segundo plano
  * ([pausar] / [reanudar]).
@@ -123,11 +122,6 @@ class PreguntaFlashViewModel(
                 ruta.startsWith("${OdinNavGraph.rutaRoadmap}/"))
         // Flujo alternativo A2.1: la pregunta pospuesta sale al volver a navegación.
         if (enPantallaNavegacion && preguntaPendiente) mostrarPregunta()
-    }
-
-    /** Modo admin: saca una pregunta flash ya, sin esperar el intervalo. */
-    fun invocar() {
-        if (ModoAdmin.estaActivo && enPantallaNavegacion) mostrarPregunta()
     }
 
     fun alternarOpcion(indice: Int) {

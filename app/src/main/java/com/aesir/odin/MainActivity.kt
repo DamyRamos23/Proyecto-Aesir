@@ -88,7 +88,7 @@ class MainActivity : ComponentActivity() {
             ODINTheme { CompositionLocalProvider(LocalPresentacionLectura provides presentacion) {
                 val navController = rememberNavController()
 
-                // La pregunta flash solo puede interrumpir Mundos y Roadmap (RF-39).
+                // La pregunta flash solo puede interrumpir Mundos y Roadmap (RF-83).
                 val rutaActual = navController.currentBackStackEntryAsState().value?.destination?.route
                 LaunchedEffect(rutaActual) {
                     preguntaFlashViewModel.onPantallaCambiada(rutaActual)
@@ -103,8 +103,7 @@ class MainActivity : ComponentActivity() {
                     Box(Modifier.fillMaxSize().padding(innerPadding)) {
                         OdinNavGraph.construirGrafo(
                             nav = navController,
-                            appContainer = appContainer,
-                            onInvocarPreguntaFlash = preguntaFlashViewModel::invocar
+                            appContainer = appContainer
                         )
                         // MOD-01: avisos de hidromiel sobre cualquier pantalla.
                         // Al abrir la app en un nuevo día se entrega la recompensa diaria (E3).

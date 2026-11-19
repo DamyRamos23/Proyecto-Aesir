@@ -5,7 +5,7 @@ package com.aesir.odin.domain.eastereggs
  * del escudo en orden ([combinacion], con los índices del escudo:
  * 0 UML, 1 Casos de Uso, 2 Ciclo de Vida, 3 Modelos Tradicionales).
  *
- * No están en el SRS: no cuentan para la racha, la bitácora ni el progreso.
+ * MOD-07 Juegos ocultos (SRS v3.3): no cuentan para la racha, la bitácora ni el progreso.
  * Todo el hidromiel pasa por el MOD-01 (apuesta con piso, RN-08).
  */
 enum class JuegoOculto(val nombre: String, val combinacion: List<Int>) {

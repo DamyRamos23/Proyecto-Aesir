@@ -40,7 +40,7 @@ import com.aesir.odin.ui.theme.FuenteTexto
 import com.aesir.odin.ui.theme.FuenteTitulo
 
 /**
- * CU-04, RF-16: muestra los puntos obtenidos y el tiempo empleado
+ * CU-04, RF-67: muestra los puntos obtenidos y el tiempo empleado
  * (ResumenMemoramaScreen del diagrama de clases). Observa el resultado del
  * mismo MemoramaViewModel. Lo ganado en hidromiel lo muestra el aviso global
  * del MOD-01.
@@ -131,7 +131,7 @@ private fun Dato(estilo: EstiloMundo, valor: String, etiqueta: String) {
     }
 }
 
-/** RF-67 / RF-101: el resumen dice si el nivel fue superado (MOD-01, RN-07: 60 puntos o más). */
+/** RF-67: el resumen dice si el nivel fue superado (MOD-01, RN-07: 60 puntos o más). */
 @Composable
 private fun LineaSuperado(puntaje: Int, estilo: EstiloMundo) {
     val superado = puntaje >= PoliticaCosto.PUNTAJE_MINIMO

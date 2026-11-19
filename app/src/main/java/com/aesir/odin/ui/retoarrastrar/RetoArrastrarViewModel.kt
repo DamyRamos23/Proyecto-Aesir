@@ -128,7 +128,7 @@ class RetoArrastrarViewModel(
     // -----------------------------------------------------------------------
 
     /**
-     * Coloca un elemento en una posición (RF-72, RF-73). Si la posición ya
+     * Coloca un elemento en una posición (RF-121). Si la posición ya
      * tenía otro elemento, se intercambian; con [posicionId] = null el
      * elemento regresa al banco.
      */
@@ -170,7 +170,7 @@ class RetoArrastrarViewModel(
                     _puntaje.value = puntajeUseCase(intentos)
                     _elementosIncorrectos.value = incorrectos
                     val textos = reto.elementos.filter { it.id in incorrectos }.map { it.texto }
-                    val limiteAlcanzado = registrarErrorUseCase(reto.id, textos, intentos)
+                    val limiteAlcanzado = registrarErrorUseCase(reto, textos, intentos)
                     if (limiteAlcanzado) {
                         // A8.2: termina sin puntaje y sin mostrar la solución (RF-125, RN-34)
                         _puntaje.value = 0
