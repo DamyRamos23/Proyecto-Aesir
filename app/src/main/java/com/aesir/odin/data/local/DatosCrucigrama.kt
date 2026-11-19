@@ -3,10 +3,13 @@ package com.aesir.odin.data.local
 import com.aesir.odin.data.local.entity.ConceptoCrucigramaEntity
 import com.aesir.odin.data.local.entity.MundoEntity
 import com.aesir.odin.data.local.entity.TemaEntity
+import com.aesir.odin.domain.model.ArbolHabilidades
 
 /**
- * Contenido inicial del CU-07: banco de conceptos por tema y un nivel de
- * crucigrama por mundo que repasa los temas de ese mundo.
+ * Contenido inicial del CU-07: banco de conceptos por tema (los 10 temas de
+ * cada mundo, al menos 6 conceptos cada uno) y los minijuegos del anillo 2.
+ * El mismo banco lo usan el memorama (CU-04), las flashcards (CU-03) y el
+ * duelo de enigmas (CU-13).
  *
  * Reglas del banco: una sola palabra por respuesta, de 3 a 12 letras (el
  * generador quita acentos y la Ñ se conserva). La descripción es la pista.
@@ -15,9 +18,10 @@ object DatosCrucigrama {
 
     /**
      * Anillo exterior (minijuegos) de cada mundo: 2 crucigramas, 2 memoramas
-     * y 2 de flash cards, intercalados. Cada uno queda entre las dos lecciones
-     * que repasa (ArbolHabilidades). Todos son jugables: crucigrama (CU-07),
-     * memorama (CU-04) y flash cards (CU-03).
+     * y 2 de flash cards, intercalados. Cada uno pertenece a un tema 1 a 4
+     * (ArbolHabilidades.TEMA_DE_MINIJUEGO), usa los conceptos de ese tema y se
+     * conecta con su lección: crucigrama (CU-07), memorama (CU-04) y flash
+     * cards (CU-03).
      */
     fun minijuegos(mundos: List<MundoEntity>): List<TemaEntity> = mundos.flatMap { mundo ->
         MINIJUEGOS.mapIndexed { k, (actividad, nombre, descripcion) ->
@@ -32,21 +36,22 @@ object DatosCrucigrama {
                 completado = false,
                 tipo = "NORMAL",
                 actividad = actividad,
-                anillo = 2
+                anillo = 2,
+                temaBaseId = DatosIniciales.idTema(mundo.id, ArbolHabilidades.TEMA_DE_MINIJUEGO[k])
             )
         }
     }
 
     private val MINIJUEGOS = listOf(
-        Triple("CRUCIGRAMA", "Crucigrama I", "Resuelve un crucigrama con los conceptos de las lecciones cercanas."),
+        Triple("CRUCIGRAMA", "Crucigrama I", "Resuelve un crucigrama con los conceptos del tema."),
         Triple("MEMORAMA", "Memorama I", "Encuentra los pares de concepto y definición."),
         Triple("FLASHCARDS", "Flash cards I", "Repasa los conceptos con tarjetas de pregunta y respuesta."),
-        Triple("CRUCIGRAMA", "Crucigrama II", "Resuelve un crucigrama con los conceptos de las lecciones cercanas."),
+        Triple("CRUCIGRAMA", "Crucigrama II", "Resuelve un crucigrama con los conceptos del tema."),
         Triple("MEMORAMA", "Memorama II", "Encuentra los pares de concepto y definición."),
         Triple("FLASHCARDS", "Flash cards II", "Repasa los conceptos con tarjetas de pregunta y respuesta.")
     )
 
-    private val banco: Map<String, List<Pair<String, String>>> = mapOf(
+    private val bancoBase: Map<String, List<Pair<String, String>>> = mapOf(
         // Mundo 1 · UML
         "tema_uml_1" to listOf(
             "Clase" to "Plantilla que define los atributos y métodos de un objeto.",
@@ -164,6 +169,11 @@ object DatosCrucigrama {
             "Arquitectura" to "Base que debe estar bien definida para soportar los incrementos."
         )
     )
+
+    /** temaId -> (concepto, descripción). También lo usan el memorama, las flashcards y el duelo de enigmas. */
+    internal val banco: Map<String, List<Pair<String, String>>> =
+        bancoBase.mapValues { (temaId, lista) -> lista + ContenidoTemas.conceptosExtra[temaId].orEmpty() } +
+            ContenidoTemas.temas.associate { it.id to it.conceptos }
 
     val conceptos: List<ConceptoCrucigramaEntity> = banco.flatMap { (temaId, lista) ->
         lista.mapIndexed { i, (respuesta, descripcion) ->

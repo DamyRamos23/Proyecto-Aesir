@@ -1,6 +1,9 @@
 package com.aesir.odin.ui.mundos
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -39,18 +42,21 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.material3.Text
+import com.aesir.odin.ui.theme.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -78,6 +84,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -92,6 +99,7 @@ import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
 import com.aesir.odin.ui.components.odin.ContadorHidromiel
 import com.aesir.odin.domain.model.Mundo
 import com.aesir.odin.ui.components.odin.BotonOdin
+import com.aesir.odin.ui.racha.ContadorRacha
 import com.aesir.odin.ui.components.odin.FondoMundo
 import com.aesir.odin.ui.components.odin.TextoAjustable
 import com.aesir.odin.ui.components.odin.desaturar
@@ -108,6 +116,12 @@ import com.aesir.odin.ui.theme.FuenteTexto
 import com.aesir.odin.ui.theme.OdinPaleta
 import kotlin.random.Random
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.ui.input.pointer.pointerInput
+import com.aesir.odin.domain.eastereggs.JuegoOculto
+import com.aesir.odin.ui.eastereggs.MenuEastereggs
 import kotlinx.coroutines.delay
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
@@ -120,6 +134,12 @@ import androidx.compose.ui.text.font.FontWeight
 import com.aesir.odin.domain.hidromiel.CombinacionSecreta
 import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.ui.components.odin.rememberTiempo
+import com.aesir.odin.ui.components.odin.PuntosProgreso
+import com.aesir.odin.ui.moneda.CaraMoneda
+import com.aesir.odin.ui.moneda.EscudoGiratorio
+import com.aesir.odin.ui.moneda.rememberGiroEscudo
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.text.font.FontStyle
 
 /**
  * Pantalla que lista los mundos del roadmap como un escudo dividido en
@@ -141,6 +161,9 @@ fun MundosScreen(
     )
     val mundos by viewModel.mundos.collectAsState()
     val saldo by remember { appContainer.moduloHidromiel.observarSaldo(USUARIO_LOCAL) }.collectAsState(initial = 0)
+    // MOD-05: contador de la racha; abre la pantalla de la carrera de Sól
+    val racha by appContainer.moduloCarreraSol.estado.collectAsState()
+    LaunchedEffect(Unit) { appContainer.moduloCarreraSol.resumen(USUARIO_LOCAL, java.time.LocalDate.now()) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
@@ -157,6 +180,26 @@ fun MundosScreen(
     val combinacion = remember { CombinacionSecreta(listOf(0, 1, 3, 2, 0, 1, 3, 2)) }
     var avisoAdmin by remember { mutableStateOf<String?>(null) }
     var editandoSaldo by remember { mutableStateOf(false) }
+    // Easter eggs: una combinación por juego oculto y 7 toques al contador para el menú.
+    val combinacionesJuegos = remember { JuegoOculto.entries.associateWith { CombinacionSecreta(it.combinacion) } }
+    val sieteToques = remember { CombinacionSecreta(List(7) { 0 }) }
+    var mostrarMenuJuegos by remember { mutableStateOf(false) }
+    val abrirJuego: (JuegoOculto) -> Unit = { juego ->
+        appContainer.almacenEastereggs.descubrir(juego)
+        mostrarMenuJuegos = false
+        navController.navigate(OdinNavGraph.rutaJuegoOcultoCon(juego))
+    }
+    if (mostrarMenuJuegos) {
+        MenuEastereggs(
+            descubiertos = remember { appContainer.almacenEastereggs.descubiertos() },
+            todosVisibles = adminActivo,
+            onElegir = { juego ->
+                mostrarMenuJuegos = false
+                navController.navigate(OdinNavGraph.rutaJuegoOcultoCon(juego))
+            },
+            onCerrar = { mostrarMenuJuegos = false }
+        )
+    }
     if (editandoSaldo) {
         var texto by remember { mutableStateOf(saldo.toString()) }
         AlertDialog(
@@ -187,11 +230,28 @@ fun MundosScreen(
             avisoAdmin = null
         }
     }
+    // El escudo es una moneda: cae del cielo al abrir la app y al girarlo muestra los casos de uso.
+    val giro = rememberGiroEscudo()
+    val caraActual = giro.cara
+    val enMundos = caraActual == CaraMoneda.MUNDOS
+    // Todo lo demás aparece cuando el escudo termina de caer.
+    val alfaUi by animateFloatAsState(if (giro.listo) 1f else 0f, tween(450), label = "alfaUi")
     val visibles = mundos.take(4)
     val seleccionado = visibles.firstOrNull { it.id == seleccionadoId }
         ?: visibles.firstOrNull { it.desbloqueado }
         ?: visibles.firstOrNull()
     /** CU-10: la primera vez se presenta la evaluación diagnóstica del mundo. */
+    val entrarACara: (CaraMoneda) -> Unit = { cara ->
+        if (cara != CaraMoneda.MUNDOS) navController.navigate(
+            when (cara) {
+                CaraMoneda.VOLVA -> OdinNavGraph.rutaVolva
+                CaraMoneda.HASTA_EL_ALBA -> OdinNavGraph.rutaAlba
+                CaraMoneda.POR_REVELAR -> OdinNavGraph.rutaDuelo
+                CaraMoneda.APUESTA_BROKKR -> OdinNavGraph.rutaForjaBrokkr
+                else -> OdinNavGraph.rutaCaraMonedaCon(cara.name)
+            }
+        )
+    }
     val entrar: (Mundo) -> Unit = { mundo ->
         scope.launch {
             val ruta = if (viewModel.intentarAbrirDiagnostico(mundo.id)) {
@@ -205,14 +265,21 @@ fun MundosScreen(
 
     Box(Modifier.fillMaxSize()) {
     FondoMundo(estilo = null) {
+        // Pantalla fija (sin desplazamiento): el escudo ocupa el espacio que sobra y se adapta a cada pantalla.
         Column(
             Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("MUNDOS", style = estiloTitulo(36.sp))
+            Row(Modifier.fillMaxWidth().alpha(alfaUi), verticalAlignment = Alignment.CenterVertically) {
+                TextoAjustable(
+                    caraActual.titulo.uppercase(),
+                    estiloTitulo(36.sp, brillo = if (enMundos) null else caraActual.acento),
+                    // Ocupa todo el espacio libre de la fila (antes compartía la mitad con un Spacer y se cortaba).
+                    Modifier.weight(1f),
+                    minEscala = 0.5f,
+                    maxLineas = 2
+                )
                 if (adminActivo) {
                     Text(
                         "ADMIN",
@@ -227,7 +294,21 @@ fun MundosScreen(
                             .padding(horizontal = 6.dp, vertical = 3.dp)
                     )
                 }
-                Spacer(Modifier.weight(1f))
+                if (adminActivo) {
+                    // Modo admin: editar el hidromiel con un toque (además de mantener presionado el contador).
+                    Icon(
+                        Icons.Filled.Edit,
+                        contentDescription = "Editar hidromiel",
+                        tint = OdinPaleta.Hollin,
+                        modifier = Modifier
+                            .padding(end = 10.dp)
+                            .size(34.dp)
+                            .clip(CircleShape)
+                            .background(OdinPaleta.Oro)
+                            .clickable(role = Role.Button) { editandoSaldo = true }
+                            .padding(7.dp)
+                    )
+                }
                 if (adminActivo) {
                     // Modo admin: saca una pregunta flash a voluntad.
                     Icon(
@@ -243,23 +324,69 @@ fun MundosScreen(
                             .padding(6.dp)
                     )
                 }
-                // Modo admin: tocar el contador permite fijar el hidromiel.
+                Icon(
+                    Icons.Filled.Settings,
+                    contentDescription = "Ajustes",
+                    tint = OdinPaleta.Hueso,
+                    modifier = Modifier
+                        .padding(end = 10.dp)
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .clickable(role = Role.Button) { navController.navigate(OdinNavGraph.rutaAjustes) }
+                        .padding(5.dp)
+                )
+                ContadorRacha(
+                    estado = racha,
+                    onClick = { navController.navigate(OdinNavGraph.rutaRacha) },
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                // 7 toques: menú de easter eggs. Modo admin: mantener 3 s permite fijar el hidromiel.
                 ContadorHidromiel(
                     saldo = saldo,
-                    modifier = if (adminActivo) Modifier.clickable { editandoSaldo = true } else Modifier
+                    modifier = Modifier.pointerInput(adminActivo) {
+                        awaitEachGesture {
+                            awaitFirstDown()
+                            val soltado = withTimeoutOrNull(PRESION_ADMIN_MS) { waitForUpOrCancellation() }
+                            if (soltado == null) {
+                                if (adminActivo) {
+                                    vibrar.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    editandoSaldo = true
+                                }
+                            } else if (sieteToques.registrar(0)) {
+                                mostrarMenuJuegos = true
+                            }
+                        }
+                    }
                 )
             }
             Spacer(Modifier.height(6.dp))
             Text(
-                "Cada mundo es un tema de Ingeniería de Software. Supera su Ragnarök para abrir el siguiente.",
-                color = OdinPaleta.HuesoTenue,
+                if (enMundos) "Cada mundo es un tema de Ingeniería de Software. Supera su Ragnarök para abrir el siguiente."
+                else caraActual.subtitulo,
+                color = if (enMundos) OdinPaleta.HuesoTenue else caraActual.acento,
                 fontFamily = FuenteTexto,
-                fontSize = 15.sp,
-                lineHeight = 21.sp
+                fontStyle = if (enMundos) FontStyle.Normal else FontStyle.Italic,
+                fontSize = 14.sp,
+                lineHeight = 19.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.alpha(alfaUi)
             )
-            Spacer(Modifier.height(24.dp))
 
+            BoxWithConstraints(
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+            val ladoEscudo = minOf(maxWidth, maxHeight, 440.dp)
             if (visibles.isNotEmpty()) {
+                EscudoGiratorio(
+                    giro = giro,
+                    modifier = Modifier.size(ladoEscudo),
+                    onTocarCara = { cara -> entrarACara(cara) }
+                ) {
                 EscudoMundos(
                     mundos = visibles,
                     seleccionadoId = seleccionado?.id,
@@ -273,6 +400,13 @@ fun MundosScreen(
                         }
                         seleccionadoId = id
                         val i = visibles.indexOfFirst { it.id == id }
+                        // Todas las combinaciones escuchan cada toque (no se interrumpen entre sí).
+                        val juego = combinacionesJuegos.entries.filter { (_, c) -> i >= 0 && c.registrar(i) }.firstOrNull()?.key
+                        if (juego != null) {
+                            vibrar.performHapticFeedback(HapticFeedbackType.LongPress)
+                            abrirJuego(juego)
+                            return@EscudoMundos
+                        }
                         if (i >= 0 && combinacion.registrar(i)) {
                             ModoAdmin.alternar()
                             viewModel.cargarMundos()
@@ -283,36 +417,68 @@ fun MundosScreen(
                     // CU-11: el reto mezcla preguntas de todos los temas ya
                     // estudiados, por eso se entra desde el centro del escudo.
                     onAbrirReto = { navController.navigate(OdinNavGraph.rutaRetoContrareloj) },
-                    modifier = Modifier
-                        .widthIn(max = 440.dp)
-                        .fillMaxWidth()
-                        .align(Alignment.CenterHorizontally)
+                    modifier = Modifier.fillMaxSize()
                 )
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    "Toca el Valknut del centro para el reto contrarreloj.",
-                    color = OdinPaleta.HuesoTenue,
-                    fontFamily = FuenteTexto,
-                    fontSize = 13.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                }
             }
+            }
+            Text(
+                if (enMundos) "Valknut: reto contrarreloj · Arrastra el escudo para girarlo"
+                else "Arrastra o toca el escudo para girarlo otra vez",
+                color = OdinPaleta.HuesoTenue.copy(alpha = .8f),
+                fontFamily = FuenteTexto,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth().alpha(alfaUi)
+            )
+            Spacer(Modifier.height(10.dp))
 
-            Spacer(Modifier.height(24.dp))
-
-            if (seleccionado != null) {
+            // El panel no desaparece al girar: se atenúa mientras el escudo se mueve
+            // y su contenido se funde con el de la cara nueva al caer.
+            // Ocupa siempre su lugar (alto fijo) para que el escudo no cambie de tamaño.
+            val alfaPanel by animateFloatAsState(
+                when {
+                    !giro.listo -> 0f
+                    giro.enMovimiento -> 0.35f
+                    else -> 1f
+                },
+                tween(if (giro.enMovimiento) 250 else 500),
+                label = "alfaPanel"
+            )
+            Box(Modifier.fillMaxWidth().height(84.dp).alpha(alfaPanel)) {
                 AnimatedContent(
-                    targetState = seleccionado,
-                    transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(120)) },
-                    contentKey = { it.id },
-                    label = "detalleMundo"
-                ) { mundo ->
-                    PanelMundo(
-                        mundo = mundo,
-                        anterior = visibles.getOrNull(visibles.indexOfFirst { it.id == mundo.id } - 1),
-                        onEntrar = { entrar(mundo) }
-                    )
+                    targetState = caraActual,
+                    transitionSpec = {
+                        (fadeIn(tween(400, delayMillis = 120)) togetherWith fadeOut(tween(220)))
+                            .using(SizeTransform(clip = false))
+                    },
+                    label = "panelCara"
+                ) { cara ->
+                    if (cara == CaraMoneda.MUNDOS) {
+                        if (seleccionado != null) {
+                            AnimatedContent(
+                                targetState = seleccionado,
+                                transitionSpec = { (fadeIn(tween(220)) togetherWith fadeOut(tween(120))).using(SizeTransform(clip = false)) },
+                                contentKey = { it.id },
+                                label = "detalleMundo"
+                            ) { mundo ->
+                                PanelMundo(
+                                    mundo = mundo,
+                                    anterior = visibles.getOrNull(visibles.indexOfFirst { it.id == mundo.id } - 1),
+                                    enMovimiento = giro.enMovimiento,
+                                    onEntrar = { if (giro.listo) entrar(mundo) }
+                                )
+                            }
+                        }
+                    } else {
+                        PanelCasoUso(
+                            cara = cara,
+                            enMovimiento = giro.enMovimiento,
+                            onEntrar = { if (giro.listo) entrarACara(cara) }
+                        )
+                    }
                 }
             }
 
@@ -601,50 +767,166 @@ private fun rotacionDial(objetivo: Float): Float {
 // Panel inferior
 // ---------------------------------------------------------------------------
 
+/**
+ * Panel compacto (alto fijo) para que la pantalla no brinque al cambiar de mundo
+ * o de cara. Si la descripción no cabe, al tocarlo se despliega hacia arriba
+ * (encima del escudo, sin mover nada) con el texto completo; otro toque lo cierra.
+ */
 @Composable
-private fun PanelMundo(mundo: Mundo, anterior: Mundo?, onEntrar: () -> Unit) {
-    val estilo = EstilosMundo.porOrden(mundo.orden)
+private fun PanelCompacto(
+    titulo: String,
+    texto: String,
+    metal: Color,
+    acento: Color,
+    brillo: Color?,
+    bloqueado: Boolean,
+    enMovimiento: Boolean,
+    onEntrar: (() -> Unit)?
+) {
     val forma = CutCornerShape(8.dp)
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(forma)
-            .background(Color(0xE61E1A15))
-            .border(1.dp, (if (mundo.desbloqueado) estilo.metal else OdinPaleta.Hierro).copy(alpha = .7f), forma)
-            .padding(20.dp)
-    ) {
-        Text(
-            mundo.nombre.uppercase(),
-            style = estiloTitulo(22.sp, if (mundo.desbloqueado) OdinPaleta.Hueso else OdinPaleta.Escarcha)
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            mundo.descripcion,
-            color = OdinPaleta.HuesoTenue,
-            fontFamily = FuenteTexto,
-            fontSize = 15.sp,
-            lineHeight = 21.sp
-        )
-        Spacer(Modifier.height(18.dp))
-        if (mundo.desbloqueado) {
-            BotonOdin(
-                texto = "Entrar",
-                onClick = onEntrar,
-                acento = estilo.acento,
-                iconoFinal = Icons.AutoMirrored.Filled.ArrowForward,
-                modifier = Modifier.fillMaxWidth()
-            )
-        } else {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.Lock, contentDescription = null, tint = OdinPaleta.Escarcha, modifier = Modifier.size(18.dp))
+    var recortado by remember(texto) { mutableStateOf(false) }
+    var expandido by remember(titulo, texto) { mutableStateOf(false) }
+    // Al girar el escudo se cierra la descripción completa
+    LaunchedEffect(enMovimiento) { if (enMovimiento) expandido = false }
+    Box(Modifier.fillMaxWidth().height(84.dp)) {
+        Row(
+            Modifier
+                .fillMaxSize()
+                .clip(forma)
+                .background(Color(0xE61E1A15))
+                .border(1.dp, metal.copy(alpha = .7f), forma)
+                .padding(start = 16.dp, end = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                Modifier
+                    .weight(1f)
+                    .clickable(enabled = recortado, onClickLabel = "Ver descripción completa") { expandido = true }
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextoAjustable(
+                        titulo.uppercase(),
+                        estiloTitulo(17.sp, if (bloqueado) OdinPaleta.Escarcha else OdinPaleta.Hueso, brillo = brillo),
+                        Modifier.weight(1f, fill = false),
+                        minEscala = 0.7f,
+                        maxLineas = 1
+                    )
+                    if (recortado) {
+                        Spacer(Modifier.width(6.dp))
+                        Text("Leer más ▴", color = acento.copy(alpha = .9f), fontFamily = FuenteTexto, fontSize = 11.sp, maxLines = 1)
+                    }
+                }
+                Spacer(Modifier.height(3.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (bloqueado) {
+                        Icon(Icons.Filled.Lock, contentDescription = null, tint = OdinPaleta.Escarcha, modifier = Modifier.size(13.dp))
+                        Spacer(Modifier.width(5.dp))
+                    }
+                    Text(
+                        texto,
+                        color = if (bloqueado) OdinPaleta.Escarcha else OdinPaleta.HuesoTenue,
+                        fontFamily = FuenteTexto,
+                        fontSize = 13.sp,
+                        lineHeight = 17.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        onTextLayout = { if (it.hasVisualOverflow) recortado = true }
+                    )
+                }
+            }
+            if (onEntrar != null) {
                 Spacer(Modifier.width(10.dp))
-                Text(
-                    if (anterior != null) "Se abre al superar el Ragnarök de ${anterior.nombre}." else "Este mundo todavía está bloqueado.",
-                    color = OdinPaleta.Escarcha,
-                    fontFamily = FuenteTexto,
-                    fontSize = 15.sp
+                BotonOdin(
+                    texto = "Entrar",
+                    onClick = onEntrar,
+                    acento = acento,
+                    metal = metal,
+                    iconoFinal = Icons.AutoMirrored.Filled.ArrowForward,
+                    modifier = Modifier.width(140.dp)
                 )
+            }
+        }
+        // Descripción completa: crece hacia arriba desde el panel, encima del escudo
+        AnimatedVisibility(
+            visible = expandido,
+            enter = fadeIn(tween(220)) + expandVertically(tween(260), expandFrom = Alignment.Bottom),
+            exit = fadeOut(tween(160)) + shrinkVertically(tween(200), shrinkTowards = Alignment.Bottom),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .wrapContentHeight(align = Alignment.Bottom, unbounded = true)
+        ) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(forma)
+                    .background(Color(0xF51E1A15))
+                    .border(1.dp, metal.copy(alpha = .8f), forma)
+                    .clickable(onClickLabel = "Cerrar descripción") { expandido = false }
+                    .padding(16.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        titulo.uppercase(),
+                        style = estiloTitulo(17.sp, if (bloqueado) OdinPaleta.Escarcha else OdinPaleta.Hueso, brillo = brillo),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text("Cerrar ▾", color = acento.copy(alpha = .9f), fontFamily = FuenteTexto, fontSize = 11.sp)
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    texto,
+                    color = if (bloqueado) OdinPaleta.Escarcha else OdinPaleta.HuesoTenue,
+                    fontFamily = FuenteTexto,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp
+                )
+                if (onEntrar != null) {
+                    Spacer(Modifier.height(12.dp))
+                    BotonOdin(
+                        texto = "Entrar",
+                        onClick = { expandido = false; onEntrar() },
+                        acento = acento,
+                        metal = metal,
+                        iconoFinal = Icons.AutoMirrored.Filled.ArrowForward,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         }
     }
 }
+
+@Composable
+private fun PanelMundo(mundo: Mundo, anterior: Mundo?, enMovimiento: Boolean, onEntrar: () -> Unit) {
+    val estilo = EstilosMundo.porOrden(mundo.orden)
+    PanelCompacto(
+        titulo = mundo.nombre,
+        texto = if (mundo.desbloqueado) mundo.descripcion
+        else if (anterior != null) "Se abre al superar el Ragnarök de ${anterior.nombre}." else "Este mundo todavía está bloqueado.",
+        metal = if (mundo.desbloqueado) estilo.metal else OdinPaleta.Hierro,
+        acento = estilo.acento,
+        brillo = null,
+        bloqueado = !mundo.desbloqueado,
+        enMovimiento = enMovimiento,
+        onEntrar = if (mundo.desbloqueado) onEntrar else null
+    )
+}
+
+/** Panel de una cara de caso de uso del escudo (en lugar del panel del mundo). */
+@Composable
+private fun PanelCasoUso(cara: CaraMoneda, enMovimiento: Boolean, onEntrar: () -> Unit) {
+    PanelCompacto(
+        titulo = cara.titulo,
+        texto = cara.descripcion,
+        metal = cara.metal,
+        acento = cara.acento,
+        brillo = cara.acento,
+        bloqueado = false,
+        enMovimiento = enMovimiento,
+        onEntrar = onEntrar
+    )
+}
+
+/** Mantener presionado el contador este tiempo abre el editor de hidromiel (modo admin). */
+private const val PRESION_ADMIN_MS = 3_000L

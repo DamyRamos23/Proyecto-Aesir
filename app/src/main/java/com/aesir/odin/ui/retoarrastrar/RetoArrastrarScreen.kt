@@ -45,7 +45,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
+import com.aesir.odin.ui.theme.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -109,11 +109,11 @@ import kotlin.math.roundToInt
  *
  * El alumno arrastra cada "piedra rúnica" (una etapa del proceso o una pieza
  * del diagrama) a su lugar; también puede tocar una piedra y luego el lugar.
- * Al comprobar, las mal colocadas se marcan y tiemblan (A7.1); con tres
- * intentos fallidos el reto termina y se muestra la solución (A7.2). Si se
- * aprueba, se pasa al resumen (paso 9).
+ * Al comprobar, las mal colocadas se marcan y tiemblan (A8.1); con tres
+ * intentos fallidos el reto termina sin mostrar la solución (A8.2, RN-34).
+ * Si se aprueba, se pasa al resumen (paso 9).
  *
- * @param temasIncluidos lecciones cercanas en el árbol; la primera es la que se sugiere repasar.
+ * @param temasIncluidos lección del tema del reto, la que se sugiere repasar.
  * @param onAprobado resultado, nombres de los niveles que se abrieron y orden del mundo.
  * @param onSalir el alumno confirmó que quiere abandonar (A4.1).
  */
@@ -212,8 +212,8 @@ fun RetoArrastrarScreen(
                         val estadoDe: (String) -> EstadoPiedra = { id ->
                             when {
                                 aprobado -> EstadoPiedra.CORRECTA
-                                terminado -> EstadoPiedra.SOLUCION
                                 id in incorrectos -> EstadoPiedra.INCORRECTA
+                                terminado -> EstadoPiedra.NORMAL
                                 id == seleccionado -> EstadoPiedra.SELECCIONADA
                                 else -> EstadoPiedra.NORMAL
                             }
@@ -433,7 +433,7 @@ private class EstadoArrastre {
     val sobreBanco: Boolean get() = elementoId != null && banco.contains(puntero)
 }
 
-private enum class EstadoPiedra { NORMAL, SELECCIONADA, INCORRECTA, CORRECTA, SOLUCION }
+private enum class EstadoPiedra { NORMAL, SELECCIONADA, INCORRECTA, CORRECTA }
 
 /** Piedra que se puede arrastrar o tocar para elegirla. */
 @Composable
@@ -506,7 +506,7 @@ private fun PiedraRunica(
             EstadoPiedra.NORMAL -> estilo.metal.copy(alpha = .75f)
             EstadoPiedra.SELECCIONADA -> estilo.acento
             EstadoPiedra.INCORRECTA -> OdinPaleta.Incorrecto
-            EstadoPiedra.CORRECTA, EstadoPiedra.SOLUCION -> OdinPaleta.Correcto
+            EstadoPiedra.CORRECTA -> OdinPaleta.Correcto
         },
         label = "bordePiedra"
     )
@@ -529,7 +529,7 @@ private fun PiedraRunica(
             .background(
                 when (estado) {
                     EstadoPiedra.INCORRECTA -> OdinPaleta.Incorrecto.copy(alpha = .16f)
-                    EstadoPiedra.CORRECTA, EstadoPiedra.SOLUCION -> OdinPaleta.Correcto.copy(alpha = .12f)
+                    EstadoPiedra.CORRECTA -> OdinPaleta.Correcto.copy(alpha = .12f)
                     else -> Color.Transparent
                 }
             )
@@ -938,7 +938,7 @@ private fun Marcador(puntaje: Int, intentosFallidos: Int, estilo: EstiloMundo) {
 private fun Retroalimentacion(incorrectos: Int, intentosFallidos: Int, aprobado: Boolean, terminado: Boolean) {
     val texto = when {
         aprobado -> "¡Todo en su lugar! Las runas encajan."
-        terminado -> "Se agotaron los intentos. Así queda la solución correcta."
+        terminado -> "Se agotaron los intentos. Las piedras marcadas no estaban en su lugar."
         incorrectos > 0 -> {
             val quedan = RegistrarErrorRetoArrastrarUseCase.LIMITE_INTENTOS - intentosFallidos
             val piezas = if (incorrectos == 1) "1 piedra está mal colocada" else "$incorrectos piedras están mal colocadas"
@@ -992,7 +992,7 @@ private fun PanelLimite(estilo: EstiloMundo, hayLeccion: Boolean, onRepasar: () 
         Text("Las runas no encajaron", style = estiloTitulo(20.sp), modifier = Modifier.padding(top = 2.dp))
         Text(
             "Fallaste ${RegistrarErrorRetoArrastrarUseCase.LIMITE_INTENTOS} veces, así que el reto termina sin puntaje. " +
-                "Revisa la solución de arriba" + if (hayLeccion) " y repasa la lección del tema antes de volver a intentarlo." else ".",
+                if (hayLeccion) "Repasa la lección del tema antes de volver a intentarlo." else "Vuelve a intentarlo cuando quieras.",
             color = Color(0xFFB8AE9C),
             fontFamily = FuenteTexto,
             fontSize = 14.sp,

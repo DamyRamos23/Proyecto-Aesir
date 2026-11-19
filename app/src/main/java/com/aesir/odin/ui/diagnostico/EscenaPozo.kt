@@ -36,7 +36,7 @@ import com.aesir.odin.ui.ragnarok.Brasas
 import com.aesir.odin.ui.ragnarok.RG
 import com.aesir.odin.ui.ragnarok.caminoPuntas
 import com.aesir.odin.ui.ragnarok.cinzel
-import androidx.compose.material3.Text
+import com.aesir.odin.ui.theme.Text
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.max
@@ -60,7 +60,11 @@ object MI {
 
     /** Runas de la prueba de sabiduría (una por pregunta). */
     val runas = listOf("ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ", "ᚾ", "ᛁ", "ᛃ")
-    val ordinales = listOf("primera", "segunda", "tercera", "cuarta", "quinta", "sexta", "séptima", "octava", "novena", "décima", "undécima", "duodécima")
+    val ordinales = listOf(
+        "primera", "segunda", "tercera", "cuarta", "quinta", "sexta", "séptima", "octava", "novena", "décima",
+        "undécima", "duodécima", "decimotercera", "decimocuarta", "decimoquinta", "decimosexta", "decimoséptima",
+        "decimoctava", "decimonovena", "vigésima"
+    )
 
     val Rojo = Color(0xFFE0675A)
     val Tinta = Color(0xFF1B130A)

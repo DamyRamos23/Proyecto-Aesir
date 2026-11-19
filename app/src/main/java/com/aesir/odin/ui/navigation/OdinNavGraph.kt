@@ -13,7 +13,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.aesir.odin.di.AppContainer
-import com.aesir.odin.domain.model.ArbolHabilidades
 import com.aesir.odin.domain.model.Tema
 import com.aesir.odin.ui.crucigrama.CrucigramaScreen
 import com.aesir.odin.ui.crucigrama.CrucigramaViewModel
@@ -28,13 +27,29 @@ import com.aesir.odin.ui.leccion.ResumenLeccionScreen
 import com.aesir.odin.ui.memorama.MemoramaScreen
 import com.aesir.odin.ui.memorama.MemoramaViewModel
 import com.aesir.odin.ui.memorama.ResumenMemoramaScreen
+import com.aesir.odin.ui.moneda.CaraMoneda
+import com.aesir.odin.ui.moneda.CaraMonedaScreen
 import com.aesir.odin.ui.mundos.MundosScreen
+import com.aesir.odin.ui.ajustes.AjustesScreen
+import com.aesir.odin.ui.duelo.DueloEnigmasScreen
+import com.aesir.odin.ui.duelo.DueloEnigmasViewModel
+import com.aesir.odin.domain.eastereggs.JuegoOculto
+import com.aesir.odin.ui.eastereggs.JuegoOcultoScreen
+import com.aesir.odin.ui.ajustes.AjustesViewModel
 import com.aesir.odin.ui.retocontrareloj.RetoContrarrelojScreen
 import com.aesir.odin.ui.retocontrareloj.RetoContrarrelojViewModel
+import com.aesir.odin.ui.volva.ConsultaVolvaViewModel
+import com.aesir.odin.ui.volva.VolvaScreen
+import com.aesir.odin.ui.alba.HastaElAlbaScreen
+import com.aesir.odin.ui.alba.HastaElAlbaViewModel
 import com.aesir.odin.ui.roadmap.RoadmapScreen
 import com.aesir.odin.ui.temaintro.TemaIntroScreen
 import androidx.compose.runtime.CompositionLocalProvider
 import com.aesir.odin.ui.flashcards.FlashcardsScreen
+import com.aesir.odin.ui.forja.ForjaBrokkrScreen
+import com.aesir.odin.ui.racha.RachaScreen
+import com.aesir.odin.ui.racha.RachaViewModel
+import com.aesir.odin.ui.forja.ForjaBrokkrViewModel
 import com.aesir.odin.ui.flashcards.FlashcardsViewModel
 import com.aesir.odin.ui.ragnarok.RagnarokScreen
 import com.aesir.odin.ui.ragnarok.RagnarokViewModel
@@ -51,11 +66,25 @@ import com.aesir.odin.ui.retoarrastrar.RetoArrastrarViewModel
 object OdinNavGraph {
 
     const val rutaMundos = "mundos"
+    // Caras del escudo de Mundos (los casos de uso nuevos) que aún no tienen pantalla propia
+    const val rutaCaraMoneda = "caraMoneda"
+    private const val argCara = "cara"
+    const val rutaAjustes = "ajustes"
+    /** CU-13 Duelo de enigmas (cuarta cara del escudo-moneda). */
+    const val rutaDuelo = "dueloEnigmas"
+    private const val rutaJuegoOculto = "juegoOculto"
+    private const val argJuego = "juego"
+
+    /** Juego oculto (easter egg) de la pantalla de Mundos. */
+    fun rutaJuegoOcultoCon(juego: JuegoOculto) = "$rutaJuegoOculto/${juego.name}"
     const val rutaRoadmap = "roadmap"
     const val rutaIntroTema = "introTema"
     const val rutaLeccion = "leccion"
     const val rutaResumenLeccion = "resumenLeccion"
     const val rutaRetoContrareloj = "retoContrareloj"
+    /** CU-12 Retar a la bruja (La Völva). */
+    const val rutaVolva = "volva"
+    const val rutaAlba = "hastaElAlba"
     const val rutaCrucigrama = "crucigrama"
     const val rutaResultadoCrucigrama = "resultadoCrucigrama"
     // CU-04 Resolver memorama de conceptos
@@ -70,6 +99,10 @@ object OdinNavGraph {
     const val rutaRagnarok = "ragnarok"
     const val rutaRetoArrastrar = "retoArrastrar"
     const val rutaResumenReto = "resumenReto"
+    // CU-02 Forjar artefactos en la apuesta de Brokkr
+    const val rutaForjaBrokkr = "forjaBrokkr"
+    // MOD-05 La carrera de Sól
+    const val rutaRacha = "racha"
 
     private const val argMundoId = "mundoId"
     private const val argTemaId = "temaId"
@@ -88,6 +121,9 @@ object OdinNavGraph {
     private const val argOrdenMundo = "ordenMundo"
     private const val argIntentos = "intentos"
     private const val argDesbloqueados = "desbloqueados"
+
+    /** Ruta de un caso de uso del escudo que todavía no tiene pantalla propia. */
+    fun rutaCaraMonedaCon(cara: String) = "$rutaCaraMoneda/$cara"
 
     /** Ruta concreta del roadmap para un mundo determinado. */
     fun rutaRoadmapCon(mundoId: String) =
@@ -144,31 +180,27 @@ object OdinNavGraph {
     private const val patronEvaluacionDiagnostica = "$rutaEvaluacionDiagnostica/{$argMundoId}"
 
     /**
-     * A dónde lleva entrar a un nivel: la introducción del tema; el reto de fin
-     * de mundo si es el Ragnarök; el memorama (CU-04); el reto de arrastrar y
-     * soltar con las lecciones cercanas para repasar (CU-09); o, si el nivel es
-     * un crucigrama o unas flashcards, la actividad con los conceptos de las
-     * dos lecciones que tiene más cerca en el árbol (ArbolHabilidades).
+     * A dónde lleva entrar a un nivel: la introducción del tema si es una
+     * lección; el reto de fin de mundo si es el Ragnarök; y, si es un
+     * minijuego o un reto, la actividad con el contenido del tema al que
+     * pertenece el nivel (SRS v3.2: «Todo nivel pertenece a un tema»): el
+     * memorama (CU-04), el crucigrama (CU-07), las flashcards (CU-03) o el
+     * reto de arrastrar y soltar (CU-09, cuya lección sugerida es la del tema).
      */
     fun rutaNivelCon(tema: Tema, temasDelMundo: List<Tema>): String {
         if (tema.esRagnarok) return rutaRagnarokCon(tema.id)
-        if (tema.esMemorama) return rutaMemoramaCon(tema.mundoId, tema.id)
-        val lecciones = temasDelMundo.filter { !it.esRagnarok && !it.esMinijuego }.sortedBy { it.orden }
-        if (tema.esArrastrar) {
-            // Tercer anillo: las lecciones más cercanas por ángulo son las que se sugiere repasar (A7.2)
-            val retos = temasDelMundo.filter { !it.esRagnarok && it.esReto }.sortedBy { it.orden }
-            val j = retos.indexOfFirst { it.id == tema.id }
-            val cercanas = if (j < 0) lecciones.indices.toList()
-            else ArbolHabilidades.leccionesCercanasAReto(j, retos.size, lecciones.size)
-            return rutaRetoArrastrarCon(tema.id, cercanas.map { lecciones[it].id })
+        if (!tema.esMinijuego) return rutaIntroTemaCon(tema.id)
+        val temaBase = tema.idTema.takeIf { id -> temasDelMundo.any { it.id == id && it.esLeccion } }
+        val temas = listOfNotNull(temaBase).ifEmpty {
+            temasDelMundo.filter { it.esLeccion }.sortedBy { it.orden }.map { it.id }
         }
-        if (!tema.esCrucigrama && !tema.esFlashcards) return rutaIntroTemaCon(tema.id)
-        val minijuegos = temasDelMundo.filter { !it.esRagnarok && it.anillo == ArbolHabilidades.ANILLO_MINIJUEGOS }.sortedBy { it.orden }
-        val k = minijuegos.indexOfFirst { it.id == tema.id }
-        val cercanas = if (k < 0) lecciones.indices.toList()
-        else ArbolHabilidades.leccionesCercanas(k, lecciones.size, minijuegos.size)
-        val temas = cercanas.map { lecciones[it].id }
-        return if (tema.esFlashcards) rutaFlashcardsCon(tema.id, temas) else rutaCrucigramaCon(tema.id, temas)
+        return when {
+            tema.esMemorama -> rutaMemoramaCon(tema.mundoId, tema.id)
+            tema.esArrastrar -> rutaRetoArrastrarCon(tema.id, temas)
+            tema.esFlashcards -> rutaFlashcardsCon(tema.id, temas)
+            tema.esCrucigrama -> rutaCrucigramaCon(tema.id, temas)
+            else -> rutaIntroTemaCon(tema.id)
+        }
     }
 
     private fun argumentoMundoId(): NamedNavArgument =
@@ -221,6 +253,43 @@ object OdinNavGraph {
                     nav,
                     appContainer,
                     onInvocarPreguntaFlash
+                )
+            }
+
+            // CU-13 Duelo de enigmas
+            composable(rutaDuelo) {
+                DueloEnigmasScreen(
+                    vm = viewModel(factory = DueloEnigmasViewModel.factory(appContainer)),
+                    onSalir = { nav.popBackStack() }
+                )
+            }
+
+            // Juegos ocultos (easter eggs)
+            composable("$rutaJuegoOculto/{$argJuego}") { entrada ->
+                val juego = JuegoOculto.entries.firstOrNull { it.name == entrada.arguments?.getString(argJuego) }
+                if (juego != null) JuegoOcultoScreen(juego, appContainer, onVolver = { nav.popBackStack() })
+            }
+
+            // Ajustes (MOD-02, MOD-03 y MOD-04)
+            composable(rutaAjustes) {
+                AjustesScreen(
+                    vm = viewModel(factory = AjustesViewModel.factory(appContainer.moduloVisionHeimdall, appContainer.moduloSonido, appContainer.moduloCuervos)),
+                    onVolver = { nav.popBackStack() }
+                )
+            }
+
+            // -------------------------
+            // Caras del escudo (casos de uso aún sin pantalla propia)
+            // -------------------------
+
+            composable(
+                route = "$rutaCaraMoneda/{$argCara}",
+                arguments = listOf(navArgument(argCara) { type = NavType.StringType })
+            ) { entrada ->
+                CaraMonedaScreen(
+                    cara = CaraMoneda.porNombre(entrada.arguments?.getString(argCara)),
+                    // Evita el doble pop (pantalla negra) si se toca dos veces.
+                    onVolver = { if (entrada.lifecycle.currentState == Lifecycle.State.RESUMED) nav.popBackStack() }
                 )
             }
 
@@ -293,6 +362,32 @@ object OdinNavGraph {
                 RetoContrarrelojScreen(
                     viewModel = viewModel,
                     // Toques repetidos en "Volver" hacían popBackStack de más y dejaban la pantalla negra.
+                    onSalir = { if (entrada.lifecycle.currentState == Lifecycle.State.RESUMED) nav.popBackStack() }
+                )
+            }
+
+            // -------------------------
+            // Sobrevivir oleadas: Hasta el Alba (CU-01)
+            // -------------------------
+
+            composable(rutaAlba) { entrada ->
+                val viewModel: HastaElAlbaViewModel =
+                    viewModel(factory = HastaElAlbaViewModel.factory(appContainer))
+                HastaElAlbaScreen(
+                    vm = viewModel,
+                    onSalir = { if (entrada.lifecycle.currentState == Lifecycle.State.RESUMED) nav.popBackStack() }
+                )
+            }
+
+            // -------------------------
+            // Retar a la bruja (CU-12)
+            // -------------------------
+
+            composable(rutaVolva) { entrada ->
+                val viewModel: ConsultaVolvaViewModel =
+                    viewModel(factory = ConsultaVolvaViewModel.factory(appContainer))
+                VolvaScreen(
+                    viewModel = viewModel,
                     onSalir = { if (entrada.lifecycle.currentState == Lifecycle.State.RESUMED) nav.popBackStack() }
                 )
             }
@@ -629,6 +724,27 @@ object OdinNavGraph {
                     onRepasarLeccion = { irDesdeRoadmap(rutaIntroTemaCon(it)) },
                     // MOD-01: salir antes de terminar es abandonar el nivel.
                     onSalir = { viewModel.confirmarSalida(volverAlRoadmap) }
+                )
+            }
+
+            // -------------------------
+            // La apuesta de Brokkr (CU-02)
+            // -------------------------
+
+            composable(rutaRacha) { entrada ->
+                val viewModel: RachaViewModel = viewModel(factory = RachaViewModel.factory(appContainer))
+                RachaScreen(
+                    viewModel = viewModel,
+                    onVolver = { if (entrada.lifecycle.currentState == Lifecycle.State.RESUMED) nav.popBackStack() }
+                )
+            }
+
+            composable(rutaForjaBrokkr) { entrada ->
+                val viewModel: ForjaBrokkrViewModel = viewModel(factory = ForjaBrokkrViewModel.factory(appContainer))
+                ForjaBrokkrScreen(
+                    viewModel = viewModel,
+                    // Regresa al Valhalla (pantalla de mundos); se ignoran toques repetidos.
+                    onSalir = { if (entrada.lifecycle.currentState == Lifecycle.State.RESUMED) nav.popBackStack() }
                 )
             }
 

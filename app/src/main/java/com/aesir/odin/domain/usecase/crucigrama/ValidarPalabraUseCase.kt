@@ -1,5 +1,7 @@
 package com.aesir.odin.domain.usecase.crucigrama
 
+import com.aesir.odin.domain.sonido.eventoDeRespuesta
+import com.aesir.odin.domain.sonido.ModuloSonido
 import com.aesir.odin.domain.model.EstadoRespuesta
 import com.aesir.odin.domain.model.PalabraCrucigrama
 import java.text.Normalizer
@@ -15,11 +17,13 @@ class ValidarPalabraUseCase {
     operator fun invoke(palabra: PalabraCrucigrama, respuesta: String): EstadoRespuesta {
         val escrita = normalizar(respuesta)
         val esperada = normalizar(palabra.respuesta)
-        return when {
+        val estado = when {
             escrita == esperada -> EstadoRespuesta.CORRECTA
             escrita.length < esperada.length && esperada.startsWith(escrita) -> EstadoRespuesta.INCOMPLETA
             else -> EstadoRespuesta.INCORRECTA
         }
+        ModuloSonido.avisar(eventoDeRespuesta(estado)) // MOD-02, disparador 2
+        return estado
     }
 
     fun normalizar(texto: String): String = normalizarPalabra(texto)

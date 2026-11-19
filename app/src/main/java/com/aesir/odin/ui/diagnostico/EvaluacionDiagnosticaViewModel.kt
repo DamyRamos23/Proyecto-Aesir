@@ -16,6 +16,7 @@ import com.aesir.odin.domain.usecase.diagnostico.EvaluarDiagnosticoUseCase
 import com.aesir.odin.domain.usecase.diagnostico.FinalizarDiagnosticoUseCase
 import com.aesir.odin.domain.usecase.diagnostico.ObtenerPreguntasDiagnosticoUseCase
 import com.aesir.odin.domain.usecase.diagnostico.ObtenerPreguntasRepasoUseCase
+import com.aesir.odin.domain.usecase.diagnostico.FinalizarRepasoMimirUseCase
 import com.aesir.odin.domain.usecase.diagnostico.OmitirDiagnosticoUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerMundoUseCase
 import com.aesir.odin.domain.usecase.roadmap.ObtenerTemasPorMundoUseCase
@@ -49,7 +50,9 @@ class EvaluacionDiagnosticaViewModel(
     private val obtenerMundoUseCase: ObtenerMundoUseCase,
     private val obtenerTemasPorMundoUseCase: ObtenerTemasPorMundoUseCase,
     private val validador: ValidarRespuestaUseCase,
-    val repaso: Boolean = false
+    val repaso: Boolean = false,
+    /** MOD-05: terminar el repaso cuenta para la racha. */
+    private val finalizarRepasoUseCase: FinalizarRepasoMimirUseCase? = null
 ) : ViewModel() {
 
     enum class Fase { LLAMADO, PRUEBA, REVELACION }
@@ -190,6 +193,8 @@ class EvaluacionDiagnosticaViewModel(
             viewModelScope.launch {
                 val resultado = if (repaso) {
                     // Solo se evalúa para mostrar la revelación; no se guarda nada
+                    // salvo el aviso a la racha (MOD-05)
+                    finalizarRepasoUseCase?.invoke()
                     EvaluarDiagnosticoUseCase(validador)(mundoId, preguntas, lista)
                 } else {
                     finalizarUseCase(mundoId, preguntas, lista)
@@ -243,7 +248,8 @@ class EvaluacionDiagnosticaViewModel(
                     obtenerMundoUseCase = container.obtenerMundoUseCase,
                     obtenerTemasPorMundoUseCase = container.obtenerTemasPorMundoUseCase,
                     validador = container.validarRespuestaUseCase,
-                    repaso = repaso
+                    repaso = repaso,
+                    finalizarRepasoUseCase = container.finalizarRepasoMimirUseCase
                 )
             }
         }

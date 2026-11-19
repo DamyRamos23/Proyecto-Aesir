@@ -1,5 +1,9 @@
 package com.aesir.odin.domain.usecase.memorama
 
+import com.aesir.odin.domain.racha.ActividadTerminada
+import com.aesir.odin.domain.racha.ModuloCarreraSol
+import com.aesir.odin.domain.racha.TipoActividad
+import com.aesir.odin.domain.racha.fechaLocal
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.hidromiel.NivelFinalizado
 import com.aesir.odin.domain.hidromiel.ResultadoNivel
@@ -22,7 +26,9 @@ class FinalizarMemoramaUseCase(
     private val roadmapRepository: RoadmapRepository,
     private val calcularPuntosUseCase: CalcularPuntosMemoramaUseCase,
     private val moduloHidromiel: ModuloHidromiel? = null,
-    private val idUsuario: String = USUARIO_LOCAL
+    private val idUsuario: String = USUARIO_LOCAL,
+    /** MOD-05: terminar la actividad sin abandonarla cuenta para la racha. */
+    private val moduloCarreraSol: ModuloCarreraSol? = null
 ) {
     suspend operator fun invoke(
         mundoId: String,
@@ -43,6 +49,7 @@ class FinalizarMemoramaUseCase(
         moduloHidromiel?.alFinalizarNivel(
             NivelFinalizado(idUsuario, nivelId, resultado.puntos, ResultadoNivel.SUPERADO)
         )
+        moduloCarreraSol?.alTerminarActividad(ActividadTerminada(idUsuario, TipoActividad.NIVEL_ROADMAP, abandonada = false, fechaFin = fechaLocal(tiempoFin)))
         return resultado
     }
 }

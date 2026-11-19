@@ -1,5 +1,9 @@
 package com.aesir.odin.domain.usecase.flashcards
 
+import com.aesir.odin.domain.racha.ActividadTerminada
+import com.aesir.odin.domain.racha.ModuloCarreraSol
+import com.aesir.odin.domain.racha.TipoActividad
+import com.aesir.odin.domain.racha.fechaLocal
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.hidromiel.NivelFinalizado
 import com.aesir.odin.domain.hidromiel.ResultadoNivel
@@ -98,6 +102,8 @@ class FinalizarFlashcardsUseCase(
     private val registrarCompletadaUseCase: RegistrarLeccionCompletadaUseCase,
     private val moduloHidromiel: ModuloHidromiel,
     private val idUsuario: String = USUARIO_LOCAL,
+    /** MOD-05: terminar la actividad sin abandonarla cuenta para la racha. */
+    private val moduloCarreraSol: ModuloCarreraSol? = null,
     private val reloj: () -> Long = System::currentTimeMillis
 ) {
     suspend operator fun invoke(temaId: String, pila: PilaFlashcards): Result<ResultadoFlashcards> {
@@ -113,6 +119,7 @@ class FinalizarFlashcardsUseCase(
         repository.guardarResultado(resultado)
         registrarCompletadaUseCase(temaId)
         moduloHidromiel.alFinalizarNivel(NivelFinalizado(idUsuario, temaId, resultado.puntaje, ResultadoNivel.SUPERADO))
+        moduloCarreraSol?.alTerminarActividad(ActividadTerminada(idUsuario, TipoActividad.NIVEL_ROADMAP, abandonada = false, fechaFin = fechaLocal(resultado.fecha)))
         return Result.success(resultado)
     }
 }
@@ -123,10 +130,13 @@ class FinalizarFlashcardsUseCase(
  */
 class RegistrarFlashcardsSinSuperarUseCase(
     private val moduloHidromiel: ModuloHidromiel,
-    private val idUsuario: String = USUARIO_LOCAL
+    private val idUsuario: String = USUARIO_LOCAL,
+    /** MOD-05: terminar la actividad sin abandonarla cuenta para la racha. */
+    private val moduloCarreraSol: ModuloCarreraSol? = null
 ) {
     suspend operator fun invoke(temaId: String, resultado: ResultadoNivel) {
         require(resultado != ResultadoNivel.SUPERADO) { "Para un nivel superado usa FinalizarFlashcardsUseCase" }
         moduloHidromiel.alFinalizarNivel(NivelFinalizado(idUsuario, temaId, 0, resultado))
+        moduloCarreraSol?.alTerminarActividad(ActividadTerminada(idUsuario, TipoActividad.NIVEL_ROADMAP, abandonada = resultado == ResultadoNivel.ABANDONADO, fechaFin = java.time.LocalDate.now()))
     }
 }

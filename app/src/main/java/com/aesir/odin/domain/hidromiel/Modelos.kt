@@ -38,7 +38,32 @@ enum class TipoMovimiento {
     ABANDONO_CONTRARRELOJ,
     ENTRADA_CONTRARRELOJ,
     RECOMPENSA_CONTRARRELOJ,
-    AJUSTE_ADMIN
+    BONO_DIAGNOSTICO,
+    /** Juegos ocultos (easter eggs) de la pantalla de Mundos. */
+    APUESTA_OCULTA,
+    /** CU-13 duelo de enigmas. */
+    APUESTA_DUELO,
+    PREMIO_DUELO,
+    PREMIO_OCULTO,
+    AJUSTE_ADMIN,
+    /** CU-12: apuesta de la consulta a la Völva (RF-164). */
+    APUESTA_VOLVA,
+    /** CU-12: premio o devolución de la consulta a la Völva (RF-173 a RF-175). */
+    PREMIO_VOLVA,
+    /** CU-01: apuesta de una noche de Hasta el Alba (RF-05). */
+    APUESTA_ALBA,
+    /** CU-01: premio neto al volver al banquete o sobrevivir hasta el alba (RF-17). */
+    PREMIO_ALBA,
+    /** CU-02: apuesta de la forja de Brokkr (se descuenta al apostar a Loki). */
+    APUESTA_FORJA,
+    /** CU-02: premio de la forja perfecta (apuesta ×3 menos el diezmo de Odín). */
+    PREMIO_FORJA,
+    /** MOD-05: bono por alcanzar un hito de racha. */
+    BONO_RACHA,
+    /** MOD-05: compra de una ofrenda a Sól. */
+    OFRENDA_SOL,
+    /** CU-07 A3.1: el nivel no se pudo generar y el alumno regresó al roadmap. */
+    DEVOLUCION_ENTRADA
 }
 
 // ---------------------------------------------------------------------------
@@ -55,7 +80,11 @@ data class NivelInfo(
     val idMundo: String,
     val nombre: String,
     val tipo: TipoNivel,
-    val esPrimero: Boolean
+    val esPrimero: Boolean,
+    /** Anillo del árbol (1 y 4 lecciones, 2 minijuegos, 3 retos). */
+    val anillo: Int = 1,
+    /** Tema (lección) al que pertenece el nivel: el diagnóstico reconoce todos los niveles de un tema conocido. */
+    val idTema: String = idNivel
 )
 
 /**
@@ -110,7 +139,40 @@ data class PreguntaFlashResuelta(
 /** [saldoReto]: puntaje acumulado en el reto al abandonarlo; si es negativo se suma a la penalización. */
 data class ContrarrelojAbandonado(val idUsuario: String, val saldoReto: Int = 0)
 
-data class ContrarrelojFinalizado(val idUsuario: String, val aciertos: Int, val fallos: Int = 0)
+/** CU-02: la forja de Brokkr terminó con [resultado]; si fue perfecta se abona el premio (RF-41). */
+data class ForjaFinalizada(
+    val forjaId: String,
+    val apuesta: Int,
+    val resultado: com.aesir.odin.domain.model.EstadoFinalForja
+)
+
+/** CU-02: resultado de cobrar la apuesta de la forja (RF-33). [faltante]: hidromiel que faltó si no se cobró. */
+data class ResultadoApuestaForja(
+    val cobrada: Boolean,
+    val saldoActual: Int,
+    val faltante: Int = 0
+)
+
+/**
+ * CU-11: el reto terminó. [acumulado] es el hidromiel que se juntó durante el
+ * reto, sin bajar de 0 (RF-154); si no se da, se calcula con aciertos y fallos.
+ */
+data class ContrarrelojFinalizado(val idUsuario: String, val aciertos: Int, val fallos: Int = 0, val acumulado: Int? = null)
+
+/** CU-13: el duelo terminó (ganado o perdido) con [sorbosSobrantes] en el cuerno. */
+data class DueloFinalizado(val idUsuario: String, val ganado: Boolean, val sorbosSobrantes: Int)
+
+/** CU-13: respuesta a una apuesta. Reemplaza a ResultadoAcceso porque el duelo no es un nivel. */
+data class ResultadoApuesta(val autorizado: Boolean, val faltante: Int, val motivo: String)
+
+/** CU-12: la consulta a la Völva terminó con [lectura]; el módulo paga lo que corresponda (pasos 12 y 13). */
+data class ConsultaVolvaTerminada(val idUsuario: String, val apuesta: Int, val lectura: com.aesir.odin.domain.model.Lectura)
+
+/** CU-01: la noche terminó con cobro (retirada o alba); el módulo abona [premioNeto] como PREMIO_ALBA. */
+data class NocheAlbaCobrada(val idUsuario: String, val premioNeto: Int, val diezmo: Int)
+
+/** Pago de un modo del Valhalla: premio bruto, diezmo de Odín y lo que se abona. */
+data class PagoValhalla(val bruto: Int, val diezmo: Int, val neto: Int)
 
 // ---------------------------------------------------------------------------
 // Registros

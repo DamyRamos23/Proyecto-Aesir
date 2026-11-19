@@ -1,5 +1,9 @@
 package com.aesir.odin.domain.usecase.crucigrama
 
+import com.aesir.odin.domain.racha.ActividadTerminada
+import com.aesir.odin.domain.racha.ModuloCarreraSol
+import com.aesir.odin.domain.racha.TipoActividad
+import com.aesir.odin.domain.racha.fechaLocal
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.hidromiel.NivelFinalizado
 import com.aesir.odin.domain.hidromiel.ResultadoNivel
@@ -23,6 +27,8 @@ class FinalizarCrucigramaUseCase(
     private val registrarCompletadaUseCase: RegistrarLeccionCompletadaUseCase,
     private val moduloHidromiel: ModuloHidromiel,
     private val idUsuario: String = USUARIO_LOCAL,
+    /** MOD-05: terminar la actividad sin abandonarla cuenta para la racha. */
+    private val moduloCarreraSol: ModuloCarreraSol? = null,
     private val reloj: () -> Long = System::currentTimeMillis
 ) {
     suspend operator fun invoke(crucigrama: Crucigrama, puntaje: Int, errores: Int): ResultadoCrucigrama {
@@ -38,12 +44,11 @@ class FinalizarCrucigramaUseCase(
         moduloHidromiel.alFinalizarNivel(
             NivelFinalizado(idUsuario, crucigrama.temaId, porcentaje(crucigrama, puntaje), ResultadoNivel.SUPERADO)
         )
+        moduloCarreraSol?.alTerminarActividad(ActividadTerminada(idUsuario, TipoActividad.NIVEL_ROADMAP, abandonada = false, fechaFin = fechaLocal(resultado.fecha)))
         return resultado
     }
 
-    /** Puntaje en escala de 0 a 100, que es la que usa el MOD-01 para el bono. */
-    fun porcentaje(crucigrama: Crucigrama, puntaje: Int): Int {
-        val maximo = crucigrama.palabras.size * ActualizarPuntajeUseCase.PUNTOS_POR_ACIERTO
-        return if (maximo == 0) 0 else (puntaje * 100 / maximo).coerceIn(0, 100)
-    }
+    /** El puntaje del crucigrama ya está en la escala de 0 a 100 que usa el MOD-01 (paso 10). */
+    @Suppress("UNUSED_PARAMETER")
+    fun porcentaje(crucigrama: Crucigrama, puntaje: Int): Int = puntaje.coerceIn(0, 100)
 }

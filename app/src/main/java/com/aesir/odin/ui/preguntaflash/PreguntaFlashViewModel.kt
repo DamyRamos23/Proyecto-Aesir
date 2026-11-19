@@ -1,5 +1,6 @@
 package com.aesir.odin.ui.preguntaflash
 
+import com.aesir.odin.domain.sonido.ModuloSonido
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -222,7 +223,10 @@ class PreguntaFlashViewModel(
         contadorJob = viewModelScope.launch {
             while (isActive && _segundosRestantes.value > 0) {
                 delay(UN_SEGUNDO_MS)
-                if (pausadoEn == null) _segundosRestantes.value -= 1
+                if (pausadoEn == null) {
+                    _segundosRestantes.value -= 1
+                    ModuloSonido.compartido?.avisarTiempoRestante(_segundosRestantes.value) // MOD-02, disparador 3
+                }
             }
             if (isActive) onTiempoAgotado()
         }

@@ -1,5 +1,7 @@
 package com.aesir.odin.ui.components.odin
 
+import com.aesir.odin.domain.sonido.ModuloSonido
+import com.aesir.odin.domain.sonido.EventoSonido
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -19,7 +22,7 @@ import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
+import com.aesir.odin.ui.theme.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -282,12 +285,15 @@ fun BotonOdin(
     val textoColor = if (primario) OdinPaleta.Hollin else OdinPaleta.Hueso
     Row(
         modifier = modifier
-            .height(52.dp)
+            .heightIn(min = 52.dp)
             .alpha(if (habilitado) 1f else .38f)
             .clip(FormaFlecha)
             .background(fondo)
             .then(if (!primario) Modifier.border(1.5.dp, metal, FormaFlecha) else Modifier)
-            .clickable(enabled = habilitado, role = Role.Button, onClick = onClick)
+            .clickable(enabled = habilitado, role = Role.Button) {
+                ModuloSonido.avisar(EventoSonido.TOQUE) // MOD-02, Interfaz
+                onClick()
+            }
             .padding(horizontal = 20.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically

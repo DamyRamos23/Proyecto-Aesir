@@ -32,7 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material3.Text
+import com.aesir.odin.ui.theme.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -473,7 +473,6 @@ private fun PanelPregunta(
 ) {
     val forma = RoundedCornerShape(8.dp)
     val respondido = resultado != null
-    val correctas = resultado?.opcionesCorrectas.orEmpty()
 
     Box(Modifier.padding(top = 14.dp)) {
         Column(
@@ -507,12 +506,11 @@ private fun PanelPregunta(
             DivisorCuadro(Modifier.padding(vertical = 12.dp))
 
             permutacion.forEachIndexed { posVisual, original ->
+                // RF-87 y RN-34: solo se marca lo que eligió el alumno; nunca la correcta que no eligió
                 val estado = when {
-                    !respondido -> EstadoOpcion.NEUTRA
-                    original in correctas && original in seleccionadas -> EstadoOpcion.CORRECTA
-                    original in correctas -> EstadoOpcion.FALTANTE
-                    original in seleccionadas -> EstadoOpcion.INCORRECTA
-                    else -> EstadoOpcion.NEUTRA
+                    !respondido || original !in seleccionadas -> EstadoOpcion.NEUTRA
+                    resultado?.estado == EstadoPreguntaFlash.CORRECTA -> EstadoOpcion.CORRECTA
+                    else -> EstadoOpcion.INCORRECTA
                 }
                 OpcionFlash(
                     letra = ('A' + posVisual).toString(),

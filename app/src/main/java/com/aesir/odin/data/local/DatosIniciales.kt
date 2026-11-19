@@ -10,9 +10,24 @@ import com.aesir.odin.data.local.entity.MundoEntity
 import com.aesir.odin.data.local.entity.TemaEntity
 
 /**
- * Contenido inicial de la base de datos con 4 mundos sobre Ingeniería de Software.
+ * Contenido inicial de la base de datos con 4 mundos sobre Ingeniería de
+ * Software. Cada mundo tiene 10 temas (SRS v3.2): los temas 1 a 4 van en el
+ * anillo interior del roadmap y los temas 5 a 10 (ContenidoTemas) en el
+ * cuarto anillo.
  */
 object DatosIniciales {
+
+    /** Id del tema (lección) número [numero] (1 a 10) del mundo [mundoId]. */
+    fun idTema(mundoId: String, numero: Int): String {
+        val prefijo = when (mundoId) {
+            "mundo_uml" -> "uml"
+            "mundo_casos_uso" -> "cu"
+            "mundo_ciclo_vida" -> "cv"
+            "mundo_modelos_trad" -> "mt"
+            else -> mundoId.removePrefix("mundo_")
+        }
+        return "tema_${prefijo}_$numero"
+    }
 
     val mundos = listOf(
         MundoEntity("mundo_uml", "UML", "Lenguaje de modelado visual para especificar y documentar sistemas de software.", 1, desbloqueado = true),
@@ -21,7 +36,7 @@ object DatosIniciales {
         MundoEntity("mundo_modelos_trad", "Modelos Tradicionales", "Enfoques clásicos y estructurados para organizar el proceso de desarrollo de software.", 4, desbloqueado = false)
     )
 
-    private val temasNormales = listOf(
+    private val temasInteriores = listOf(
         // Mundo 1 - UML
         TemaEntity("tema_uml_1", "mundo_uml", "Diagramas de Clases", "Estructura estática del sistema: clases, atributos y métodos.", 1, desbloqueado = true, introduccionVista = false, completado = false),
         TemaEntity("tema_uml_2", "mundo_uml", "Diagramas de Secuencia", "Interacción dinámica: intercambio de mensajes en el tiempo.", 2, desbloqueado = false, introduccionVista = false, completado = false),
@@ -47,7 +62,7 @@ object DatosIniciales {
         TemaEntity("tema_mt_4", "mundo_modelos_trad", "Modelo Incremental", "Construcción por partes o incrementos funcionales.", 4, desbloqueado = false, introduccionVista = false, completado = false)
     )
 
-    private val leccionesNormales = listOf(
+    private val leccionesInteriores = listOf(
         // Mundo 1 - UML
         LeccionEntity("leccion_uml_1", "tema_uml_1", "Fundamentos de Diagramas de Clases", 
             "Los Diagramas de Clases son el pilar del modelado orientado a objetos en UML. Representan la estructura estática del sistema mostrando sus clases, atributos, operaciones (métodos) y las relaciones entre los objetos.\n\nSon esenciales para traducir los requisitos al código fuente real, ya que cada clase en el diagrama suele corresponder a una clase en el código.", 1, completada = false),
@@ -89,7 +104,7 @@ object DatosIniciales {
             "El Modelo Incremental no intenta construir el sistema entero de una vez. En su lugar, el sistema se divide en incrementos (módulos funcionales), y cada uno se desarrolla, prueba y entrega al cliente.\n\nPermite al cliente obtener valor rápidamente con los primeros incrementos, aunque requiere una buena arquitectura base que soporte las futuras adiciones.", 1, completada = false)
     )
 
-    private val ejerciciosNormales = listOf(
+    private val ejerciciosInteriores = listOf(
         // Mundo 1 - Leccion 1
         EjercicioEntity("ej_uml_1_1", "leccion_uml_1", "¿Qué tipo de diagrama UML muestra la estructura estática del sistema?", listOf("Diagrama de Secuencia", "Diagrama de Clases", "Diagrama de Actividades", "Diagrama de Casos de Uso"), listOf(1), 1),
         EjercicioEntity("ej_uml_1_2", "leccion_uml_1", "Selecciona los elementos principales que contiene una clase en un diagrama UML:", listOf("Atributos", "Actores", "Operaciones (Métodos)", "Nodos de hardware"), listOf(0, 2), 2),
@@ -204,9 +219,47 @@ object DatosIniciales {
     )
 
     // -----------------------------------------------------------------------
+    // Cuarto anillo: temas 5 a 10 de cada mundo, una lección por tema.
+    // -----------------------------------------------------------------------
+
+    private val temasCuarto = ContenidoTemas.temas.map { t ->
+        TemaEntity(
+            id = t.id,
+            mundoId = t.mundoId,
+            nombre = t.nombre,
+            descripcion = t.descripcion,
+            orden = t.orden,
+            desbloqueado = false,
+            introduccionVista = false,
+            completado = false,
+            tipo = "NORMAL",
+            actividad = "LECCION",
+            anillo = 4
+        )
+    }
+
+    private val leccionesCuarto = ContenidoTemas.temas.map { t ->
+        LeccionEntity("leccion_${t.sufijo}", t.id, t.tituloLeccion, t.introduccion, 1, completada = false)
+    }
+
+    private val ejerciciosCuarto = ContenidoTemas.temas.flatMap { t ->
+        t.ejercicios.mapIndexed { i, ej ->
+            val id = "ej_${t.sufijo}_${i + 1}"
+            val mezclada = ContenidoTemas.mezclar(id, ej)
+            EjercicioEntity(id, "leccion_${t.sufijo}", mezclada.enunciado, mezclada.opciones, mezclada.correctas, i + 1)
+        }
+    }
+
+    /** Los 10 temas (lecciones) de cada mundo. */
+    private val temasNormales = temasInteriores + temasCuarto
+    private val leccionesNormales = leccionesInteriores + leccionesCuarto
+    private val ejerciciosNormales = ejerciciosInteriores + ejerciciosCuarto
+
+    // -----------------------------------------------------------------------
     // Ragnarök (MOD-01): un nivel de fin de mundo por mundo. Va oculto en el
-    // centro del escudo, cuesta 3C y se abre al superar todos los temas.
-    // Su lección mezcla ejercicios de todos los temas del mundo.
+    // centro del escudo, cuesta 3C y se abre al superar los 18 niveles.
+    // Su lección mezcla ejercicios de los 10 temas del mundo (el reto en sí
+    // elige 2 preguntas al azar de cada tema en cada intento, CU-08).
     // -----------------------------------------------------------------------
 
     /** Ejercicios (por su orden dentro de cada lección) que se copian al Ragnarök. */
@@ -233,8 +286,8 @@ object DatosIniciales {
             temaId = "ragnarok_${mundo.id}",
             titulo = "El Ocaso de ${mundo.nombre}",
             introduccion = "Los cuernos suenan y el cielo se parte: llegó el Ragnarök de ${mundo.nombre}. " +
-                "Esta batalla reúne preguntas de todos los temas del mundo.\n\n" +
-                "Si la superas, se abrirá el siguiente mundo. Con tres errores la batalla termina y la entrada se pierde.",
+                "Esta batalla reúne dos preguntas de cada uno de los diez temas del mundo.\n\n" +
+                "Necesitas 70 puntos para vencer y abrir el siguiente mundo; si no los alcanzas, la entrada se pierde.",
             orden = 1,
             completada = false
         )
@@ -252,19 +305,43 @@ object DatosIniciales {
     val lecciones = leccionesNormales + leccionesRagnarok
     val ejercicios = ejerciciosNormales + ejerciciosRagnarok
 
+    /** Base de datos nueva: siembra los mundos y todo el contenido. */
     fun insertar(db: SupportSQLiteDatabase) {
+        sincronizar(db)
+    }
+
+    /**
+     * Pone la estructura del roadmap y el contenido fijo al día sin borrar el
+     * progreso. Se llama en cada apertura de la base de datos:
+     * - Mundos, temas (niveles), lecciones y retos se insertan si faltan y,
+     *   si ya existen, solo se actualizan sus datos de contenido y su lugar en
+     *   el árbol (nombre, orden, anillo, actividad, tema). No se tocan
+     *   desbloqueado, completado, introducción vista ni conocido.
+     * - Ejercicios, conceptos, piezas de los retos y preguntas diagnósticas son
+     *   contenido puro: se reescriben.
+     * - Se borran los niveles que ya no existen en el árbol (las 6 piedras
+     *   «por definir» del antiguo tercer anillo).
+     */
+    fun sincronizar(db: SupportSQLiteDatabase) {
         val converters = Converters()
         mundos.forEach { mundo ->
-            db.insert("mundos", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
+            db.insert("mundos", SQLiteDatabase.CONFLICT_IGNORE, ContentValues().apply {
                 put("id", mundo.id)
                 put("nombre", mundo.nombre)
                 put("descripcion", mundo.descripcion)
                 put("orden", mundo.orden)
                 put("desbloqueado", mundo.desbloqueado)
             })
+            db.update("mundos", SQLiteDatabase.CONFLICT_IGNORE, ContentValues().apply {
+                put("nombre", mundo.nombre)
+                put("descripcion", mundo.descripcion)
+                put("orden", mundo.orden)
+            }, "id = ?", arrayOf(mundo.id))
         }
+
+        db.execSQL("DELETE FROM temas WHERE actividad = 'POR_DEFINIR'")
         temas.forEach { tema ->
-            db.insert("temas", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
+            db.insert("temas", SQLiteDatabase.CONFLICT_IGNORE, ContentValues().apply {
                 put("id", tema.id)
                 put("mundoId", tema.mundoId)
                 put("nombre", tema.nombre)
@@ -277,10 +354,21 @@ object DatosIniciales {
                 put("actividad", tema.actividad)
                 put("anillo", tema.anillo)
                 put("conocido", tema.conocido)
+                put("temaBaseId", tema.temaBaseId)
             })
+            db.update("temas", SQLiteDatabase.CONFLICT_IGNORE, ContentValues().apply {
+                put("mundoId", tema.mundoId)
+                put("nombre", tema.nombre)
+                put("descripcion", tema.descripcion)
+                put("orden", tema.orden)
+                put("tipo", tema.tipo)
+                put("actividad", tema.actividad)
+                put("anillo", tema.anillo)
+                put("temaBaseId", tema.temaBaseId)
+            }, "id = ?", arrayOf(tema.id))
         }
         lecciones.forEach { leccion ->
-            db.insert("lecciones", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
+            db.insert("lecciones", SQLiteDatabase.CONFLICT_IGNORE, ContentValues().apply {
                 put("id", leccion.id)
                 put("temaId", leccion.temaId)
                 put("titulo", leccion.titulo)
@@ -288,6 +376,12 @@ object DatosIniciales {
                 put("orden", leccion.orden)
                 put("completada", leccion.completada)
             })
+            db.update("lecciones", SQLiteDatabase.CONFLICT_IGNORE, ContentValues().apply {
+                put("temaId", leccion.temaId)
+                put("titulo", leccion.titulo)
+                put("introduccion", leccion.introduccion)
+                put("orden", leccion.orden)
+            }, "id = ?", arrayOf(leccion.id))
         }
         ejercicios.forEach { ejercicio ->
             db.insert("ejercicios", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
@@ -307,7 +401,7 @@ object DatosIniciales {
                 put("descripcion", concepto.descripcion)
             })
         }
-        // CU-04 Resolver memorama de conceptos
+        // Banco anterior del memorama por mundo (el CU-04 ahora toma los pares del tema del nivel)
         DatosMemorama.pares.forEach { par ->
             db.insert("pares_concepto", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
                 put("id", par.id)
@@ -318,7 +412,7 @@ object DatosIniciales {
         }
         // CU-09 Resolver reto de arrastrar y soltar
         DatosArrastrar.retos.forEach { reto ->
-            db.insert("retos_arrastrar", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
+            db.insert("retos_arrastrar", SQLiteDatabase.CONFLICT_IGNORE, ContentValues().apply {
                 put("id", reto.id)
                 put("temaId", reto.temaId)
                 put("modalidad", reto.modalidad)
@@ -326,6 +420,12 @@ object DatosIniciales {
                 put("imagenDiagrama", reto.imagenDiagrama)
                 put("completado", reto.completado)
             })
+            db.update("retos_arrastrar", SQLiteDatabase.CONFLICT_IGNORE, ContentValues().apply {
+                put("temaId", reto.temaId)
+                put("modalidad", reto.modalidad)
+                put("instrucciones", reto.instrucciones)
+                put("imagenDiagrama", reto.imagenDiagrama)
+            }, "id = ?", arrayOf(reto.id))
         }
         DatosArrastrar.elementos.forEach { e ->
             db.insert("elementos_arrastrables", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
@@ -345,7 +445,7 @@ object DatosIniciales {
                 put("y", p.y)
             })
         }
-        // CU-10 Realizar evaluación diagnóstico
+        // CU-10 Realizar evaluación diagnóstica
         DatosDiagnostico.preguntas.forEach { pregunta ->
             db.insert("preguntas_diagnostico", SQLiteDatabase.CONFLICT_REPLACE, ContentValues().apply {
                 put("id", pregunta.id)

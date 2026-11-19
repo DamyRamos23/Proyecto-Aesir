@@ -12,9 +12,9 @@ class SinTemasEstudiadosException : Exception("No hay temas estudiados")
 class SinPreguntasDisponiblesException : Exception("No hay preguntas disponibles")
 
 /**
- * CU-11, pasos 1 y 2: arma el reto con preguntas del banco de Pregunta Flash,
- * solo de temas ya estudiados (completados) y sin repetir preguntas. En modo
- * admin se encienden todas las runas: entran todas las lecciones.
+ * CU-11, paso 5 (RF-149): arma el reto con hasta 20 preguntas del banco de
+ * Pregunta Flash, solo de temas cuya lección fue superada y sin repetir
+ * preguntas. En modo admin se encienden todas las runas: entran todas las lecciones.
  */
 class ArmarRetoContrarrelojUseCase(
     private val roadmapRepository: RoadmapRepository,
@@ -22,7 +22,7 @@ class ArmarRetoContrarrelojUseCase(
 ) {
     suspend operator fun invoke(): Result<RetoContrareloj> {
         val temas = roadmapRepository.obtenerTemas()
-        val temasEstudiados = (if (ModoAdmin.estaActivo) temas.filter { !it.esRagnarok && !it.esMinijuego } else temas.filter { it.completado })
+        val temasEstudiados = (if (ModoAdmin.estaActivo) temas.filter { it.esLeccion } else temas.filter { it.esLeccion && it.completado })
             .map { it.id }
         if (temasEstudiados.isEmpty()) return Result.failure(SinTemasEstudiadosException())
 
@@ -33,7 +33,7 @@ class ArmarRetoContrarrelojUseCase(
     }
 
     companion object {
-        /** Todo el banco de los temas estudiados; si se acaban antes del tiempo, se vuelven a barajar. */
-        const val CANTIDAD_PREGUNTAS = 1000
+        /** RF-149: hasta 20 preguntas; si se responden todas antes del tiempo, el reto termina (A10.1). */
+        const val CANTIDAD_PREGUNTAS = RetoContrareloj.MAX_PREGUNTAS
     }
 }

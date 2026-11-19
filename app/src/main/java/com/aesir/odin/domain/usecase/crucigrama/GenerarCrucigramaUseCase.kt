@@ -10,16 +10,16 @@ import java.util.UUID
 import kotlin.random.Random
 
 /**
- * Genera un crucigrama con conceptos de los temas incluidos (RF-47).
+ * Genera un crucigrama con 6 a 10 conceptos del tema del nivel (RF-93).
  *
- * 1. Pide el banco de conceptos al repositorio.
- * 2. Elige [CANTIDAD_PALABRAS] conceptos al azar (seleccionarAleatorios).
+ * 1. Pide el banco de conceptos del tema al repositorio.
+ * 2. Elige hasta [CANTIDAD_PALABRAS] conceptos al azar (seleccionarAleatorios).
  * 3. Los acomoda en la cuadrícula cruzándolos por letras en común
  *    (acomodarPalabras).
  *
  * Si no logra acomodarlos todos, vuelve a intentar con otra selección. Si el
- * banco no alcanza o no se pudo armar ni el mínimo, regresa
- * Result.failure (flujo alternativo A2.1).
+ * banco no alcanza los [MINIMO_PALABRAS] o no se pudo armar ese mínimo,
+ * regresa Result.failure (flujo alternativo A3.1, RF-103).
  */
 class GenerarCrucigramaUseCase(
     private val repository: CrucigramaRepository,
@@ -32,15 +32,16 @@ class GenerarCrucigramaUseCase(
             .map { it.copy(respuesta = normalizarPalabra(it.respuesta)) }
             .filter { it.respuesta.length in LONGITUD_MINIMA..MAX_LADO }
             .distinctBy { it.respuesta }
-        check(banco.size >= CANTIDAD_PALABRAS) {
-            "No hay suficientes conceptos para armar el crucigrama (${banco.size} de $CANTIDAD_PALABRAS)."
+        check(banco.size >= MINIMO_PALABRAS) {
+            "No hay suficientes conceptos para armar el crucigrama (${banco.size} de $MINIMO_PALABRAS)."
         }
 
+        val objetivo = minOf(CANTIDAD_PALABRAS, banco.size)
         var mejor: List<PalabraCrucigrama> = emptyList()
         for (intento in 1..INTENTOS) {
             val palabras = acomodarPalabras(seleccionarAleatorios(banco))
             if (palabras.size > mejor.size) mejor = palabras
-            if (mejor.size == CANTIDAD_PALABRAS) break
+            if (mejor.size == objetivo) break
         }
         check(mejor.size >= MINIMO_PALABRAS) { "No se pudieron acomodar los conceptos en la cuadrícula." }
 
@@ -158,11 +159,13 @@ class GenerarCrucigramaUseCase(
     }
 
     companion object {
-        const val CANTIDAD_PALABRAS = 6
-        const val MINIMO_PALABRAS = 4
+        /** Palabras que se intentan acomodar (RF-93: de 6 a 10). */
+        const val CANTIDAD_PALABRAS = 8
+        /** Mínimo de palabras de un crucigrama (RF-93) y de conceptos del tema (precondición). */
+        const val MINIMO_PALABRAS = 6
         const val LONGITUD_MINIMA = 3
         /** Lado máximo de la cuadrícula, para que quepa en la pantalla del teléfono. */
         const val MAX_LADO = 12
-        private const val INTENTOS = 40
+        private const val INTENTOS = 120
     }
 }

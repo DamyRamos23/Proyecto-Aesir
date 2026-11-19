@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fondo del ícono adaptativo: el cielo nocturno de la moneda. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient android:type="radial" android:gradientRadius="80%p" android:centerX="0.5" android:centerY="0.5"
+        android:startColor="#FF2A2215" android:endColor="#FF0D0C0B" />
+</shape>

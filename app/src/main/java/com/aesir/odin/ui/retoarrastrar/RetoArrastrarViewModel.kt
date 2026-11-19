@@ -1,5 +1,7 @@
 package com.aesir.odin.ui.retoarrastrar
 
+import com.aesir.odin.domain.sonido.ModuloSonido
+import com.aesir.odin.domain.sonido.EventoSonido
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -144,6 +146,7 @@ class RetoArrastrarViewModel(
             ocupante?.let { if (origen != null) actuales[it] = origen else actuales.remove(it) }
         }
         _colocaciones.value = actuales
+        ModuloSonido.avisar(EventoSonido.SOLTAR_PIEZA) // MOD-02
         // Lo que se movió deja de estar señalado
         _elementosIncorrectos.value = _elementosIncorrectos.value - setOfNotNull(elementoId, ocupante)
     }
@@ -169,10 +172,9 @@ class RetoArrastrarViewModel(
                     val textos = reto.elementos.filter { it.id in incorrectos }.map { it.texto }
                     val limiteAlcanzado = registrarErrorUseCase(reto.id, textos, intentos)
                     if (limiteAlcanzado) {
-                        // A7.2: termina sin puntaje y se muestra la solución
+                        // A8.2: termina sin puntaje y sin mostrar la solución (RF-125, RN-34)
                         _puntaje.value = 0
                         finalizar(reto, aprobado = false)
-                        _colocaciones.value = reto.solucion
                     }
                 }
             } finally {

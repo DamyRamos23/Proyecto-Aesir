@@ -24,7 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
+import com.aesir.odin.ui.theme.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -86,14 +86,21 @@ fun RetoContrarrelojScreen(
     val seleccionadas by viewModel.seleccionadas.collectAsState()
     val tiempo by viewModel.tiempoRestanteSeg.collectAsState()
     val puntaje by viewModel.puntaje.collectAsState()
+    val hidromielReto by viewModel.hidromiel.collectAsState()
     val resultado by viewModel.resultado.collectAsState()
     val saldo by viewModel.saldo.collectAsState()
+    val restantesHoy by viewModel.restantesHoy.collectAsState()
 
     val estilo = EstilosMundo.porOrden(1)
     var confirmandoSalida by remember { mutableStateOf(false) }
 
     // Atrás durante el reto equivale a querer abandonarlo: pide confirmación.
-    BackHandler(enabled = estado == Estado.EnCurso) { confirmandoSalida = true }
+    // E7.1: al pedir salir, el contador se detiene mientras se confirma.
+    val pedirSalida = {
+        viewModel.pausarParaConfirmar()
+        confirmandoSalida = true
+    }
+    BackHandler(enabled = estado == Estado.EnCurso) { pedirSalida() }
 
     FondoMundo(estilo = estilo, modifier = modifier, alturaPaisaje = 300.dp, paisajeInferior = true) {
         when (val e = estado) {
@@ -105,6 +112,7 @@ fun RetoContrarrelojScreen(
                 saldo = saldo,
                 costo = viewModel.costoEntrada,
                 duracionSegundos = viewModel.duracionSegundos,
+                restantesHoy = restantesHoy,
                 aviso = e.aviso,
                 onComenzar = viewModel::pagarYComenzar,
                 onSalir = onSalir
@@ -119,9 +127,10 @@ fun RetoContrarrelojScreen(
                     tiempoRestanteSeg = tiempo,
                     duracionSegundos = viewModel.duracionSegundos,
                     puntaje = puntaje,
+                    hidromiel = hidromielReto,
                     onSeleccionar = viewModel::seleccionarOpcion,
                     onConfirmar = viewModel::confirmarRespuesta,
-                    onAbandonar = { confirmandoSalida = true }
+                    onAbandonar = pedirSalida
                 )
             }
 
@@ -148,7 +157,10 @@ fun RetoContrarrelojScreen(
                     confirmandoSalida = false
                     viewModel.abandonarReto()
                 },
-                onSeguir = { confirmandoSalida = false }
+                onSeguir = {
+                    confirmandoSalida = false
+                    viewModel.reanudarTrasCancelar()
+                }
             )
         }
     }
@@ -163,6 +175,7 @@ private fun ContenidoReto(
     tiempoRestanteSeg: Int,
     duracionSegundos: Int,
     puntaje: Int,
+    hidromiel: Int,
     onSeleccionar: (Int) -> Unit,
     onConfirmar: () -> Unit,
     onAbandonar: () -> Unit
@@ -197,6 +210,8 @@ private fun ContenidoReto(
                 Column(Modifier.weight(1f)) {
                     EtiquetaPequena("PREGUNTA")
                     Text("$numeroPregunta", style = estiloTitulo(24.sp))
+                    EtiquetaPequena("PUNTOS")
+                    Text("$puntaje", style = estiloTitulo(18.sp))
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     EtiquetaPequena("TIEMPO RESTANTE")
@@ -209,7 +224,7 @@ private fun ContenidoReto(
                 }
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.End) {
                     EtiquetaPequena("HIDROMIEL")
-                    Text(if (puntaje >= 0) "+$puntaje" else "−${-puntaje}", style = estiloTitulo(24.sp, color = estilo.acento))
+                    Text("+$hidromiel", style = estiloTitulo(24.sp, color = estilo.acento))
                 }
             }
             Spacer(Modifier.height(8.dp))
@@ -387,14 +402,10 @@ private fun ResumenReto(estilo: EstiloMundo, resultado: ResultadoContrarreloj, o
                         textAlign = TextAlign.Center
                     )
                     DivisorOrnamental(estilo.metal, estilo.acento, Modifier.padding(vertical = 12.dp))
-                    val perdio = resultado.abandonado || resultado.puntaje < 0
+                    val perdio = resultado.abandonado
                     EtiquetaPequena(if (perdio) "HIDROMIEL PERDIDO" else "HIDROMIEL GANADO")
                     Text(
-                        when {
-                            resultado.abandonado -> "−${resultado.penalizacion}"
-                            resultado.puntaje < 0 -> "−${-resultado.puntaje}"
-                            else -> "+${resultado.puntaje}"
-                        },
+                        if (resultado.abandonado) "−${resultado.penalizacion}" else "+${resultado.hidromiel}",
                         style = estiloTitulo(56.sp, color = Color(0xFFFFF6E0), brillo = estilo.acento)
                     )
                     Spacer(Modifier.height(8.dp))
@@ -407,8 +418,11 @@ private fun ResumenReto(estilo: EstiloMundo, resultado: ResultadoContrarreloj, o
                             textAlign = TextAlign.Center
                         )
                     } else {
-                        Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+                        // RF-157: puntaje, aciertos, errores, respondidas e hidromiel
+                        Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                            DatoResumen("PUNTOS", resultado.puntaje, estilo)
                             DatoResumen("ACIERTOS", resultado.aciertos, estilo)
+                            DatoResumen("ERRORES", resultado.respondidas - resultado.aciertos, estilo)
                             DatoResumen("RESPONDIDAS", resultado.respondidas, estilo)
                         }
                     }
@@ -439,11 +453,14 @@ private fun PreparacionReto(
     saldo: Int,
     costo: Int,
     duracionSegundos: Int,
+    restantesHoy: Int?,
     aviso: String?,
     onComenzar: () -> Unit,
     onSalir: () -> Unit
 ) {
-    val alcanza = saldo >= costo
+    // A2.1: con los 3 retos del día jugados no se puede iniciar otro (en modo admin la entrada es gratis)
+    val sinRetosHoy = costo > 0 && restantesHoy == 0
+    val alcanza = saldo >= costo && !sinRetosHoy
     Column(Modifier.fillMaxHeight().fillMaxWidth().padding(horizontal = 14.dp, vertical = 16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             BotonVolver("Volver", onClick = onSalir, modifier = Modifier.weight(1f))
@@ -459,12 +476,19 @@ private fun PreparacionReto(
                     Spacer(Modifier.height(10.dp))
                     Text("Reto contrarreloj", style = estiloTitulo(24.sp), textAlign = TextAlign.Center)
                     DivisorOrnamental(estilo.metal, estilo.acento, Modifier.padding(vertical = 12.dp))
-                    ReglaReto("Tienes ${formatearTiempo(duracionSegundos)} para responder preguntas de los temas que ya estudiaste.")
-                    ReglaReto("Cada respuesta correcta te da +${RetoContrareloj.PUNTOS_POR_ACIERTO} de hidromiel al terminar.")
-                    ReglaReto("Cada respuesta incorrecta te quita ${PoliticaCosto.CONTRARRELOJ_FALLO} de hidromiel.")
+                    ReglaReto("Tienes ${formatearTiempo(duracionSegundos)} para responder hasta ${RetoContrareloj.MAX_PREGUNTAS} preguntas de los temas que ya superaste.")
+                    ReglaReto("Cada acierto suma ${RetoContrareloj.PUNTOS_POR_ACIERTO} puntos y ${PoliticaCosto.CONTRARRELOJ_CORRECTA} de hidromiel; cada error resta ${RetoContrareloj.PUNTOS_POR_ERROR} puntos y ${PoliticaCosto.CONTRARRELOJ_FALLO} de hidromiel, sin bajar de 0.")
+                    ReglaReto(
+                        "El hidromiel acumulado se paga al terminar. Puedes jugar hasta ${PoliticaCosto.MAX_CONTRARRELOJ_DIA} retos por día" +
+                            (restantesHoy?.let { " (te quedan $it hoy)." } ?: ".")
+                    )
                     ReglaReto(if (costo == 0) "Modo admin: entrar es gratis." else "Entrar cuesta $costo de hidromiel.")
-                    ReglaReto("Si abandonas pierdes lo ganado y se restan ${AbandonarRetoContrarrelojUseCase.PENALIZACION} de hidromiel; si ibas en negativo, eso también se resta.")
-                    val nota = aviso ?: if (!alcanza) "Te faltan ${costo - saldo} de hidromiel para entrar." else null
+                    ReglaReto("Si abandonas pierdes lo acumulado y se restan ${AbandonarRetoContrarrelojUseCase.PENALIZACION} de hidromiel.")
+                    val nota = aviso ?: when {
+                        sinRetosHoy -> "Ya jugaste los ${PoliticaCosto.MAX_CONTRARRELOJ_DIA} retos de hoy. Podrás volver a jugar mañana."
+                        saldo < costo -> "Te faltan ${costo - saldo} de hidromiel para entrar."
+                        else -> null
+                    }
                     if (nota != null) {
                         Spacer(Modifier.height(8.dp))
                         Text(
@@ -541,8 +565,8 @@ private fun DialogoAbandonar(estilo: EstiloMundo, onConfirmar: () -> Unit, onSeg
         title = { Text("¿Abandonar el reto?", fontFamily = FuenteTitulo) },
         text = {
             Text(
-                "Si abandonas, pierdes el hidromiel ganado en el reto y se restan " +
-                    "${AbandonarRetoContrarrelojUseCase.PENALIZACION} de hidromiel. El tiempo sigue corriendo mientras decides.",
+                "Si abandonas, pierdes el puntaje y el hidromiel acumulados en el reto y se restan " +
+                    "${AbandonarRetoContrarrelojUseCase.PENALIZACION} de hidromiel. El tiempo está detenido mientras decides.",
                 fontFamily = FuenteTexto
             )
         },

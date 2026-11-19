@@ -1,5 +1,9 @@
 package com.aesir.odin.domain.usecase.ragnarok
 
+import com.aesir.odin.domain.racha.ActividadTerminada
+import com.aesir.odin.domain.racha.ModuloCarreraSol
+import com.aesir.odin.domain.racha.TipoActividad
+import com.aesir.odin.domain.racha.fechaLocal
 import com.aesir.odin.domain.hidromiel.EstadoNivel
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.hidromiel.NivelFinalizado
@@ -29,11 +33,12 @@ import kotlin.random.Random
  *
  * - A2.1: si el MOD-01 dice que el Ragnarök sigue bloqueado, regresa los
  *   temas que faltan por completar (RF-54, RF-55).
- * - Arma el reto con [ReglasReto.PREGUNTAS] preguntas al azar que cubren
- *   todos los temas del mundo (RF-56): primero una por tema y el resto al
- *   azar entre todas las demás.
+ * - Arma el reto con [ReglasReto.PREGUNTAS] preguntas al azar:
+ *   [ReglasReto.PREGUNTAS_POR_TEMA] de cada uno de los 10 temas del mundo
+ *   (RF-106). Si un tema tuviera menos, el resto se completa al azar con
+ *   las de los demás temas.
  * - [excluir] son preguntas de un intento anterior; se prefieren otras para
- *   que el reintento tenga un nuevo conjunto de preguntas (RF-64).
+ *   que el reintento tenga un nuevo conjunto de preguntas (RF-114).
  */
 class ObtenerRetoFinMundoUseCase(
     private val roadmapRepository: RoadmapRepository,
@@ -45,7 +50,7 @@ class ObtenerRetoFinMundoUseCase(
     suspend operator fun invoke(mundoId: String, excluir: Set<String> = emptySet()): DisponibilidadReto {
         val temas = roadmapRepository.obtenerTemasPorMundo(mundoId)
         val ragnarok = temas.firstOrNull { it.esRagnarok } ?: return DisponibilidadReto.SinPreguntas
-        val temasNormales = temas.filter { !it.esRagnarok && !it.esMinijuego }.sortedBy { it.orden }
+        val temasNormales = temas.filter { it.esLeccion }.sortedBy { it.orden }
 
         val estados = moduloHidromiel.obtenerEstadoRoadmap(idUsuario, mundoId).associateBy { it.idNivel }
         if (estados[ragnarok.id]?.estado == EstadoNivel.BLOQUEADO) {
@@ -72,9 +77,11 @@ class ObtenerRetoFinMundoUseCase(
             val ordenadas = mezcla.filter { it.id !in excluir } + mezcla.filter { it.id in excluir }
             if (ordenadas.isEmpty()) null else tema to ordenadas
         }
-        val elegidas = ordenadasPorTema.map { it.first to it.second.first() }.toMutableList()
+        val elegidas = ordenadasPorTema
+            .flatMap { (tema, ejercicios) -> ejercicios.take(ReglasReto.PREGUNTAS_POR_TEMA).map { tema to it } }
+            .toMutableList()
         val restoMezclado = ordenadasPorTema
-            .flatMap { (tema, ejercicios) -> ejercicios.drop(1).map { tema to it } }
+            .flatMap { (tema, ejercicios) -> ejercicios.drop(ReglasReto.PREGUNTAS_POR_TEMA).map { tema to it } }
             .shuffled(random)
         val resto = restoMezclado.filter { it.second.id !in excluir } + restoMezclado.filter { it.second.id in excluir }
         elegidas += resto.take((ReglasReto.PREGUNTAS - elegidas.size).coerceAtLeast(0))
@@ -139,6 +146,8 @@ class FinalizarRetoFinMundoUseCase(
     private val roadmapRepository: RoadmapRepository,
     private val moduloHidromiel: ModuloHidromiel,
     private val idUsuario: String = USUARIO_LOCAL,
+    /** MOD-05: terminar la actividad sin abandonarla cuenta para la racha. */
+    private val moduloCarreraSol: ModuloCarreraSol? = null,
     private val reloj: () -> Long = System::currentTimeMillis
 ) {
     suspend operator fun invoke(reto: RetoFinMundo, respuestas: List<Pair<PreguntaReto, EstadoRespuesta>>): ResultadoRetoFinMundo {
@@ -163,6 +172,8 @@ class FinalizarRetoFinMundoUseCase(
         moduloHidromiel.alFinalizarNivel(
             NivelFinalizado(idUsuario, reto.ragnarokId, puntaje, if (superado) ResultadoNivel.SUPERADO else ResultadoNivel.NO_SUPERADO)
         )
+
+        moduloCarreraSol?.alTerminarActividad(ActividadTerminada(idUsuario, TipoActividad.NIVEL_ROADMAP, abandonada = false, fechaFin = fechaLocal(fecha)))
 
         var siguiente: Mundo? = null
         var ultimo = false

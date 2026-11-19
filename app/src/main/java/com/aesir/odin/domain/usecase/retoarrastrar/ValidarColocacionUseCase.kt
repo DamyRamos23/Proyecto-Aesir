@@ -1,5 +1,7 @@
 package com.aesir.odin.domain.usecase.retoarrastrar
 
+import com.aesir.odin.domain.sonido.EventoSonido
+import com.aesir.odin.domain.sonido.ModuloSonido
 import com.aesir.odin.domain.model.RetoArrastrar
 
 /**
@@ -10,8 +12,11 @@ import com.aesir.odin.domain.model.RetoArrastrar
  * @param colocaciones elementoId → posicionId.
  */
 class ValidarColocacionUseCase {
-    operator fun invoke(reto: RetoArrastrar, colocaciones: Map<String, String>): List<String> =
-        reto.elementos
+    operator fun invoke(reto: RetoArrastrar, colocaciones: Map<String, String>): List<String> {
+        val incorrectos = reto.elementos
             .filter { colocaciones[it.id] != it.posicionCorrectaId }
             .map { it.id }
+        ModuloSonido.avisar(if (incorrectos.isEmpty()) EventoSonido.ACIERTO else EventoSonido.ERROR) // MOD-02
+        return incorrectos
+    }
 }

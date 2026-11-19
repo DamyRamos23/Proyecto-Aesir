@@ -38,7 +38,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
+import com.aesir.odin.ui.theme.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -309,7 +309,8 @@ fun RoadmapScreen(
                     val acceso = accesos[tema.id]
                     PanelTema(
                         tema = tema,
-                        total = temas.count { !it.esMinijuego },
+                        total = temas.count { it.esLeccion },
+                        temaBase = temas.firstOrNull { it.id == tema.temaBaseId },
                         acceso = acceso,
                         saldo = saldo,
                         estilo = estilo,
@@ -354,7 +355,6 @@ private fun runaDe(tema: Tema, estilo: EstiloMundo): String = when (tema.activid
     Actividad.MEMORAMA -> estilo.runas[5]
     Actividad.FLASHCARDS -> estilo.runas[6]
     Actividad.ARRASTRAR -> estilo.runas[7 % estilo.runas.size]
-    Actividad.POR_DEFINIR -> "?"
 }
 
 @Composable
@@ -376,15 +376,21 @@ private fun EscudoTemas(
     // Ragnarök no se revela hasta terminar todos los niveles jugables. El tiempo
     // se lee solo al dibujar, para que el latido no recomponga la pantalla.
     val tiempo = rememberTiempo()
-    // Tres anillos (ArbolHabilidades): lecciones adentro, minijuegos en medio y retos afuera
-    val lecciones = temas.filter { !it.esMinijuego }.sortedBy { it.orden }
+    // Cuatro anillos (ArbolHabilidades): lecciones 1 a 4 adentro, luego los
+    // minijuegos, los retos de arrastrar y soltar y, afuera, las lecciones 5 a 10
+    val lecciones = temas.filter { it.anillo <= ArbolHabilidades.ANILLO_LECCIONES }.sortedBy { it.orden }
     val minijuegos = temas.filter { it.anillo == ArbolHabilidades.ANILLO_MINIJUEGOS }.sortedBy { it.orden }
     val retos = temas.filter { it.esReto }.sortedBy { it.orden }
+    val cuarto = temas.filter { it.anillo == ArbolHabilidades.ANILLO_LECCIONES_NUEVAS }.sortedBy { it.orden }
     val n = lecciones.size
     val m = minijuegos.size
     val numRetos = retos.size
-    val conexiones = remember(lecciones.map { it.id }, minijuegos.map { it.id }, retos.map { it.id }) {
-        ArbolHabilidades.conexiones(lecciones.map { it.id }, minijuegos.map { it.id }, retos.map { it.id })
+    val q = cuarto.size
+    val conexiones = remember(temas.map { it.id to it.temaBaseId }) {
+        val temaDe = minijuegos.associate { it.id to it.temaBaseId }
+        ArbolHabilidades.conexiones(
+            lecciones.map { it.id }, minijuegos.map { it.id }, retos.map { it.id }, cuarto.map { it.id }
+        ) { temaDe[it]?.ifEmpty { null } }
     }
     val medidor = rememberTextMeasurer()
     val runasAro = remember(estilo) {
@@ -393,17 +399,23 @@ private fun EscudoTemas(
 
     BoxWithConstraints(modifier.aspectRatio(1f)) {
         val lado = maxWidth
-        val radioInterior = if (numRetos > 0) lado * 0.165f else if (m > 0) lado * 0.2f else lado * 0.33f
-        val radioExterior = if (numRetos > 0) lado * 0.27f else lado * 0.35f
-        val radioRetos = lado * 0.37f
-        val tamLeccion = if (numRetos > 0) 40.dp else if (m > 0) 48.dp else 58.dp
-        val tamMinijuego = if (numRetos > 0) 36.dp else 42.dp
-        val tamReto = 32.dp
+        // Radios y tamaños en proporción al escudo para que los cuatro anillos
+        // quepan en la cara sin encimarse (la cara mide 0.43 del lado).
+        val conCuarto = q > 0
+        val radioInterior = if (conCuarto) lado * 0.14f else if (numRetos > 0) lado * 0.165f else if (m > 0) lado * 0.2f else lado * 0.33f
+        val radioExterior = if (conCuarto) lado * 0.215f else if (numRetos > 0) lado * 0.27f else lado * 0.35f
+        val radioRetos = if (conCuarto) lado * 0.29f else lado * 0.37f
+        val radioCuarto = lado * 0.378f
+        val tamLeccion = if (conCuarto) lado * 0.088f else if (numRetos > 0) 40.dp else if (m > 0) 48.dp else 58.dp
+        val tamMinijuego = if (conCuarto) lado * 0.082f else if (numRetos > 0) 36.dp else 42.dp
+        val tamReto = if (conCuarto) lado * 0.078f else 32.dp
+        val umboFraccion = if (conCuarto) .17f else .2f
         // Ángulo y radio de cada nivel, por id
         val ubicacion: Map<String, Pair<Float, Dp>> =
             lecciones.mapIndexed { i, t -> t.id to (ArbolHabilidades.anguloInterior(i, n) to radioInterior) }.toMap() +
                 minijuegos.mapIndexed { k, t -> t.id to (ArbolHabilidades.anguloExterior(k, n, m) to radioExterior) } +
-                retos.mapIndexed { j, t -> t.id to (ArbolHabilidades.anguloRetos(j, numRetos) to radioRetos) }
+                retos.mapIndexed { j, t -> t.id to (ArbolHabilidades.anguloRetos(j, numRetos) to radioRetos) } +
+                cuarto.mapIndexed { i, t -> t.id to (ArbolHabilidades.anguloCuarto(i, q) to radioCuarto) }
 
         Canvas(Modifier.size(lado)) {
             val c = center
@@ -484,6 +496,7 @@ private fun EscudoTemas(
                 estilo.metal.copy(alpha = .1f), radioRetos.toPx(), c,
                 style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx())))
             )
+            if (q > 0) drawCircle(estilo.metal.copy(alpha = .14f), radioCuarto.toPx(), c, style = Stroke(1.dp.toPx()))
             lecciones.forEach { t -> pos[t.id]?.let { drawLine(estilo.metal.copy(alpha = .22f), c, it, 1.2.dp.toPx()) } }
 
             // Rayos del Ragnarök: de cada nivel jugable al centro
@@ -498,6 +511,8 @@ private fun EscudoTemas(
             // Conexiones del árbol. Un tramo se enciende cuando alguno de sus
             // extremos ya se superó; hacia un minijuego que aún no existe, apenas se insinúa.
             // Cada tramo una sola vez (a < b), en orden fijo para que no parpadee
+            val idsInterior = lecciones.map { it.id }.toSet()
+            val idsCuarto = cuarto.map { it.id }.toSet()
             val tramos = conexiones.keys.sorted().flatMap { a -> conexiones[a].orEmpty().sorted().filter { a < it }.map { a to it } }
             for ((a, b) in tramos) {
                 val pa = pos[a] ?: continue
@@ -518,8 +533,8 @@ private fun EscudoTemas(
                         pathEffect = PathEffect.dashPathEffect(floatArrayOf(2.dp.toPx(), 6.dp.toPx()))
                     )
                 }
-                // Rombo en los tramos entre lecciones
-                if (a in lecciones.map { it.id } && b in lecciones.map { it.id }) {
+                // Rombo en los tramos entre lecciones del mismo anillo
+                if ((a in idsInterior && b in idsInterior) || (a in idsCuarto && b in idsCuarto)) {
                     val medio = (pa + pb) / 2f
                     val d = 4.dp.toPx()
                     val rombo = Path().apply { moveTo(medio.x, medio.y - d); lineTo(medio.x + d, medio.y); lineTo(medio.x, medio.y + d); lineTo(medio.x - d, medio.y); close() }
@@ -528,7 +543,7 @@ private fun EscudoTemas(
             }
 
             // Umbo central con el emblema del mundo
-            val umbo = r * .2f
+            val umbo = r * umboFraccion
             mancha(c + Offset(0f, 3.dp.toPx()), umbo * 1.25f, Color.Black, .7f)
             if (fuerte) mancha(c, umbo * 2.1f, estilo.acento, 0.75f * latido)
             if (onda != null) {
@@ -555,7 +570,7 @@ private fun EscudoTemas(
 
         // Centro del escudo: entrada al Ragnarök, solo cuando ya despertó
         if (ragnarokVisible) {
-            val tamUmbo = lado * 0.2f
+            val tamUmbo = lado * umboFraccion
             Box(
                 Modifier
                     .offset(x = lado / 2 - tamUmbo / 2, y = lado / 2 - tamUmbo / 2)
@@ -716,6 +731,7 @@ private fun Insignia(
 private fun PanelTema(
     tema: Tema,
     total: Int,
+    temaBase: Tema?,
     acceso: ResultadoAcceso?,
     saldo: Int,
     estilo: EstiloMundo,
@@ -753,10 +769,18 @@ private fun PanelTema(
             modifier = Modifier.padding(top = 4.dp)
         )
         Spacer(Modifier.height(14.dp))
+        if (temaBase != null) {
+            Text(
+                "Tema ${temaBase.orden} · ${temaBase.nombre}",
+                color = estilo.metalClaro,
+                fontFamily = FuenteTexto,
+                fontSize = 13.sp,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
         if (!tema.actividad.jugable) {
             Text(
-                if (tema.actividad == Actividad.POR_DEFINIR) "Próximamente: este reto todavía se está forjando."
-                else "Próximamente: este minijuego llega en una siguiente versión.",
+                "Próximamente: este minijuego llega en una siguiente versión.",
                 color = OdinPaleta.Escarcha,
                 fontFamily = FuenteTexto,
                 fontSize = 14.sp

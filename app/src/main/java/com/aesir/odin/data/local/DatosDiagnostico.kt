@@ -3,9 +3,11 @@ package com.aesir.odin.data.local
 import com.aesir.odin.data.local.entity.PreguntaDiagnosticaEntity
 
 /**
- * Contenido inicial del CU-10: 10 preguntas por mundo. Los dos primeros temas
- * tienen 3 preguntas y los dos últimos 2, así cada tema se puede reconocer
- * como conocido con EvaluarDiagnosticoUseCase.UMBRAL_ACIERTOS_TEMA = 2.
+ * Contenido inicial del CU-10. La evaluación de cada mundo presenta 2
+ * preguntas de cada uno de sus 10 temas (RF-130); un tema es conocido con sus
+ * dos preguntas acertadas (EvaluarDiagnosticoUseCase.UMBRAL_ACIERTOS_TEMA).
+ * Los temas 1 y 2 tienen una tercera pregunta de reserva: el caso de uso elige
+ * 2 al azar. Las de los temas 5 a 10 vienen de ContenidoTemas.
  *
  * Son preguntas distintas a las de las lecciones, para que el diagnóstico
  * no adelante las respuestas de los ejercicios.
@@ -97,7 +99,7 @@ object DatosDiagnostico {
         ))
     )
 
-    val preguntas: List<PreguntaDiagnosticaEntity> = banco.flatMap { (temaId, mundoYPreguntas) ->
+    private val preguntasBase: List<PreguntaDiagnosticaEntity> = banco.flatMap { (temaId, mundoYPreguntas) ->
         val (mundoId, lista) = mundoYPreguntas
         lista.mapIndexed { i, p ->
             PreguntaDiagnosticaEntity(
@@ -110,4 +112,21 @@ object DatosDiagnostico {
             )
         }
     }
+
+    private val preguntasNuevas: List<PreguntaDiagnosticaEntity> = ContenidoTemas.temas.flatMap { t ->
+        t.diagnostico.mapIndexed { i, p ->
+            val id = "pd_${t.id}_${i + 1}"
+            val mezclada = ContenidoTemas.mezclar(id, p)
+            PreguntaDiagnosticaEntity(
+                id = id,
+                mundoId = t.mundoId,
+                temaId = t.id,
+                enunciado = mezclada.enunciado,
+                opciones = mezclada.opciones,
+                respuestasCorrectas = mezclada.correctas
+            )
+        }
+    }
+
+    val preguntas: List<PreguntaDiagnosticaEntity> = preguntasBase + preguntasNuevas
 }

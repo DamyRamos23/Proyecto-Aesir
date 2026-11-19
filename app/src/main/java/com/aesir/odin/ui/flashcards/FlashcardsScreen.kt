@@ -1,5 +1,6 @@
 package com.aesir.odin.ui.flashcards
 
+import com.aesir.odin.domain.hidromiel.PoliticaCosto
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -45,7 +46,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
+import com.aesir.odin.ui.theme.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -1087,8 +1088,10 @@ private fun PantallaCompletada(
     }
     PanelDificiles(salon, filas, Modifier.centroEn(195f, yPanel + altoPanel / 2f).requiredSize(329.3.dp, altoPanel.dp))
     TextoAjustable(
-        if (r.errores == 0) "Nivel completado: todas las cartas fueron contestadas bien."
-        else "Nivel completado: repetiste las falladas hasta dominarlas.",
+        // RF-55: el resumen dice si el nivel fue superado (MOD-01, RN-07)
+        if (r.puntaje >= PoliticaCosto.PUNTAJE_MINIMO) "Nivel superado con ${r.puntaje} puntos" +
+            (if (r.errores == 0) ": todas las cartas fueron contestadas bien." else ": repetiste las falladas hasta dominarlas.")
+        else "Nivel no superado: obtuviste ${r.puntaje} puntos y necesitas ${PoliticaCosto.PUNTAJE_MINIMO} al primer intento.",
         alegreya(12f, italica = true).copy(textAlign = TextAlign.Center, shadow = Shadow(Color.Black.copy(alpha = 0.8f), Offset(0f, 1f), 4f)),
         Modifier.centroEn(195f, yTexto).width(350.dp),
         minEscala = 0.8f,

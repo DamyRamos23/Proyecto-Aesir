@@ -34,7 +34,24 @@ data class EstiloMundo(
     /** Runas del mundo; el tema N usa runas[N - 1]. */
     val runas: List<String>
 ) {
-    fun runaDeTema(orden: Int): String = runas[((orden - 1).coerceAtLeast(0)) % runas.size]
+    /**
+     * Runa de la lección del tema [orden] (1 a 10): los temas 1 a 4 usan las
+     * primeras runas del mundo y los temas 5 a 10, runas del Futhark antiguo
+     * que el mundo no usa, para que ninguna se repita en el escudo.
+     */
+    fun runaDeTema(orden: Int): String {
+        val i = (orden - 1).coerceAtLeast(0)
+        if (i < 4) return runas[i % runas.size]
+        val libres = FUTHARK.filter { it !in runas }
+        return if (libres.isEmpty()) runas[i % runas.size] else libres[(i - 4) % libres.size]
+    }
+
+    private companion object {
+        val FUTHARK = listOf(
+            "ᚠ", "ᚢ", "ᚦ", "ᚨ", "ᚱ", "ᚲ", "ᚷ", "ᚹ", "ᚺ", "ᚾ", "ᛁ", "ᛃ",
+            "ᛇ", "ᛈ", "ᛉ", "ᛊ", "ᛏ", "ᛒ", "ᛖ", "ᛗ", "ᛚ", "ᛜ", "ᛞ", "ᛟ"
+        )
+    }
 }
 
 object EstilosMundo {

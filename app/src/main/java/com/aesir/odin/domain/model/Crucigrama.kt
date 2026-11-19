@@ -46,6 +46,14 @@ data class PalabraCrucigrama(
     fun letraEn(celda: Celda): Char? = celdas.indexOf(celda).takeIf { it >= 0 }?.let { respuesta[it] }
 }
 
+/** Valores del CU-07 (paso 10 y A5.1). */
+object ReglasCrucigrama {
+    const val PUNTAJE_INICIAL = 100
+    const val PENALIZACION_ERROR = 5
+    const val PENALIZACION_LETRA = 2
+    const val PENALIZACION_PALABRA = 10
+}
+
 data class Crucigrama(
     val id: String,
     val temaId: String,
@@ -53,7 +61,7 @@ data class Crucigrama(
     val filas: Int,
     val columnas: Int,
     val palabras: List<PalabraCrucigrama>,
-    val puntajeInicial: Int = 0,
+    val puntajeInicial: Int = ReglasCrucigrama.PUNTAJE_INICIAL,
     val completado: Boolean = false
 ) {
     val resueltas: Int get() = palabras.count { it.resuelta }

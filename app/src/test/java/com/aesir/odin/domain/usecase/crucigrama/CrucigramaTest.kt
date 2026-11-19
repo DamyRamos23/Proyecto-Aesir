@@ -71,7 +71,7 @@ class GenerarCrucigramaUseCaseTest {
     }
 
     @Test
-    fun `casi siempre logra acomodar las seis palabras`() = runBlocking {
+    fun `casi siempre logra acomodar todas las palabras elegidas`() = runBlocking {
         val completos = (0 until 30).count { semilla ->
             GenerarCrucigramaUseCase(FakeCrucigramaRepository(BANCO), Random(semilla))("n", listOf("t1", "t2"))
                 .getOrThrow().palabras.size == GenerarCrucigramaUseCase.CANTIDAD_PALABRAS
@@ -82,7 +82,7 @@ class GenerarCrucigramaUseCaseTest {
     @Test
     fun `A2_1 con banco insuficiente regresa error`() = runBlocking {
         val r = GenerarCrucigramaUseCase(FakeCrucigramaRepository(BANCO))("n", listOf("t1")).let { it }
-        // t1 tiene exactamente 6: alcanza
+        // t1 tiene exactamente 6 (el mínimo del RF-93): alcanza
         assertTrue(r.isSuccess)
         val vacio = GenerarCrucigramaUseCase(FakeCrucigramaRepository(BANCO.take(3)))("n", listOf("t1"))
         assertTrue(vacio.isFailure)
@@ -124,10 +124,15 @@ class ValidarYPuntajeTest {
     }
 
     @Test
-    fun `suma por acierto y penaliza sin bajar de cero`() {
-        assertEquals(10, puntaje(0, EstadoRespuesta.CORRECTA))
-        assertEquals(7, puntaje(10, EstadoRespuesta.INCORRECTA))
+    fun `empieza en 100 y penaliza errores y ayudas sin bajar de cero`() {
+        assertEquals(100, Crucigrama("x", "t", listOf("t"), 1, 1, emptyList()).puntajeInicial)
+        assertEquals(100, puntaje(100, EstadoRespuesta.CORRECTA))
+        assertEquals(95, puntaje(100, EstadoRespuesta.INCORRECTA))
         assertEquals(0, puntaje(2, EstadoRespuesta.INCOMPLETA))
+        val calc = ActualizarPuntajeUseCase()
+        assertEquals(98, calc.porAyuda(100, com.aesir.odin.domain.hidromiel.TipoAyuda.REVELAR_LETRA))
+        assertEquals(90, calc.porAyuda(100, com.aesir.odin.domain.hidromiel.TipoAyuda.REVELAR_PALABRA))
+        assertEquals(0, calc.porAyuda(7, com.aesir.odin.domain.hidromiel.TipoAyuda.REVELAR_PALABRA))
     }
 }
 
@@ -145,14 +150,14 @@ class FinalizarCrucigramaUseCaseTest {
             PalabraCrucigrama("p$i", "c$i", "m1-n1", "ABC", "p", i * 2, 0, Direccion.HORIZONTAL, resuelta = true, revelada = i == 0)
         }
         val c = Crucigrama("x", "m1-n1", listOf("t"), 12, 3, palabras)
-        val r = finalizar(c, puntaje = 45, errores = 2)
+        val r = finalizar(c, puntaje = 75, errores = 2)
 
         assertEquals(5, r.aciertos) // la revelada no cuenta
-        assertEquals(45, r.puntajeFinal)
+        assertEquals(75, r.puntajeFinal)
         assertEquals(r, repo.resultados.single())
         assertTrue(roadmap.temas.getValue("m1-n1").completado)
         assertNotNull(hidromiel.superados[U to "m1-n1"])
-        // 45 de 60 = 75 % → bono 8; 40 iniciales + 20 + 8
-        assertEquals(68, hidromiel.saldo())
+        // 75 puntos → bono 7; 40 iniciales + 20 + 7
+        assertEquals(67, hidromiel.saldo())
     }
 }

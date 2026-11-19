@@ -1,6 +1,7 @@
 package com.aesir.odin.data.repository
 
 import com.aesir.odin.data.local.dao.MundoDao
+import com.aesir.odin.data.local.dao.RetoFinMundoDao
 import com.aesir.odin.data.local.dao.TemaDao
 import com.aesir.odin.data.local.entity.MundoEntity
 import com.aesir.odin.data.local.entity.TemaEntity
@@ -17,8 +18,17 @@ import com.aesir.odin.domain.repository.RoadmapRepository
  */
 class RoadmapRepositoryImpl(
     private val mundoDao: MundoDao,
-    private val temaDao: TemaDao
+    private val temaDao: TemaDao,
+    private val retoFinMundoDao: RetoFinMundoDao
 ) : RoadmapRepository {
+
+    override suspend fun haSuperadoAlgunRagnarok(): Boolean = retoFinMundoDao.existeSuperado()
+
+    /** CU-02: mundos cuyo Ragnarök ya se superó, en orden. */
+    override suspend fun obtenerMundosSuperados(): List<String> {
+        val superados = retoFinMundoDao.getMundosSuperados().toSet()
+        return mundoDao.getAll().sortedBy { it.orden }.map { it.id }.filter { it in superados }
+    }
 
     override suspend fun obtenerTemas(): List<Tema> =
         temaDao.getAll().map { it.aTema() }
@@ -79,6 +89,7 @@ class RoadmapRepositoryImpl(
         esRagnarok = tipo == "RAGNAROK",
         anillo = anillo,
         actividad = Actividad.desde(actividad),
-        conocido = conocido
+        conocido = conocido,
+        temaBaseId = temaBaseId
     )
 }
