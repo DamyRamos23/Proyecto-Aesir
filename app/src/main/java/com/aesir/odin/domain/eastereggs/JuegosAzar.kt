@@ -25,10 +25,10 @@ object Ruleta {
 /** Símbolos de la tragamonedas: cuántos hay en cada rodillo de 20 y cuánto paga el triple. */
 enum class Simbolo(val glifo: String, val enRodillo: Int, val premioTriple: Int) {
     RUNA("ᛟ", 7, 20),
-    CUERNO("🍺", 6, 45),
-    MJOLNIR("🔨", 4, 120),
-    CUERVO("🐦", 2, 400),
-    OJO("👁", 1, 1500)
+    CUERNO("ᚠ", 6, 45),   // fehu, la riqueza
+    MJOLNIR("ᚦ", 4, 120), // thurisaz, la runa de Thor
+    CUERVO("ᛉ", 2, 400),  // algiz, como la pata de un cuervo
+    OJO("ᚨ", 1, 1500)     // ansuz, la runa de Odín
 }
 
 /** Tres rodillos de 20 símbolos. Tiro de 5; retorno ≈ 91 %. */

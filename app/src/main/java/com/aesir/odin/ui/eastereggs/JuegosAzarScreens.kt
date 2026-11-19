@@ -201,7 +201,7 @@ fun TragamonedasJuego(vm: JuegoOcultoViewModel, estilo: EstiloMundo) {
     PanelJuego(estilo, "Premios", semilla = 2) {
         Simbolo.entries.reversed().forEach { s ->
             Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("${s.glifo} ${s.glifo} ${s.glifo}", fontSize = 18.sp, maxLines = 1)
+                Text("${s.glifo} ${s.glifo} ${s.glifo}", color = OdinPaleta.Hueso, fontSize = 18.sp, maxLines = 1)
                 Text("${s.premioTriple}", style = estiloTitulo(16.sp, color = estilo.acento), maxLines = 1)
             }
         }

@@ -1,0 +1,1364 @@
+{
+  "app/build.gradle.kts": {
+    "mtime": 1792476319.619007,
+    "seen": 1794460627.624508,
+    "ast_hash": "7c5710b97464a4de3106c878e64d1d88",
+    "semantic_hash": "7c5710b97464a4de3106c878e64d1d88"
+  },
+  "app/src/androidTest/java/com/aesir/odin/ExampleInstrumentedTest.kt": {
+    "mtime": 1792219136.1127102,
+    "seen": 1794460627.624515,
+    "ast_hash": "49708a058bfdb1c30b631c435e4f7190",
+    "semantic_hash": "49708a058bfdb1c30b631c435e4f7190"
+  },
+  "app/src/main/java/com/aesir/odin/MainActivity.kt": {
+    "mtime": 1792476499.5823665,
+    "seen": 1794460627.6245186,
+    "ast_hash": "726a694ac15cd346bd2de582116272ac",
+    "semantic_hash": "726a694ac15cd346bd2de582116272ac"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/BancoPreguntas.kt": {
+    "mtime": 1792219587.9016454,
+    "seen": 1794460627.6245213,
+    "ast_hash": "b1720704ec5d919f46d7e9c8aba3fc49",
+    "semantic_hash": "b1720704ec5d919f46d7e9c8aba3fc49"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/DatosArrastrar.kt": {
+    "mtime": 1792219587.902637,
+    "seen": 1794460627.6245232,
+    "ast_hash": "6d2c00fa1178546a6a89c6df99afd668",
+    "semantic_hash": "6d2c00fa1178546a6a89c6df99afd668"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/DatosCrucigrama.kt": {
+    "mtime": 1792219587.9071815,
+    "seen": 1794460627.6245253,
+    "ast_hash": "e4a86b4c823f46178f7ecdf274d7e0bf",
+    "semantic_hash": "e4a86b4c823f46178f7ecdf274d7e0bf"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/DatosDiagnostico.kt": {
+    "mtime": 1792219136.1261342,
+    "seen": 1794460627.6245277,
+    "ast_hash": "9f350017a4deab87b41cadab634e2989",
+    "semantic_hash": "9f350017a4deab87b41cadab634e2989"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/DatosIniciales.kt": {
+    "mtime": 1792219587.9124742,
+    "seen": 1794460627.6245294,
+    "ast_hash": "db4c9a55b61d9a028e6f97f5e2c31ce4",
+    "semantic_hash": "db4c9a55b61d9a028e6f97f5e2c31ce4"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/DatosMemorama.kt": {
+    "mtime": 1792219136.129146,
+    "seen": 1794460627.6245315,
+    "ast_hash": "81674c86cc031f9d8f4a25cac6ee1c2a",
+    "semantic_hash": "81674c86cc031f9d8f4a25cac6ee1c2a"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/OdinDatabase.kt": {
+    "mtime": 1792219587.918594,
+    "seen": 1794460627.6245334,
+    "ast_hash": "772eceff94f09e3ac3686c061c7bb191",
+    "semantic_hash": "772eceff94f09e3ac3686c061c7bb191"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/converter/Converters.kt": {
+    "mtime": 1792219136.1346889,
+    "seen": 1794460627.6245356,
+    "ast_hash": "9981183847ea6e5cc889512019c388c6",
+    "semantic_hash": "9981183847ea6e5cc889512019c388c6"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/dao/ConceptoCrucigramaDao.kt": {
+    "mtime": 1792219136.1366916,
+    "seen": 1794460627.624538,
+    "ast_hash": "94f48aeb7ddef198a8736b0ce3c2f6c9",
+    "semantic_hash": "94f48aeb7ddef198a8736b0ce3c2f6c9"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/dao/DiagnosticoDao.kt": {
+    "mtime": 1792219136.1386907,
+    "seen": 1794460627.6245399,
+    "ast_hash": "beb3b7ca84f8b9dec395cca2a746c549",
+    "semantic_hash": "beb3b7ca84f8b9dec395cca2a746c549"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/dao/EjercicioDao.kt": {
+    "mtime": 1792219136.139688,
+    "seen": 1794460627.6245418,
+    "ast_hash": "ac83f8486395418075bc76a094a2ae49",
+    "semantic_hash": "ac83f8486395418075bc76a094a2ae49"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/dao/HidromielDao.kt": {
+    "mtime": 1792219136.1412053,
+    "seen": 1794460627.624544,
+    "ast_hash": "aa99ffefa600103a8caaeb5a9efe543e",
+    "semantic_hash": "aa99ffefa600103a8caaeb5a9efe543e"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/dao/HistorialErrorDao.kt": {
+    "mtime": 1792219136.1432421,
+    "seen": 1794460627.6245458,
+    "ast_hash": "d121ba3d4775036ee2622cb3bd223e66",
+    "semantic_hash": "d121ba3d4775036ee2622cb3bd223e66"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/dao/LeccionDao.kt": {
+    "mtime": 1792219136.144251,
+    "seen": 1794460627.6245475,
+    "ast_hash": "4ec3bfea15c69736d02a6d02c3da1d98",
+    "semantic_hash": "4ec3bfea15c69736d02a6d02c3da1d98"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/dao/MemoramaDao.kt": {
+    "mtime": 1792219136.1452446,
+    "seen": 1794460627.6245496,
+    "ast_hash": "2706ce425b4164fb6f654b007c3b7164",
+    "semantic_hash": "2706ce425b4164fb6f654b007c3b7164"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/dao/MinijuegosDaos.kt": {
+    "mtime": 1792219587.9196188,
+    "seen": 1794460627.6245518,
+    "ast_hash": "e4775b980dc93da69f9daa1ee9300ad6",
+    "semantic_hash": "e4775b980dc93da69f9daa1ee9300ad6"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/dao/MundoDao.kt": {
+    "mtime": 1792219136.146246,
+    "seen": 1794460627.6245537,
+    "ast_hash": "639370b8a05b1e4e52c62a44c49184c6",
+    "semantic_hash": "639370b8a05b1e4e52c62a44c49184c6"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/dao/PreguntaFlashBancoDao.kt": {
+    "mtime": 1792219587.9216146,
+    "seen": 1794460627.6245558,
+    "ast_hash": "f9d0b360955b0ed8f34e0525f9827ee0",
+    "semantic_hash": "f9d0b360955b0ed8f34e0525f9827ee0"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/dao/PreguntaFlashDao.kt": {
+    "mtime": 1792219587.9241507,
+    "seen": 1794460627.6245575,
+    "ast_hash": "fc8a4b49a5664a0d0a68592074428dc6",
+    "semantic_hash": "fc8a4b49a5664a0d0a68592074428dc6"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/dao/ResultadoContrarrelojDao.kt": {
+    "mtime": 1792219587.9262004,
+    "seen": 1794460627.62456,
+    "ast_hash": "266b0e6d6b3570a2157ed90739a1d114",
+    "semantic_hash": "266b0e6d6b3570a2157ed90739a1d114"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/dao/ResultadoCrucigramaDao.kt": {
+    "mtime": 1792219136.1482592,
+    "seen": 1794460627.6245623,
+    "ast_hash": "fb4e89901d5b333ec95b2f72b4c825ee",
+    "semantic_hash": "fb4e89901d5b333ec95b2f72b4c825ee"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/dao/RetoArrastrarDaos.kt": {
+    "mtime": 1792219587.9281957,
+    "seen": 1794460627.6245642,
+    "ast_hash": "816a37aaf48b70f99222100f30948925",
+    "semantic_hash": "816a37aaf48b70f99222100f30948925"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/dao/TemaDao.kt": {
+    "mtime": 1792219136.149263,
+    "seen": 1794460627.624566,
+    "ast_hash": "40b11a37c60294cdef6d32384db2f76c",
+    "semantic_hash": "40b11a37c60294cdef6d32384db2f76c"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/entity/CrucigramaEntities.kt": {
+    "mtime": 1792219136.1517847,
+    "seen": 1794460627.624568,
+    "ast_hash": "bbda66c64b24ef1749c8957a5dd5b5ce",
+    "semantic_hash": "bbda66c64b24ef1749c8957a5dd5b5ce"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/entity/DiagnosticoEntities.kt": {
+    "mtime": 1792219136.1538029,
+    "seen": 1794460627.6245701,
+    "ast_hash": "96686de0d9fdb4803596b63388ee4402",
+    "semantic_hash": "96686de0d9fdb4803596b63388ee4402"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/entity/EjercicioEntity.kt": {
+    "mtime": 1792219136.1548007,
+    "seen": 1794460627.6245718,
+    "ast_hash": "3672e1f092495472498a9e8dedc52b20",
+    "semantic_hash": "3672e1f092495472498a9e8dedc52b20"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/entity/HidromielEntities.kt": {
+    "mtime": 1792219136.1568024,
+    "seen": 1794460627.624574,
+    "ast_hash": "d5924d9a8b1c0aa7f02d1a13bedf30fc",
+    "semantic_hash": "d5924d9a8b1c0aa7f02d1a13bedf30fc"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/entity/HistorialErrorEntity.kt": {
+    "mtime": 1792219136.1577985,
+    "seen": 1794460627.6245759,
+    "ast_hash": "3c9204a06f1141f56b92e178385d55e2",
+    "semantic_hash": "3c9204a06f1141f56b92e178385d55e2"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/entity/LeccionEntity.kt": {
+    "mtime": 1792219136.1593094,
+    "seen": 1794460627.6245778,
+    "ast_hash": "d1299969985cc929d98ddbf37ff62b26",
+    "semantic_hash": "d1299969985cc929d98ddbf37ff62b26"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/entity/MemoramaEntities.kt": {
+    "mtime": 1792219136.160325,
+    "seen": 1794460627.62458,
+    "ast_hash": "62d0b3bdac739f24dab1892dda2fe6e5",
+    "semantic_hash": "62d0b3bdac739f24dab1892dda2fe6e5"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/entity/MinijuegosEntities.kt": {
+    "mtime": 1792219587.9297183,
+    "seen": 1794460627.6245818,
+    "ast_hash": "04eed6dedb015af0108e8aa05098f58c",
+    "semantic_hash": "04eed6dedb015af0108e8aa05098f58c"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/entity/MundoEntity.kt": {
+    "mtime": 1792219136.1623597,
+    "seen": 1794460627.6245837,
+    "ast_hash": "ef8f45f582518ea4afaf68942fba6e4e",
+    "semantic_hash": "ef8f45f582518ea4afaf68942fba6e4e"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/entity/PreguntaFlashAttemptEntity.kt": {
+    "mtime": 1792219587.930747,
+    "seen": 1794460627.6245856,
+    "ast_hash": "b334e103d6f787d870d6e8a160929cfd",
+    "semantic_hash": "b334e103d6f787d870d6e8a160929cfd"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/entity/PreguntaFlashEntity.kt": {
+    "mtime": 1792219587.9327352,
+    "seen": 1794460627.6245878,
+    "ast_hash": "81c8ffc91cb8d86bc157692e394b5b51",
+    "semantic_hash": "81c8ffc91cb8d86bc157692e394b5b51"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/entity/ResultadoContrarrelojEntity.kt": {
+    "mtime": 1792219587.9342487,
+    "seen": 1794460627.62459,
+    "ast_hash": "7d5dea102a31b165b4da06c858728f2c",
+    "semantic_hash": "7d5dea102a31b165b4da06c858728f2c"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/entity/ResultadoLeccionEntity.kt": {
+    "mtime": 1792219136.1633787,
+    "seen": 1794460627.6245916,
+    "ast_hash": "453547c4305865b4830b85409cc16bac",
+    "semantic_hash": "453547c4305865b4830b85409cc16bac"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/entity/RetoArrastrarEntities.kt": {
+    "mtime": 1792219587.9352636,
+    "seen": 1794460627.6245937,
+    "ast_hash": "bea8df0ff32350c4c91ca5147c88d536",
+    "semantic_hash": "bea8df0ff32350c4c91ca5147c88d536"
+  },
+  "app/src/main/java/com/aesir/odin/data/local/entity/TemaEntity.kt": {
+    "mtime": 1792219587.9378037,
+    "seen": 1794460627.6245956,
+    "ast_hash": "e8ea5db2f24458f05ee46e70de406743",
+    "semantic_hash": "e8ea5db2f24458f05ee46e70de406743"
+  },
+  "app/src/main/java/com/aesir/odin/data/repository/CatalogoNivelesImpl.kt": {
+    "mtime": 1792219587.940323,
+    "seen": 1794460627.6245975,
+    "ast_hash": "627c2327a1590fdd62f8301d1870fce6",
+    "semantic_hash": "627c2327a1590fdd62f8301d1870fce6"
+  },
+  "app/src/main/java/com/aesir/odin/data/repository/CrucigramaRepositoryImpl.kt": {
+    "mtime": 1792219136.1683836,
+    "seen": 1794460627.6245995,
+    "ast_hash": "be7a52d0573124cfeedf793d78d0c9e0",
+    "semantic_hash": "be7a52d0573124cfeedf793d78d0c9e0"
+  },
+  "app/src/main/java/com/aesir/odin/data/repository/DiagnosticoRepositoryImpl.kt": {
+    "mtime": 1792219136.169897,
+    "seen": 1794460627.624602,
+    "ast_hash": "dccee221685af60ada89219da1112763",
+    "semantic_hash": "dccee221685af60ada89219da1112763"
+  },
+  "app/src/main/java/com/aesir/odin/data/repository/HidromielFlashRepositoryImpl.kt": {
+    "mtime": 1792219587.9413395,
+    "seen": 1794460627.6246042,
+    "ast_hash": "1ff1e6860b684ed90d666577077d6d5b",
+    "semantic_hash": "1ff1e6860b684ed90d666577077d6d5b"
+  },
+  "app/src/main/java/com/aesir/odin/data/repository/HidromielRepositoryImpl.kt": {
+    "mtime": 1792219136.171929,
+    "seen": 1794460627.6246061,
+    "ast_hash": "76413532301eef9c62722dc279281323",
+    "semantic_hash": "76413532301eef9c62722dc279281323"
+  },
+  "app/src/main/java/com/aesir/odin/data/repository/HistorialRepositoryImpl.kt": {
+    "mtime": 1792219136.1744587,
+    "seen": 1794460627.6246083,
+    "ast_hash": "0318f71235ba69839cab6869a2d4d076",
+    "semantic_hash": "0318f71235ba69839cab6869a2d4d076"
+  },
+  "app/src/main/java/com/aesir/odin/data/repository/LeccionRepositoryImpl.kt": {
+    "mtime": 1792219136.175458,
+    "seen": 1794460627.62461,
+    "ast_hash": "c3d7eb9237ef53e2439b2010ef99e9fd",
+    "semantic_hash": "c3d7eb9237ef53e2439b2010ef99e9fd"
+  },
+  "app/src/main/java/com/aesir/odin/data/repository/MemoramaRepositoryImpl.kt": {
+    "mtime": 1792219136.1764624,
+    "seen": 1794460627.624612,
+    "ast_hash": "7cf82ff6e577a29e096badfa3d5ede24",
+    "semantic_hash": "7cf82ff6e577a29e096badfa3d5ede24"
+  },
+  "app/src/main/java/com/aesir/odin/data/repository/MinijuegosRepositoriesImpl.kt": {
+    "mtime": 1792219587.9423397,
+    "seen": 1794460627.6246142,
+    "ast_hash": "f792f840ba95b1f9d73a1b6831f2af34",
+    "semantic_hash": "f792f840ba95b1f9d73a1b6831f2af34"
+  },
+  "app/src/main/java/com/aesir/odin/data/repository/PreguntaFlashRepositoryImpl.kt": {
+    "mtime": 1792219587.9438574,
+    "seen": 1794460627.6246161,
+    "ast_hash": "422dd9bd9660bc8c92229b1830722757",
+    "semantic_hash": "422dd9bd9660bc8c92229b1830722757"
+  },
+  "app/src/main/java/com/aesir/odin/data/repository/RetoContrarrelojRepositoryImpl.kt": {
+    "mtime": 1792219587.9448771,
+    "seen": 1794460627.624618,
+    "ast_hash": "7f876634b2fef245346fcc0f2efebdf1",
+    "semantic_hash": "7f876634b2fef245346fcc0f2efebdf1"
+  },
+  "app/src/main/java/com/aesir/odin/data/repository/RetoRepositoryImpl.kt": {
+    "mtime": 1792219587.9458783,
+    "seen": 1794460627.62462,
+    "ast_hash": "fdfef31c4f81e8707945753c2cc1187c",
+    "semantic_hash": "fdfef31c4f81e8707945753c2cc1187c"
+  },
+  "app/src/main/java/com/aesir/odin/data/repository/RoadmapRepositoryImpl.kt": {
+    "mtime": 1792219136.1784608,
+    "seen": 1794460627.6246219,
+    "ast_hash": "98387a086429a5628dcf553310db1514",
+    "semantic_hash": "98387a086429a5628dcf553310db1514"
+  },
+  "app/src/main/java/com/aesir/odin/di/AppContainer.kt": {
+    "mtime": 1792219587.949413,
+    "seen": 1794460627.6246238,
+    "ast_hash": "e0cee5703af05f92676b828291d16fae",
+    "semantic_hash": "e0cee5703af05f92676b828291d16fae"
+  },
+  "app/src/main/java/com/aesir/odin/domain/hidromiel/CalculadoraRecompensa.kt": {
+    "mtime": 1792219136.1845264,
+    "seen": 1794460627.624626,
+    "ast_hash": "a4684fbe5d8a347c0cc4d29870f27e73",
+    "semantic_hash": "a4684fbe5d8a347c0cc4d29870f27e73"
+  },
+  "app/src/main/java/com/aesir/odin/domain/hidromiel/CatalogoNiveles.kt": {
+    "mtime": 1792219136.18554,
+    "seen": 1794460627.6246278,
+    "ast_hash": "325aacb24e9732970467e94d6096f2c1",
+    "semantic_hash": "325aacb24e9732970467e94d6096f2c1"
+  },
+  "app/src/main/java/com/aesir/odin/domain/hidromiel/ControlAcceso.kt": {
+    "mtime": 1792219136.186552,
+    "seen": 1794460627.6246297,
+    "ast_hash": "b1e1314778683797b39976350adab7ae",
+    "semantic_hash": "b1e1314778683797b39976350adab7ae"
+  },
+  "app/src/main/java/com/aesir/odin/domain/hidromiel/HidromielRepository.kt": {
+    "mtime": 1792219136.1885505,
+    "seen": 1794460627.624632,
+    "ast_hash": "c978dd7f9b57b8bd63fe779cd9bcb0f4",
+    "semantic_hash": "c978dd7f9b57b8bd63fe779cd9bcb0f4"
+  },
+  "app/src/main/java/com/aesir/odin/domain/hidromiel/Modelos.kt": {
+    "mtime": 1792475963.0602567,
+    "seen": 1794460627.6246336,
+    "ast_hash": "3387bfb607761b21f68487a50a37bc9d",
+    "semantic_hash": "3387bfb607761b21f68487a50a37bc9d"
+  },
+  "app/src/main/java/com/aesir/odin/domain/hidromiel/ModoAdmin.kt": {
+    "mtime": 1792219587.9539592,
+    "seen": 1794460627.6246357,
+    "ast_hash": "2f70c73725780b5ee93f7a259a31eb70",
+    "semantic_hash": "2f70c73725780b5ee93f7a259a31eb70"
+  },
+  "app/src/main/java/com/aesir/odin/domain/hidromiel/ModuloHidromiel.kt": {
+    "mtime": 1792476751.738099,
+    "seen": 1794460627.6246376,
+    "ast_hash": "3a3385ec61b1e10fa7007c83fa4330e6",
+    "semantic_hash": "3a3385ec61b1e10fa7007c83fa4330e6"
+  },
+  "app/src/main/java/com/aesir/odin/domain/hidromiel/PoliticaCosto.kt": {
+    "mtime": 1792220288.593788,
+    "seen": 1794460627.6246395,
+    "ast_hash": "83ecc0beb68af21ebc113027517062b4",
+    "semantic_hash": "83ecc0beb68af21ebc113027517062b4"
+  },
+  "app/src/main/java/com/aesir/odin/domain/hidromiel/ReservaHidromiel.kt": {
+    "mtime": 1792219136.1945944,
+    "seen": 1794460627.6246414,
+    "ast_hash": "5d18ca078f900f2bd25043952043dcec",
+    "semantic_hash": "5d18ca078f900f2bd25043952043dcec"
+  },
+  "app/src/main/java/com/aesir/odin/domain/hidromiel/regla/ReglaAcceso.kt": {
+    "mtime": 1792219136.1966114,
+    "seen": 1794460627.6246436,
+    "ast_hash": "9a56c9016180e5e1873f7797a776ba47",
+    "semantic_hash": "9a56c9016180e5e1873f7797a776ba47"
+  },
+  "app/src/main/java/com/aesir/odin/domain/model/ArbolHabilidades.kt": {
+    "mtime": 1792219587.959967,
+    "seen": 1794460627.6246457,
+    "ast_hash": "84681a7cb38c563ad18ea0adf6799c24",
+    "semantic_hash": "84681a7cb38c563ad18ea0adf6799c24"
+  },
+  "app/src/main/java/com/aesir/odin/domain/model/Crucigrama.kt": {
+    "mtime": 1792219136.2006223,
+    "seen": 1794460627.6246476,
+    "ast_hash": "aec00d38935db7785371f7653117a928",
+    "semantic_hash": "aec00d38935db7785371f7653117a928"
+  },
+  "app/src/main/java/com/aesir/odin/domain/model/Diagnostico.kt": {
+    "mtime": 1792219136.2026398,
+    "seen": 1794460627.6246498,
+    "ast_hash": "4c715d2caf8dfa5aa61cf950ef499bf8",
+    "semantic_hash": "4c715d2caf8dfa5aa61cf950ef499bf8"
+  },
+  "app/src/main/java/com/aesir/odin/domain/model/Ejercicio.kt": {
+    "mtime": 1792219136.2036376,
+    "seen": 1794460627.6246517,
+    "ast_hash": "fd8594d167066d391fd9b713dd3803e2",
+    "semantic_hash": "fd8594d167066d391fd9b713dd3803e2"
+  },
+  "app/src/main/java/com/aesir/odin/domain/model/EstadoPreguntaFlash.kt": {
+    "mtime": 1792219587.962496,
+    "seen": 1794460627.6246536,
+    "ast_hash": "1af39e4d04e43b76d8f1f8da771c4880",
+    "semantic_hash": "1af39e4d04e43b76d8f1f8da771c4880"
+  },
+  "app/src/main/java/com/aesir/odin/domain/model/Flashcards.kt": {
+    "mtime": 1792219587.965026,
+    "seen": 1794460627.6246557,
+    "ast_hash": "543786c546a3541b5fce21e191d56e05",
+    "semantic_hash": "543786c546a3541b5fce21e191d56e05"
+  },
+  "app/src/main/java/com/aesir/odin/domain/model/HistorialError.kt": {
+    "mtime": 1792219136.20515,
+    "seen": 1794460627.624662,
+    "ast_hash": "8eeb5d2ef32d3500ad50157f87103cc6",
+    "semantic_hash": "8eeb5d2ef32d3500ad50157f87103cc6"
+  },
+  "app/src/main/java/com/aesir/odin/domain/model/Leccion.kt": {
+    "mtime": 1792219136.2061672,
+    "seen": 1794460627.6246638,
+    "ast_hash": "11ce64e736443505abd52bcf886ea829",
+    "semantic_hash": "11ce64e736443505abd52bcf886ea829"
+  },
+  "app/src/main/java/com/aesir/odin/domain/model/Memorama.kt": {
+    "mtime": 1792219136.20718,
+    "seen": 1794460627.6246657,
+    "ast_hash": "6a6f9ce0500005c52a29020a481d78ab",
+    "semantic_hash": "6a6f9ce0500005c52a29020a481d78ab"
+  },
+  "app/src/main/java/com/aesir/odin/domain/model/Mundo.kt": {
+    "mtime": 1792219136.208185,
+    "seen": 1794460627.624668,
+    "ast_hash": "1b189be96e51a024778f2d2bd8de7155",
+    "semantic_hash": "1b189be96e51a024778f2d2bd8de7155"
+  },
+  "app/src/main/java/com/aesir/odin/domain/model/PreguntaFlash.kt": {
+    "mtime": 1792219587.967028,
+    "seen": 1794460627.62467,
+    "ast_hash": "eaa9f13743f6743827e688a4e45b6962",
+    "semantic_hash": "eaa9f13743f6743827e688a4e45b6962"
+  },
+  "app/src/main/java/com/aesir/odin/domain/model/PreguntaFlashAttempt.kt": {
+    "mtime": 1792219587.9685397,
+    "seen": 1794460627.624672,
+    "ast_hash": "0f2e6bec512e73bb7f7803ea2736cea0",
+    "semantic_hash": "0f2e6bec512e73bb7f7803ea2736cea0"
+  },
+  "app/src/main/java/com/aesir/odin/domain/model/ResultadoContrarreloj.kt": {
+    "mtime": 1792219587.9705544,
+    "seen": 1794460627.624674,
+    "ast_hash": "23f8f1969e3ae11c9328476bd8aa6eab",
+    "semantic_hash": "23f8f1969e3ae11c9328476bd8aa6eab"
+  },
+  "app/src/main/java/com/aesir/odin/domain/model/ResultadoLeccion.kt": {
+    "mtime": 1792219136.2091827,
+    "seen": 1794460627.6246765,
+    "ast_hash": "b3f9699ffddeda54d4dbe96d4553f921",
+    "semantic_hash": "b3f9699ffddeda54d4dbe96d4553f921"
+  },
+  "app/src/main/java/com/aesir/odin/domain/model/ResultadoPreguntaFlash.kt": {
+    "mtime": 1792219587.9705544,
+    "seen": 1794460627.6246786,
+    "ast_hash": "fd8e3d2ff2c71fcb0132f58ab26e3b00",
+    "semantic_hash": "fd8e3d2ff2c71fcb0132f58ab26e3b00"
+  },
+  "app/src/main/java/com/aesir/odin/domain/model/ResultadoRespuesta.kt": {
+    "mtime": 1792219136.2101834,
+    "seen": 1794460627.6246808,
+    "ast_hash": "ea2e1b2153ea8f1f10824b17da3dc1d6",
+    "semantic_hash": "ea2e1b2153ea8f1f10824b17da3dc1d6"
+  },
+  "app/src/main/java/com/aesir/odin/domain/model/RetoArrastrar.kt": {
+    "mtime": 1792219587.9730878,
+    "seen": 1794460627.6246827,
+    "ast_hash": "b6a593a725d98e1aacce257be7e34480",
+    "semantic_hash": "b6a593a725d98e1aacce257be7e34480"
+  },
+  "app/src/main/java/com/aesir/odin/domain/model/RetoContrareloj.kt": {
+    "mtime": 1792219587.9741025,
+    "seen": 1794460627.6246848,
+    "ast_hash": "ea90552621d4e7a48e5ddc33902b54f5",
+    "semantic_hash": "ea90552621d4e7a48e5ddc33902b54f5"
+  },
+  "app/src/main/java/com/aesir/odin/domain/model/RetoFinMundo.kt": {
+    "mtime": 1792219587.9751003,
+    "seen": 1794460627.6246865,
+    "ast_hash": "388b9b17575b8a52112bfc5fde32eb1e",
+    "semantic_hash": "388b9b17575b8a52112bfc5fde32eb1e"
+  },
+  "app/src/main/java/com/aesir/odin/domain/model/Tema.kt": {
+    "mtime": 1792219587.9760997,
+    "seen": 1794460627.6246886,
+    "ast_hash": "fab2100ee7fded8b54e713ef7bec4d4a",
+    "semantic_hash": "fab2100ee7fded8b54e713ef7bec4d4a"
+  },
+  "app/src/main/java/com/aesir/odin/domain/repository/CrucigramaRepository.kt": {
+    "mtime": 1792219136.2147224,
+    "seen": 1794460627.6246908,
+    "ast_hash": "4140b3441722c80ee09999b554e08846",
+    "semantic_hash": "4140b3441722c80ee09999b554e08846"
+  },
+  "app/src/main/java/com/aesir/odin/domain/repository/DiagnosticoRepository.kt": {
+    "mtime": 1792219136.2157218,
+    "seen": 1794460627.6246934,
+    "ast_hash": "72367ecbeaddb739d0bcd9812f50d1f2",
+    "semantic_hash": "72367ecbeaddb739d0bcd9812f50d1f2"
+  },
+  "app/src/main/java/com/aesir/odin/domain/repository/FlashcardsRepository.kt": {
+    "mtime": 1792219587.9781027,
+    "seen": 1794460627.6246955,
+    "ast_hash": "689593ad28130ec4c8625bc4d70f5a63",
+    "semantic_hash": "689593ad28130ec4c8625bc4d70f5a63"
+  },
+  "app/src/main/java/com/aesir/odin/domain/repository/HidromielFlashRepository.kt": {
+    "mtime": 1792219587.9791014,
+    "seen": 1794460627.6246977,
+    "ast_hash": "ee4507916d23b0c1bc54546d93e37d43",
+    "semantic_hash": "ee4507916d23b0c1bc54546d93e37d43"
+  },
+  "app/src/main/java/com/aesir/odin/domain/repository/HistorialRepository.kt": {
+    "mtime": 1792219136.2169845,
+    "seen": 1794460627.6246994,
+    "ast_hash": "f649692bc8b9c58722323df70b1793b7",
+    "semantic_hash": "f649692bc8b9c58722323df70b1793b7"
+  },
+  "app/src/main/java/com/aesir/odin/domain/repository/LeccionRepository.kt": {
+    "mtime": 1792219136.2189763,
+    "seen": 1794460627.6247015,
+    "ast_hash": "f8934c8fdff6f5fcda4af31115f8f9a5",
+    "semantic_hash": "f8934c8fdff6f5fcda4af31115f8f9a5"
+  },
+  "app/src/main/java/com/aesir/odin/domain/repository/MemoramaRepository.kt": {
+    "mtime": 1792219136.21998,
+    "seen": 1794460627.6247032,
+    "ast_hash": "eedbea2115b6c2d464d7840c001da1da",
+    "semantic_hash": "eedbea2115b6c2d464d7840c001da1da"
+  },
+  "app/src/main/java/com/aesir/odin/domain/repository/PreguntaFlashRepository.kt": {
+    "mtime": 1792219587.980099,
+    "seen": 1794460627.6247053,
+    "ast_hash": "0f4c76e9d6e3b8ca72659cb656f6fd39",
+    "semantic_hash": "0f4c76e9d6e3b8ca72659cb656f6fd39"
+  },
+  "app/src/main/java/com/aesir/odin/domain/repository/RetoContrarrelojRepository.kt": {
+    "mtime": 1792219587.9811022,
+    "seen": 1794460627.6247072,
+    "ast_hash": "9cdf0fe472717db2d835477a5929fa7f",
+    "semantic_hash": "9cdf0fe472717db2d835477a5929fa7f"
+  },
+  "app/src/main/java/com/aesir/odin/domain/repository/RetoFinMundoRepository.kt": {
+    "mtime": 1792219587.982617,
+    "seen": 1794460627.6247094,
+    "ast_hash": "e0a9460fb77dd14506852c05cc1dbd79",
+    "semantic_hash": "e0a9460fb77dd14506852c05cc1dbd79"
+  },
+  "app/src/main/java/com/aesir/odin/domain/repository/RetoRepository.kt": {
+    "mtime": 1792219587.984231,
+    "seen": 1794460627.6247115,
+    "ast_hash": "f4e41916bb1f8f294dec5a4c83c97860",
+    "semantic_hash": "f4e41916bb1f8f294dec5a4c83c97860"
+  },
+  "app/src/main/java/com/aesir/odin/domain/repository/RoadmapRepository.kt": {
+    "mtime": 1792219136.2219796,
+    "seen": 1794460627.6247134,
+    "ast_hash": "732700ef6d99d6ece39b26f2bc7e1824",
+    "semantic_hash": "732700ef6d99d6ece39b26f2bc7e1824"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/crucigrama/ActualizarPuntajeUseCase.kt": {
+    "mtime": 1792219136.2253368,
+    "seen": 1794460627.6247153,
+    "ast_hash": "c5fbabb7f651c575b1468c2f84735de8",
+    "semantic_hash": "c5fbabb7f651c575b1468c2f84735de8"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/crucigrama/FinalizarCrucigramaUseCase.kt": {
+    "mtime": 1792219136.2278714,
+    "seen": 1794460627.6247172,
+    "ast_hash": "c0237531a61ddf94199cf4e6fbffac70",
+    "semantic_hash": "c0237531a61ddf94199cf4e6fbffac70"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/crucigrama/GenerarCrucigramaUseCase.kt": {
+    "mtime": 1792219136.2288873,
+    "seen": 1794460627.6247191,
+    "ast_hash": "4c047a45bd5abf9c1fa9d0605161d38b",
+    "semantic_hash": "4c047a45bd5abf9c1fa9d0605161d38b"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/crucigrama/ValidarPalabraUseCase.kt": {
+    "mtime": 1792219136.2319012,
+    "seen": 1794460627.624721,
+    "ast_hash": "f8f0d06baaa27ce74caa2a18872525d8",
+    "semantic_hash": "f8f0d06baaa27ce74caa2a18872525d8"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/diagnostico/EvaluarDiagnosticoUseCase.kt": {
+    "mtime": 1792219136.2339132,
+    "seen": 1794460627.6247232,
+    "ast_hash": "6f02e5c7fa37f8c3676c27994bda7efe",
+    "semantic_hash": "6f02e5c7fa37f8c3676c27994bda7efe"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/diagnostico/FinalizarDiagnosticoUseCase.kt": {
+    "mtime": 1792219136.2359152,
+    "seen": 1794460627.624725,
+    "ast_hash": "b30feed46b086e8ec9f81e0db4b454f6",
+    "semantic_hash": "b30feed46b086e8ec9f81e0db4b454f6"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/diagnostico/ObtenerPreguntasDiagnosticoUseCase.kt": {
+    "mtime": 1792219136.2359152,
+    "seen": 1794460627.624727,
+    "ast_hash": "e237a42d523353d226bfb30408fea771",
+    "semantic_hash": "e237a42d523353d226bfb30408fea771"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/diagnostico/ObtenerPreguntasRepasoUseCase.kt": {
+    "mtime": 1792219587.9852436,
+    "seen": 1794460627.6247292,
+    "ast_hash": "63d8ea6aac4c872ce8d308d2f77130b7",
+    "semantic_hash": "63d8ea6aac4c872ce8d308d2f77130b7"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/diagnostico/OmitirDiagnosticoUseCase.kt": {
+    "mtime": 1792219136.2384522,
+    "seen": 1794460627.6247308,
+    "ast_hash": "5f68d8e138aeb577191ac89577120253",
+    "semantic_hash": "5f68d8e138aeb577191ac89577120253"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/diagnostico/ValidarAccesoDiagnosticoUseCase.kt": {
+    "mtime": 1792219587.987242,
+    "seen": 1794460627.624733,
+    "ast_hash": "5f552495ff7241f6e7c9feb5d0d7d94a",
+    "semantic_hash": "5f552495ff7241f6e7c9feb5d0d7d94a"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/flashcards/CasosDeUsoFlashcards.kt": {
+    "mtime": 1792219587.9882424,
+    "seen": 1794460627.6247349,
+    "ast_hash": "2d58655d4e3c498f8dca41a94afe3bd2",
+    "semantic_hash": "2d58655d4e3c498f8dca41a94afe3bd2"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/leccion/FinalizarLeccionUseCase.kt": {
+    "mtime": 1792219136.2404478,
+    "seen": 1794460627.6247368,
+    "ast_hash": "995c3387c01fbcb8f8cf7c14da1be1f8",
+    "semantic_hash": "995c3387c01fbcb8f8cf7c14da1be1f8"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/leccion/ObtenerLeccionUseCase.kt": {
+    "mtime": 1792219136.2429907,
+    "seen": 1794460627.624739,
+    "ast_hash": "01da26e05173614238b1074ba32b0445",
+    "semantic_hash": "01da26e05173614238b1074ba32b0445"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/leccion/RegistrarErrorLeccionUseCase.kt": {
+    "mtime": 1792219136.2445023,
+    "seen": 1794460627.6247408,
+    "ast_hash": "033d47e73d58c2be5901f9e8d8707f18",
+    "semantic_hash": "033d47e73d58c2be5901f9e8d8707f18"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/leccion/RegistrarLeccionCompletadaUseCase.kt": {
+    "mtime": 1792219136.2455308,
+    "seen": 1794460627.624743,
+    "ast_hash": "87db2a110f59b5fc6e60a677e758b259",
+    "semantic_hash": "87db2a110f59b5fc6e60a677e758b259"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/leccion/RegistrarNivelSinSuperarUseCase.kt": {
+    "mtime": 1792219136.246529,
+    "seen": 1794460627.624745,
+    "ast_hash": "41e17066edf5a44cbbbb107cd0dead6d",
+    "semantic_hash": "41e17066edf5a44cbbbb107cd0dead6d"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/leccion/ValidarRespuestaEjercicioUseCase.kt": {
+    "mtime": 1792219136.2480423,
+    "seen": 1794460627.6247468,
+    "ast_hash": "c72759886447b17f0e968d3454f969df",
+    "semantic_hash": "c72759886447b17f0e968d3454f969df"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/memorama/CalcularPuntosMemoramaUseCase.kt": {
+    "mtime": 1792219136.250054,
+    "seen": 1794460627.6247487,
+    "ast_hash": "8e0c502e594ba6249112bf64cf3eb9f1",
+    "semantic_hash": "8e0c502e594ba6249112bf64cf3eb9f1"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/memorama/FinalizarMemoramaUseCase.kt": {
+    "mtime": 1792219136.251567,
+    "seen": 1794460627.6247509,
+    "ast_hash": "b45804759b8ba8d22f8d8457fbea7de8",
+    "semantic_hash": "b45804759b8ba8d22f8d8457fbea7de8"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/memorama/GenerarMemoramaUseCase.kt": {
+    "mtime": 1792219136.2525783,
+    "seen": 1794460627.624753,
+    "ast_hash": "fcc61c1ae88d98dd751cf4714d63c9d5",
+    "semantic_hash": "fcc61c1ae88d98dd751cf4714d63c9d5"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/memorama/ValidarAccesoMemoramaUseCase.kt": {
+    "mtime": 1792219587.9902427,
+    "seen": 1794460627.624755,
+    "ast_hash": "b300b954ccae8e4ccb2c2f5fa2907410",
+    "semantic_hash": "b300b954ccae8e4ccb2c2f5fa2907410"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/memorama/VerificarParejaUseCase.kt": {
+    "mtime": 1792219136.2561324,
+    "seen": 1794460627.624757,
+    "ast_hash": "9db82e040142d773fd3d2db2fd3c5ce2",
+    "semantic_hash": "9db82e040142d773fd3d2db2fd3c5ce2"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/preguntaflash/ObservarHidromielUseCase.kt": {
+    "mtime": 1792219587.9915285,
+    "seen": 1794460627.6247587,
+    "ast_hash": "d144c13f25a05312c0391420ed11dded",
+    "semantic_hash": "d144c13f25a05312c0391420ed11dded"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/preguntaflash/ObtenerPreguntaFlashUseCase.kt": {
+    "mtime": 1792220288.6152024,
+    "seen": 1794460627.6247609,
+    "ast_hash": "31a476d061641f8674f6a06f2e68f78a",
+    "semantic_hash": "31a476d061641f8674f6a06f2e68f78a"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/preguntaflash/RegistrarTiempoAgotadoPreguntaFlashUseCase.kt": {
+    "mtime": 1792219587.9935439,
+    "seen": 1794460627.6247628,
+    "ast_hash": "eeeb4f0ec49b1c6d5955097c90c539a3",
+    "semantic_hash": "eeeb4f0ec49b1c6d5955097c90c539a3"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/preguntaflash/ValidarRespuestaPreguntaFlashUseCase.kt": {
+    "mtime": 1792219587.99507,
+    "seen": 1794460627.624765,
+    "ast_hash": "7a37bfb8c0a310fed52a5685ab580f69",
+    "semantic_hash": "7a37bfb8c0a310fed52a5685ab580f69"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/ragnarok/CasosDeUsoRagnarok.kt": {
+    "mtime": 1792219587.9980817,
+    "seen": 1794460627.624767,
+    "ast_hash": "3830dcc55c926338a4f554fd9c91b321",
+    "semantic_hash": "3830dcc55c926338a4f554fd9c91b321"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/reto/AbandonarRetoContrarrelojUseCase.kt": {
+    "mtime": 1792475963.0657694,
+    "seen": 1794460627.624769,
+    "ast_hash": "a96024c1bd27fc0192fa20bcb22dea5a",
+    "semantic_hash": "a96024c1bd27fc0192fa20bcb22dea5a"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/reto/ArmarRetoContrarrelojUseCase.kt": {
+    "mtime": 1792220288.593788,
+    "seen": 1794460627.6247709,
+    "ast_hash": "0041bd2039235c02eff72e8eca245df0",
+    "semantic_hash": "0041bd2039235c02eff72e8eca245df0"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/reto/FinalizarRetoContrarrelojUseCase.kt": {
+    "mtime": 1792220288.593788,
+    "seen": 1794460627.624773,
+    "ast_hash": "6684193bd779a72202662c041055e8a3",
+    "semantic_hash": "6684193bd779a72202662c041055e8a3"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/reto/PagarEntradaRetoContrarrelojUseCase.kt": {
+    "mtime": 1792219588.002617,
+    "seen": 1794460627.624775,
+    "ast_hash": "4a2bf5d29511882a7058e49e75b3ef54",
+    "semantic_hash": "4a2bf5d29511882a7058e49e75b3ef54"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/retoarrastrar/AbandonarRetoUseCase.kt": {
+    "mtime": 1792219588.0061626,
+    "seen": 1794460627.624777,
+    "ast_hash": "79221fa0d0c653462ff2f192ee52c70c",
+    "semantic_hash": "79221fa0d0c653462ff2f192ee52c70c"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/retoarrastrar/CalcularPuntajeRetoUseCase.kt": {
+    "mtime": 1792219588.0071654,
+    "seen": 1794460627.624779,
+    "ast_hash": "b96a9391b7574a57d489effc3e1106c2",
+    "semantic_hash": "b96a9391b7574a57d489effc3e1106c2"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/retoarrastrar/FinalizarRetoUseCase.kt": {
+    "mtime": 1792219588.0081673,
+    "seen": 1794460627.6247811,
+    "ast_hash": "5cbcf09525de184a5a5020ed9f3fab69",
+    "semantic_hash": "5cbcf09525de184a5a5020ed9f3fab69"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/retoarrastrar/ObtenerRetoUseCase.kt": {
+    "mtime": 1792476751.738099,
+    "seen": 1794460627.624783,
+    "ast_hash": "fc40eda84c8aa78e5050cb44c7119e9b",
+    "semantic_hash": "fc40eda84c8aa78e5050cb44c7119e9b"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/retoarrastrar/RegistrarErrorRetoArrastrarUseCase.kt": {
+    "mtime": 1792219588.0111763,
+    "seen": 1794460627.624785,
+    "ast_hash": "6571d0254384453e39cafe81300f7a64",
+    "semantic_hash": "6571d0254384453e39cafe81300f7a64"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/retoarrastrar/ValidarColocacionUseCase.kt": {
+    "mtime": 1792219588.012177,
+    "seen": 1794460627.6247869,
+    "ast_hash": "6effd08a639fa5a6f43cfe1228225a30",
+    "semantic_hash": "6effd08a639fa5a6f43cfe1228225a30"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/roadmap/ObtenerIntroduccionTemaUseCase.kt": {
+    "mtime": 1792219136.2606559,
+    "seen": 1794460627.6247892,
+    "ast_hash": "320958c1202152c5b46e05fc5c786756",
+    "semantic_hash": "320958c1202152c5b46e05fc5c786756"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/roadmap/ObtenerMundoUseCase.kt": {
+    "mtime": 1792219588.0131779,
+    "seen": 1794460627.6247914,
+    "ast_hash": "d5f8a01c8f11919ee916c2068f203d12",
+    "semantic_hash": "d5f8a01c8f11919ee916c2068f203d12"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/roadmap/ObtenerMundosUseCase.kt": {
+    "mtime": 1792219588.0167086,
+    "seen": 1794460627.624793,
+    "ast_hash": "d128290073e0597585b1c6c156d5a13f",
+    "semantic_hash": "d128290073e0597585b1c6c156d5a13f"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/roadmap/ObtenerTemasPorMundoUseCase.kt": {
+    "mtime": 1792219136.2656856,
+    "seen": 1794460627.6247952,
+    "ast_hash": "33d8f3ee29ea59cc5d506d9d8d7f6a28",
+    "semantic_hash": "33d8f3ee29ea59cc5d506d9d8d7f6a28"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/roadmap/RegistrarIntroduccionVistaUseCase.kt": {
+    "mtime": 1792219136.267211,
+    "seen": 1794460627.624797,
+    "ast_hash": "536e2146dbbd055cbe24a12f598d3e13",
+    "semantic_hash": "536e2146dbbd055cbe24a12f598d3e13"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/roadmap/ValidarAccesoNivelUseCase.kt": {
+    "mtime": 1792219588.0177102,
+    "seen": 1794460627.6247993,
+    "ast_hash": "b19e17057d4785117b832b5305bb23d4",
+    "semantic_hash": "b19e17057d4785117b832b5305bb23d4"
+  },
+  "app/src/main/java/com/aesir/odin/domain/usecase/shared/ValidarRespuestaUseCase.kt": {
+    "mtime": 1792219136.2707427,
+    "seen": 1794460627.624801,
+    "ast_hash": "da1577642d4dc4c42c26d1f7f5418f3e",
+    "semantic_hash": "da1577642d4dc4c42c26d1f7f5418f3e"
+  },
+  "app/src/main/java/com/aesir/odin/ui/components/HandPaintedTitle.kt": {
+    "mtime": 1792219136.274772,
+    "seen": 1794460627.624803,
+    "ast_hash": "ebff90ae96794cd5dc6295567b13a308",
+    "semantic_hash": "ebff90ae96794cd5dc6295567b13a308"
+  },
+  "app/src/main/java/com/aesir/odin/ui/components/PantallaProximamente.kt": {
+    "mtime": 1792219136.2762845,
+    "seen": 1794460627.6248052,
+    "ast_hash": "f53478bc0066fe11c041dd80d59e0882",
+    "semantic_hash": "f53478bc0066fe11c041dd80d59e0882"
+  },
+  "app/src/main/java/com/aesir/odin/ui/components/odin/Componentes.kt": {
+    "mtime": 1792219136.2783022,
+    "seen": 1794460627.6248071,
+    "ast_hash": "7d635c0c1abb926d0bc37190491e57c4",
+    "semantic_hash": "7d635c0c1abb926d0bc37190491e57c4"
+  },
+  "app/src/main/java/com/aesir/odin/ui/components/odin/Dibujo.kt": {
+    "mtime": 1792219136.2808309,
+    "seen": 1794460627.6248093,
+    "ast_hash": "72bf059622911854188f7c8f9c1e1815",
+    "semantic_hash": "72bf059622911854188f7c8f9c1e1815"
+  },
+  "app/src/main/java/com/aesir/odin/ui/components/odin/EncabezadoNivel.kt": {
+    "mtime": 1792219136.2833607,
+    "seen": 1794460627.6248112,
+    "ast_hash": "509441ac1559b94192d2b5242be7b012",
+    "semantic_hash": "509441ac1559b94192d2b5242be7b012"
+  },
+  "app/src/main/java/com/aesir/odin/ui/components/odin/Hidromiel.kt": {
+    "mtime": 1792219588.0212042,
+    "seen": 1794460627.6248133,
+    "ast_hash": "9ce98515b0a2b27b08f4ab36788de4a3",
+    "semantic_hash": "9ce98515b0a2b27b08f4ab36788de4a3"
+  },
+  "app/src/main/java/com/aesir/odin/ui/components/odin/LienzoDiseno.kt": {
+    "mtime": 1792219588.0222094,
+    "seen": 1794460627.6248155,
+    "ast_hash": "2cd33cb27a6a05ce739cac405f83de28",
+    "semantic_hash": "2cd33cb27a6a05ce739cac405f83de28"
+  },
+  "app/src/main/java/com/aesir/odin/ui/components/odin/Posicion.kt": {
+    "mtime": 1792219588.0237188,
+    "seen": 1794460627.6248174,
+    "ast_hash": "fbea35bd392238ed16362075fd999d04",
+    "semantic_hash": "fbea35bd392238ed16362075fd999d04"
+  },
+  "app/src/main/java/com/aesir/odin/ui/crucigrama/CrucigramaScreen.kt": {
+    "mtime": 1792219136.287401,
+    "seen": 1794460627.6248195,
+    "ast_hash": "a9a19863008575a67ff43686cbd5cbc6",
+    "semantic_hash": "a9a19863008575a67ff43686cbd5cbc6"
+  },
+  "app/src/main/java/com/aesir/odin/ui/crucigrama/CrucigramaViewModel.kt": {
+    "mtime": 1792219136.2893999,
+    "seen": 1794460627.6248214,
+    "ast_hash": "f29818ed06560ca1f219768b9dae7ec6",
+    "semantic_hash": "f29818ed06560ca1f219768b9dae7ec6"
+  },
+  "app/src/main/java/com/aesir/odin/ui/crucigrama/ResultadoCrucigramaScreen.kt": {
+    "mtime": 1792219136.2903976,
+    "seen": 1794460627.6248233,
+    "ast_hash": "15a1535903e8167fa30d0944cb309245",
+    "semantic_hash": "15a1535903e8167fa30d0944cb309245"
+  },
+  "app/src/main/java/com/aesir/odin/ui/diagnostico/EscenaPozo.kt": {
+    "mtime": 1792219588.0252278,
+    "seen": 1794460627.6248252,
+    "ast_hash": "59defe483e8dc62c6e907bb2bf0280d7",
+    "semantic_hash": "59defe483e8dc62c6e907bb2bf0280d7"
+  },
+  "app/src/main/java/com/aesir/odin/ui/diagnostico/EvaluacionDiagnosticaScreen.kt": {
+    "mtime": 1792561638.471003,
+    "seen": 1794460627.6248295,
+    "ast_hash": "a5636acc7e3ac09e57cf6cd612d85adf",
+    "semantic_hash": "a5636acc7e3ac09e57cf6cd612d85adf"
+  },
+  "app/src/main/java/com/aesir/odin/ui/diagnostico/EvaluacionDiagnosticaViewModel.kt": {
+    "mtime": 1792219588.0292497,
+    "seen": 1794460627.6248314,
+    "ast_hash": "8dd0e8784a82b197ce2ce5a3330090fc",
+    "semantic_hash": "8dd0e8784a82b197ce2ce5a3330090fc"
+  },
+  "app/src/main/java/com/aesir/odin/ui/diagnostico/ResultadoDiagnosticoScreen.kt": {
+    "mtime": 1792219588.031251,
+    "seen": 1794460627.6248333,
+    "ast_hash": "28e5a0f2ced37a1d3faf6c61dc2ae2a4",
+    "semantic_hash": "28e5a0f2ced37a1d3faf6c61dc2ae2a4"
+  },
+  "app/src/main/java/com/aesir/odin/ui/flashcards/FlashcardsScreen.kt": {
+    "mtime": 1792219588.0363116,
+    "seen": 1794460627.6248353,
+    "ast_hash": "f4b2b5f5640ef21d9618c34303a18f58",
+    "semantic_hash": "f4b2b5f5640ef21d9618c34303a18f58"
+  },
+  "app/src/main/java/com/aesir/odin/ui/flashcards/FlashcardsViewModel.kt": {
+    "mtime": 1792219588.0383341,
+    "seen": 1794460627.6248372,
+    "ast_hash": "df1ab2eea8ab0673d0b3997938443cec",
+    "semantic_hash": "df1ab2eea8ab0673d0b3997938443cec"
+  },
+  "app/src/main/java/com/aesir/odin/ui/flashcards/MaderaFlashcards.kt": {
+    "mtime": 1792219588.0401044,
+    "seen": 1794460627.624839,
+    "ast_hash": "c375f183085fb2c51c0ee2a05024e914",
+    "semantic_hash": "c375f183085fb2c51c0ee2a05024e914"
+  },
+  "app/src/main/java/com/aesir/odin/ui/leccion/LeccionInteractivaScreen.kt": {
+    "mtime": 1792219588.043117,
+    "seen": 1794460627.6248412,
+    "ast_hash": "a5073b38157e3f5b90dd8949ca6c8e26",
+    "semantic_hash": "a5073b38157e3f5b90dd8949ca6c8e26"
+  },
+  "app/src/main/java/com/aesir/odin/ui/leccion/LeccionInteractivaViewModel.kt": {
+    "mtime": 1792219136.3019345,
+    "seen": 1794460627.6248431,
+    "ast_hash": "fb5f7a05d3f81612c811294859e44932",
+    "semantic_hash": "fb5f7a05d3f81612c811294859e44932"
+  },
+  "app/src/main/java/com/aesir/odin/ui/leccion/LeccionScreen.kt": {
+    "mtime": 1792219136.3039668,
+    "seen": 1794460627.624845,
+    "ast_hash": "34fc9e43662bc11085c3c49b97c02dc1",
+    "semantic_hash": "34fc9e43662bc11085c3c49b97c02dc1"
+  },
+  "app/src/main/java/com/aesir/odin/ui/leccion/ResumenLeccionScreen.kt": {
+    "mtime": 1792219136.3059626,
+    "seen": 1794460627.624847,
+    "ast_hash": "0c1ca920f4c82c1ce9ec96dea13dc012",
+    "semantic_hash": "0c1ca920f4c82c1ce9ec96dea13dc012"
+  },
+  "app/src/main/java/com/aesir/odin/ui/leccion/ResumenLeccionViewModel.kt": {
+    "mtime": 1792219136.3069654,
+    "seen": 1794460627.6248488,
+    "ast_hash": "bc802ea22c2bd15b4bf766f3c6de5c6d",
+    "semantic_hash": "bc802ea22c2bd15b4bf766f3c6de5c6d"
+  },
+  "app/src/main/java/com/aesir/odin/ui/memorama/MemoramaScreen.kt": {
+    "mtime": 1792219588.0451179,
+    "seen": 1794460627.6248507,
+    "ast_hash": "20bc3551eb8983fa40ad747eb2064b7d",
+    "semantic_hash": "20bc3551eb8983fa40ad747eb2064b7d"
+  },
+  "app/src/main/java/com/aesir/odin/ui/memorama/MemoramaViewModel.kt": {
+    "mtime": 1792219588.0466304,
+    "seen": 1794460627.6248527,
+    "ast_hash": "9e98cd3a8897d6321b0118b495060a77",
+    "semantic_hash": "9e98cd3a8897d6321b0118b495060a77"
+  },
+  "app/src/main/java/com/aesir/odin/ui/memorama/ResumenMemoramaScreen.kt": {
+    "mtime": 1792219136.313027,
+    "seen": 1794460627.6248548,
+    "ast_hash": "4af1d3373eafba901375bed70b67186d",
+    "semantic_hash": "4af1d3373eafba901375bed70b67186d"
+  },
+  "app/src/main/java/com/aesir/odin/ui/mundos/MundosScreen.kt": {
+    "mtime": 1792562436.3282206,
+    "seen": 1794460627.6248565,
+    "ast_hash": "2f8e5c90d253e160b15c79dde11fff3c",
+    "semantic_hash": "2f8e5c90d253e160b15c79dde11fff3c"
+  },
+  "app/src/main/java/com/aesir/odin/ui/mundos/MundosViewModel.kt": {
+    "mtime": 1792219136.3180392,
+    "seen": 1794460627.6248586,
+    "ast_hash": "4c98959a9d8b10b04f9991a9adc46d29",
+    "semantic_hash": "4c98959a9d8b10b04f9991a9adc46d29"
+  },
+  "app/src/main/java/com/aesir/odin/ui/navigation/OdinNavGraph.kt": {
+    "mtime": 1792476499.580438,
+    "seen": 1794460627.6248608,
+    "ast_hash": "69e7ed54e39d6b171dc60f229a3b2ca2",
+    "semantic_hash": "69e7ed54e39d6b171dc60f229a3b2ca2"
+  },
+  "app/src/main/java/com/aesir/odin/ui/preguntaflash/PreguntaFlashScreen.kt": {
+    "mtime": 1792219588.055885,
+    "seen": 1794460627.6248627,
+    "ast_hash": "bb232cd446008ad8c62efe0eeae4e4e4",
+    "semantic_hash": "bb232cd446008ad8c62efe0eeae4e4e4"
+  },
+  "app/src/main/java/com/aesir/odin/ui/preguntaflash/PreguntaFlashViewModel.kt": {
+    "mtime": 1792476499.5754359,
+    "seen": 1794460627.6248732,
+    "ast_hash": "96990f63160fd31640531b8aadffdcce",
+    "semantic_hash": "96990f63160fd31640531b8aadffdcce"
+  },
+  "app/src/main/java/com/aesir/odin/ui/ragnarok/ArteRagnarok.kt": {
+    "mtime": 1792219588.0586214,
+    "seen": 1794460627.6248753,
+    "ast_hash": "f6aa0d3a6770805a4103ec9365d9e767",
+    "semantic_hash": "f6aa0d3a6770805a4103ec9365d9e767"
+  },
+  "app/src/main/java/com/aesir/odin/ui/ragnarok/ComponentesRagnarok.kt": {
+    "mtime": 1792219588.060261,
+    "seen": 1794460627.6248772,
+    "ast_hash": "1119e654afd976580319b552c8216f00",
+    "semantic_hash": "1119e654afd976580319b552c8216f00"
+  },
+  "app/src/main/java/com/aesir/odin/ui/ragnarok/EscenasRagnarok.kt": {
+    "mtime": 1792219588.0612726,
+    "seen": 1794460627.6248791,
+    "ast_hash": "50117df3bf258e5cc5466a2286fc52bc",
+    "semantic_hash": "50117df3bf258e5cc5466a2286fc52bc"
+  },
+  "app/src/main/java/com/aesir/odin/ui/ragnarok/RagnarokScreen.kt": {
+    "mtime": 1792219588.06285,
+    "seen": 1794460627.6248808,
+    "ast_hash": "2a2623b024f90ea25beccd6eb2c3ff9c",
+    "semantic_hash": "2a2623b024f90ea25beccd6eb2c3ff9c"
+  },
+  "app/src/main/java/com/aesir/odin/ui/ragnarok/RagnarokViewModel.kt": {
+    "mtime": 1792219588.0648746,
+    "seen": 1794460627.624883,
+    "ast_hash": "96875d93cd6e88d8b309e191665defbd",
+    "semantic_hash": "96875d93cd6e88d8b309e191665defbd"
+  },
+  "app/src/main/java/com/aesir/odin/ui/retoarrastrar/DiagramasReto.kt": {
+    "mtime": 1792219588.0668764,
+    "seen": 1794460627.624885,
+    "ast_hash": "c07c4d6502a0553b0aa96d479f033b0a",
+    "semantic_hash": "c07c4d6502a0553b0aa96d479f033b0a"
+  },
+  "app/src/main/java/com/aesir/odin/ui/retoarrastrar/ResumenRetoScreen.kt": {
+    "mtime": 1792219588.0683868,
+    "seen": 1794460627.6248868,
+    "ast_hash": "446cc742be2fce6b30182dacb728fbca",
+    "semantic_hash": "446cc742be2fce6b30182dacb728fbca"
+  },
+  "app/src/main/java/com/aesir/odin/ui/retoarrastrar/RetoArrastrarScreen.kt": {
+    "mtime": 1792219588.07041,
+    "seen": 1794460627.624889,
+    "ast_hash": "cc72479c409dbc859a5313d993f32f59",
+    "semantic_hash": "cc72479c409dbc859a5313d993f32f59"
+  },
+  "app/src/main/java/com/aesir/odin/ui/retoarrastrar/RetoArrastrarViewModel.kt": {
+    "mtime": 1792219588.071412,
+    "seen": 1794460627.6248906,
+    "ast_hash": "075871d337413b9d2cd9546fbaee795d",
+    "semantic_hash": "075871d337413b9d2cd9546fbaee795d"
+  },
+  "app/src/main/java/com/aesir/odin/ui/retocontrareloj/RetoContrarrelojScreen.kt": {
+    "mtime": 1792475963.0801215,
+    "seen": 1794460627.6248927,
+    "ast_hash": "dedfba67b4cde9a1eee1adac10a3b4ee",
+    "semantic_hash": "dedfba67b4cde9a1eee1adac10a3b4ee"
+  },
+  "app/src/main/java/com/aesir/odin/ui/retocontrareloj/RetoContrarrelojViewModel.kt": {
+    "mtime": 1792475963.0737827,
+    "seen": 1794460627.6248946,
+    "ast_hash": "19704efa3e9246185656479bf1af7f69",
+    "semantic_hash": "19704efa3e9246185656479bf1af7f69"
+  },
+  "app/src/main/java/com/aesir/odin/ui/roadmap/FuenteMimir.kt": {
+    "mtime": 1792219588.0774572,
+    "seen": 1794460627.6248968,
+    "ast_hash": "f6c2143965389190b0f0530feed21934",
+    "semantic_hash": "f6c2143965389190b0f0530feed21934"
+  },
+  "app/src/main/java/com/aesir/odin/ui/roadmap/RoadmapScreen.kt": {
+    "mtime": 1792220485.6368313,
+    "seen": 1794460627.624899,
+    "ast_hash": "fcb7c61a01d1ea9819524bc458aa6280",
+    "semantic_hash": "fcb7c61a01d1ea9819524bc458aa6280"
+  },
+  "app/src/main/java/com/aesir/odin/ui/roadmap/RoadmapTemporalScreen.kt": {
+    "mtime": 1792219136.3281517,
+    "seen": 1794460627.6249027,
+    "ast_hash": "9c6c8ef8b689ad661932076783c9565c",
+    "semantic_hash": "9c6c8ef8b689ad661932076783c9565c"
+  },
+  "app/src/main/java/com/aesir/odin/ui/roadmap/RoadmapViewModel.kt": {
+    "mtime": 1792219588.0819986,
+    "seen": 1794460627.6249049,
+    "ast_hash": "e6e89e0f1d0f51a9568279c3dead9e6f",
+    "semantic_hash": "e6e89e0f1d0f51a9568279c3dead9e6f"
+  },
+  "app/src/main/java/com/aesir/odin/ui/temaintro/TemaIntroScreen.kt": {
+    "mtime": 1792219136.3332126,
+    "seen": 1794460627.624907,
+    "ast_hash": "b27f4f6b40017cdebd63cd53f5beebd1",
+    "semantic_hash": "b27f4f6b40017cdebd63cd53f5beebd1"
+  },
+  "app/src/main/java/com/aesir/odin/ui/temaintro/TemaIntroViewModel.kt": {
+    "mtime": 1792219136.3362553,
+    "seen": 1794460627.6249087,
+    "ast_hash": "8145284fc2775510fff12eaae301a873",
+    "semantic_hash": "8145284fc2775510fff12eaae301a873"
+  },
+  "app/src/main/java/com/aesir/odin/ui/theme/Color.kt": {
+    "mtime": 1792219136.3382554,
+    "seen": 1794460627.6249108,
+    "ast_hash": "4a12e877cf0abfa2870cdb88bbd6bcae",
+    "semantic_hash": "4a12e877cf0abfa2870cdb88bbd6bcae"
+  },
+  "app/src/main/java/com/aesir/odin/ui/theme/EstiloMundo.kt": {
+    "mtime": 1792219136.340268,
+    "seen": 1794460627.6249127,
+    "ast_hash": "5256ddc001930771acf83f98523c10d4",
+    "semantic_hash": "5256ddc001930771acf83f98523c10d4"
+  },
+  "app/src/main/java/com/aesir/odin/ui/theme/Theme.kt": {
+    "mtime": 1792219136.340268,
+    "seen": 1794460627.6249146,
+    "ast_hash": "3533b5a168540386bf9398b4ad203df6",
+    "semantic_hash": "3533b5a168540386bf9398b4ad203df6"
+  },
+  "app/src/main/java/com/aesir/odin/ui/theme/Type.kt": {
+    "mtime": 1792219136.3428354,
+    "seen": 1794460627.6249168,
+    "ast_hash": "1b29d8394d85c51470a2d5165bc22e9f",
+    "semantic_hash": "1b29d8394d85c51470a2d5165bc22e9f"
+  },
+  "app/src/test/java/com/aesir/odin/ExampleUnitTest.kt": {
+    "mtime": 1792219136.385104,
+    "seen": 1794460627.6249185,
+    "ast_hash": "d8bfc360b82dde46cc0c06d0e99e2727",
+    "semantic_hash": "d8bfc360b82dde46cc0c06d0e99e2727"
+  },
+  "app/src/test/java/com/aesir/odin/domain/hidromiel/FakesHidromiel.kt": {
+    "mtime": 1792219136.3876283,
+    "seen": 1794460627.6249206,
+    "ast_hash": "46478d642080858660fe015eefa6bd3a",
+    "semantic_hash": "46478d642080858660fe015eefa6bd3a"
+  },
+  "app/src/test/java/com/aesir/odin/domain/hidromiel/ModoAdminTest.kt": {
+    "mtime": 1792219588.1241,
+    "seen": 1794460627.6249225,
+    "ast_hash": "cd49944a91fc1c24d1ca598162a2288c",
+    "semantic_hash": "cd49944a91fc1c24d1ca598162a2288c"
+  },
+  "app/src/test/java/com/aesir/odin/domain/hidromiel/ModuloHidromielTest.kt": {
+    "mtime": 1792476751.738099,
+    "seen": 1794460627.6249244,
+    "ast_hash": "defd7dc3ea316d84b74029d09fcbb97f",
+    "semantic_hash": "defd7dc3ea316d84b74029d09fcbb97f"
+  },
+  "app/src/test/java/com/aesir/odin/domain/hidromiel/ReglasYCalculosTest.kt": {
+    "mtime": 1792219136.3906424,
+    "seen": 1794460627.6249266,
+    "ast_hash": "ca11ba6442ff874d234ddf96f2a7a3c2",
+    "semantic_hash": "ca11ba6442ff874d234ddf96f2a7a3c2"
+  },
+  "app/src/test/java/com/aesir/odin/domain/model/ArbolHabilidadesTest.kt": {
+    "mtime": 1792219588.1271005,
+    "seen": 1794460627.6249285,
+    "ast_hash": "41f1f3a86d33516c0b3b9cd59e81334e",
+    "semantic_hash": "41f1f3a86d33516c0b3b9cd59e81334e"
+  },
+  "app/src/test/java/com/aesir/odin/domain/model/ArbolTercerAnilloTest.kt": {
+    "mtime": 1792219588.1286125,
+    "seen": 1794460627.6249318,
+    "ast_hash": "163215e67f89369fd20e65ba115fc8cb",
+    "semantic_hash": "163215e67f89369fd20e65ba115fc8cb"
+  },
+  "app/src/test/java/com/aesir/odin/domain/usecase/crucigrama/CrucigramaTest.kt": {
+    "mtime": 1792219136.3956544,
+    "seen": 1794460627.624934,
+    "ast_hash": "059a6eefa33b0262dc6ec783b20bd8a7",
+    "semantic_hash": "059a6eefa33b0262dc6ec783b20bd8a7"
+  },
+  "app/src/test/java/com/aesir/odin/domain/usecase/diagnostico/DiagnosticoTest.kt": {
+    "mtime": 1792219136.3981843,
+    "seen": 1794460627.6249356,
+    "ast_hash": "3bc0f16733a88b5acfd197ac3f297f1d",
+    "semantic_hash": "3bc0f16733a88b5acfd197ac3f297f1d"
+  },
+  "app/src/test/java/com/aesir/odin/domain/usecase/diagnostico/RepasoMimirTest.kt": {
+    "mtime": 1792219588.1306238,
+    "seen": 1794460627.6249378,
+    "ast_hash": "53de5a42f5518cc049f976370cdb438f",
+    "semantic_hash": "53de5a42f5518cc049f976370cdb438f"
+  },
+  "app/src/test/java/com/aesir/odin/domain/usecase/leccion/Fakes.kt": {
+    "mtime": 1792219136.4001834,
+    "seen": 1794460627.6249397,
+    "ast_hash": "09dc746870e864ab74276dd7b365939b",
+    "semantic_hash": "09dc746870e864ab74276dd7b365939b"
+  },
+  "app/src/test/java/com/aesir/odin/domain/usecase/leccion/FinalizarLeccionUseCaseTest.kt": {
+    "mtime": 1792219136.4016967,
+    "seen": 1794460627.6249418,
+    "ast_hash": "4e2938bb56b78f746e2757aa02c51adf",
+    "semantic_hash": "4e2938bb56b78f746e2757aa02c51adf"
+  },
+  "app/src/test/java/com/aesir/odin/domain/usecase/leccion/RegistrarErrorLeccionUseCaseTest.kt": {
+    "mtime": 1792219136.4037137,
+    "seen": 1794460627.6249437,
+    "ast_hash": "70d2e7c82f3894ea096b21cf2433f094",
+    "semantic_hash": "70d2e7c82f3894ea096b21cf2433f094"
+  },
+  "app/src/test/java/com/aesir/odin/domain/usecase/memorama/MemoramaTest.kt": {
+    "mtime": 1792219136.4057126,
+    "seen": 1794460627.6249456,
+    "ast_hash": "141388c6a060f34ea55b34f318c313b1",
+    "semantic_hash": "141388c6a060f34ea55b34f318c313b1"
+  },
+  "app/src/test/java/com/aesir/odin/domain/usecase/preguntaflash/FakesPreguntaFlash.kt": {
+    "mtime": 1792219588.1321356,
+    "seen": 1794460627.6249475,
+    "ast_hash": "27bad27e802fe172ecafcfc883ff39e4",
+    "semantic_hash": "27bad27e802fe172ecafcfc883ff39e4"
+  },
+  "app/src/test/java/com/aesir/odin/domain/usecase/preguntaflash/ObservarHidromielUseCaseTest.kt": {
+    "mtime": 1792219588.1331482,
+    "seen": 1794460627.6249495,
+    "ast_hash": "211190311530129950cc64e1ba8d8ce2",
+    "semantic_hash": "211190311530129950cc64e1ba8d8ce2"
+  },
+  "app/src/test/java/com/aesir/odin/domain/usecase/preguntaflash/ObtenerPreguntaFlashUseCaseTest.kt": {
+    "mtime": 1792219588.1341622,
+    "seen": 1794460627.6249514,
+    "ast_hash": "7382600b9408bde7321fcf056f929150",
+    "semantic_hash": "7382600b9408bde7321fcf056f929150"
+  },
+  "app/src/test/java/com/aesir/odin/domain/usecase/preguntaflash/RegistrarTiempoAgotadoPreguntaFlashUseCaseTest.kt": {
+    "mtime": 1792219588.1361597,
+    "seen": 1794460627.6249535,
+    "ast_hash": "3dc5eba8db65bd32fa200472aaae0d36",
+    "semantic_hash": "3dc5eba8db65bd32fa200472aaae0d36"
+  },
+  "app/src/test/java/com/aesir/odin/domain/usecase/preguntaflash/ValidarRespuestaPreguntaFlashUseCaseTest.kt": {
+    "mtime": 1792219588.137158,
+    "seen": 1794460627.6249554,
+    "ast_hash": "9dd4d8ca80f127c804a54aaba547a91d",
+    "semantic_hash": "9dd4d8ca80f127c804a54aaba547a91d"
+  },
+  "app/src/test/java/com/aesir/odin/domain/usecase/reto/ArmarRetoContrarrelojUseCaseTest.kt": {
+    "mtime": 1792219588.1381593,
+    "seen": 1794460627.6249573,
+    "ast_hash": "9da53f0b0c23a59a968802ac54935d09",
+    "semantic_hash": "9da53f0b0c23a59a968802ac54935d09"
+  },
+  "app/src/test/java/com/aesir/odin/domain/usecase/reto/ContrarrelojModoAdminTest.kt": {
+    "mtime": 1792219588.139901,
+    "seen": 1794460627.6249595,
+    "ast_hash": "5b22646cd21eb28c083b6da7ef3026ad",
+    "semantic_hash": "5b22646cd21eb28c083b6da7ef3026ad"
+  },
+  "app/src/test/java/com/aesir/odin/domain/usecase/reto/FakesReto.kt": {
+    "mtime": 1792219588.1409113,
+    "seen": 1794460627.6249619,
+    "ast_hash": "0f17de5bdf0cc237330ceb7ba31b0bb4",
+    "semantic_hash": "0f17de5bdf0cc237330ceb7ba31b0bb4"
+  },
+  "app/src/test/java/com/aesir/odin/domain/usecase/reto/FinalizarYAbandonarRetoTest.kt": {
+    "mtime": 1792220401.9559152,
+    "seen": 1794460627.6249638,
+    "ast_hash": "b23de7d1e67a0d451e25226fef14b6f4",
+    "semantic_hash": "b23de7d1e67a0d451e25226fef14b6f4"
+  },
+  "app/src/test/java/com/aesir/odin/domain/usecase/retoarrastrar/RetoArrastrarTest.kt": {
+    "mtime": 1792476751.738099,
+    "seen": 1794460627.6249657,
+    "ast_hash": "458f4fdf22a088bbf4e0de1eafc26010",
+    "semantic_hash": "458f4fdf22a088bbf4e0de1eafc26010"
+  },
+  "app/src/test/java/com/aesir/odin/domain/usecase/shared/ValidarRespuestaUseCaseTest.kt": {
+    "mtime": 1792219136.4077177,
+    "seen": 1794460627.6249676,
+    "ast_hash": "3dd72caa5610ef168267f6e978a98385",
+    "semantic_hash": "3dd72caa5610ef168267f6e978a98385"
+  },
+  "build.gradle.kts": {
+    "mtime": 1792219136.408793,
+    "seen": 1794460627.6249697,
+    "ast_hash": "4ef38bb9d9db8523af5fe928314d6096",
+    "semantic_hash": "4ef38bb9d9db8523af5fe928314d6096"
+  },
+  "docs/diagramas/generar_diagramas.py": {
+    "mtime": 1792296181.4901125,
+    "seen": 1794460627.6249719,
+    "ast_hash": "5071a90c4c315c2909b31e2beb367159",
+    "semantic_hash": "5071a90c4c315c2909b31e2beb367159"
+  },
+  "docs/diagramas/generar_secuencias.py": {
+    "mtime": 1792298703.3895428,
+    "seen": 1794460627.6249738,
+    "ast_hash": "43889925886106c31aba6f26460b9b65",
+    "semantic_hash": "43889925886106c31aba6f26460b9b65"
+  },
+  "gradlew": {
+    "mtime": 1792219136.4218674,
+    "seen": 1794460627.6249757,
+    "ast_hash": "4f7a8a3a765f6f751d47568dc3bb913f",
+    "semantic_hash": "4f7a8a3a765f6f751d47568dc3bb913f"
+  },
+  "settings.gradle.kts": {
+    "mtime": 1792219136.4243996,
+    "seen": 1794460627.6249776,
+    "ast_hash": "c31e1f0ede4d16a6b779840d659afd4b",
+    "semantic_hash": "c31e1f0ede4d16a6b779840d659afd4b"
+  },
+  "README.md": {
+    "mtime": 1792219587.896094,
+    "seen": 1794460627.6249797,
+    "ast_hash": "ac10f113381b4b2e3382c1f0126e6803",
+    "semantic_hash": "ac10f113381b4b2e3382c1f0126e6803"
+  },
+  "docs/Secciones_SCS_Sprint2.md": {
+    "mtime": 1792298724.596684,
+    "seen": 1794460627.6249816,
+    "ast_hash": "a62e5bdb4a235d23c666fa70bd7da763",
+    "semantic_hash": "a62e5bdb4a235d23c666fa70bd7da763"
+  },
+  "docs/pruebas/CasosPrueba_CU06_CU11.md": {
+    "mtime": 1792303135.6093116,
+    "seen": 1794460627.6249838,
+    "ast_hash": "155dfac623124364d9934158e68ea7ff",
+    "semantic_hash": "155dfac623124364d9934158e68ea7ff"
+  },
+  "docs/pruebas/PruebasIntegracion_CU06_CU11.md": {
+    "mtime": 1792541030.9177458,
+    "seen": 1794460627.6249857,
+    "ast_hash": "8c05ab1046d1146da94da6c93f57c188",
+    "semantic_hash": "8c05ab1046d1146da94da6c93f57c188"
+  }
+}

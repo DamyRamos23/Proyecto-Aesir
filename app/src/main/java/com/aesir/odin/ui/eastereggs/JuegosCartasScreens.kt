@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,9 +58,9 @@ fun BlackjackJuego(vm: JuegoOcultoViewModel, estilo: EstiloMundo) {
     var juego by remember { mutableStateOf<Blackjack?>(null) }
     var pagado by remember { mutableStateOf(false) }
     var resultado by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
-    // El juego es un objeto mutable: este contador hace que la pantalla se redibuje tras cada jugada.
+    // El juego muta sus listas en el mismo objeto y Compose omite redibujar parámetros «iguales»;
+    // key(jugadas) fuerza a dibujar la mesa de nuevo tras cada jugada.
     var jugadas by remember { mutableIntStateOf(0) }
-    jugadas.let { } // se lee para redibujar tras cada jugada
 
     fun revisar() {
         jugadas++
@@ -79,7 +80,7 @@ fun BlackjackJuego(vm: JuegoOcultoViewModel, estilo: EstiloMundo) {
     }
 
     val j = juego
-    PanelJuego(estilo, "Mesa", semilla = 7) {
+    key(jugadas) { PanelJuego(estilo, "Mesa", semilla = 7) {
         // La casa
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("LA CASA", style = estiloTitulo(13.sp, color = OdinPaleta.HuesoTenue), maxLines = 1)
@@ -101,7 +102,7 @@ fun BlackjackJuego(vm: JuegoOcultoViewModel, estilo: EstiloMundo) {
         } else {
             j.manos.forEachIndexed { i, mano -> ManoVista(mano, estilo, activa = !j.terminado && i == j.indiceActual, varias = j.manos.size > 1) }
         }
-    }
+    } }
 
     MensajeResultado(resultado?.first, resultado?.second == true, estilo)
     Spacer(Modifier.height(16.dp))
@@ -165,8 +166,7 @@ fun MayorMenorJuego(vm: JuegoOcultoViewModel, estilo: EstiloMundo) {
     var apuesta by remember { mutableIntStateOf(10) }
     var juego by remember { mutableStateOf<MayorMenor?>(null) }
     var resultado by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
-    var jugadas by remember { mutableIntStateOf(0) }
-    jugadas.let { } // se lee para redibujar tras cada jugada
+    var jugadas by remember { mutableIntStateOf(0) } // ver BlackjackJuego: fuerza redibujar la carta y el bote
 
     fun jugar(p: Prediccion) {
         val j = juego ?: return
@@ -180,7 +180,7 @@ fun MayorMenorJuego(vm: JuegoOcultoViewModel, estilo: EstiloMundo) {
     }
 
     val j = juego
-    PanelJuego(estilo, "Baraja", semilla = 4) {
+    key(jugadas) { PanelJuego(estilo, "Baraja", semilla = 4) {
         CartaVista(j?.actual, estilo, oculta = j == null, grande = true)
         Spacer(Modifier.height(12.dp))
         if (j != null) {
@@ -190,7 +190,7 @@ fun MayorMenorJuego(vm: JuegoOcultoViewModel, estilo: EstiloMundo) {
                 Placa("Aciertos ${j.aciertos}", estilo)
             }
         }
-    }
+    } }
 
     MensajeResultado(resultado?.first, resultado?.second == true, estilo)
     Spacer(Modifier.height(16.dp))

@@ -275,9 +275,10 @@ fun MundosScreen(
                 TextoAjustable(
                     caraActual.titulo.uppercase(),
                     estiloTitulo(36.sp, brillo = if (enMundos) null else caraActual.acento),
-                    Modifier.weight(1f, fill = false),
-                    minEscala = 0.6f,
-                    maxLineas = 1
+                    // Ocupa todo el espacio libre de la fila (antes compartía la mitad con un Spacer y se cortaba).
+                    Modifier.weight(1f),
+                    minEscala = 0.5f,
+                    maxLineas = 2
                 )
                 if (adminActivo) {
                     Text(
@@ -293,7 +294,6 @@ fun MundosScreen(
                             .padding(horizontal = 6.dp, vertical = 3.dp)
                     )
                 }
-                Spacer(Modifier.weight(1f))
                 if (adminActivo) {
                     // Modo admin: editar el hidromiel con un toque (además de mantener presionado el contador).
                     Icon(

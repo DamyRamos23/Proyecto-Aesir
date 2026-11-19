@@ -8,7 +8,11 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.provider.Settings
 import android.view.View
+import android.view.ViewGroup
 import android.webkit.WebView
+import android.util.Log
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebViewClient
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -18,6 +22,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -38,6 +44,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -52,6 +59,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -104,6 +112,7 @@ data class ChipInicio(val texto: String, val destacado: String? = null, val bord
  * «activa» (el caldero hierve, los cuervos huyen, el gigante acepta…) y,
  * cuando termina la animación, se llama a [onComenzar].
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PantallaInicioModo(
     escena: EscenaModo,
@@ -176,13 +185,25 @@ fun PantallaInicioModo(
                     modifier = Modifier.padding(horizontal = 10.dp))
                 Box(Modifier.width(36.dp).height(1.dp).background(ColoresInicio.Oro.copy(alpha = .5f)))
             }
-            Text(titulo.uppercase(), color = ColoresInicio.OroTitulo, fontFamily = FuenteTitulo, fontWeight = FontWeight.Bold,
-                fontSize = if (titulo.length > 10) 38.sp else 44.sp, letterSpacing = 4.sp, textAlign = TextAlign.Center,
-                modifier = Modifier.semantics { heading() })
+            // Se encoge (o pasa a dos líneas) si no cabe, en vez de cortarse.
+            TextoAjustable(
+                titulo.uppercase(),
+                TextStyle(
+                    color = ColoresInicio.OroTitulo, fontFamily = FuenteTitulo, fontWeight = FontWeight.Bold,
+                    fontSize = if (titulo.length > 10) 38.sp else 44.sp, letterSpacing = 4.sp, textAlign = TextAlign.Center
+                ),
+                Modifier.fillMaxWidth().semantics { heading() },
+                minEscala = 0.55f,
+                maxLineas = 2
+            )
             Text(lema, color = ColoresInicio.Lema, fontFamily = FuenteTexto, fontStyle = FontStyle.Italic, fontSize = 17.sp,
                 lineHeight = 22.sp, textAlign = TextAlign.Center, modifier = Modifier.widthIn(max = 340.dp))
             if (chips.isNotEmpty()) {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { chips.forEach { ChipDato(it) } }
+                // Si no caben en una línea (la forja tiene tres), pasan a la siguiente.
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) { chips.forEach { ChipDato(it) } }
             }
             extra?.invoke(this)
             if (aviso != null) {
@@ -303,54 +324,69 @@ fun EscenaWeb(
     pulso: PulsoEscena? = null
 ) {
     val contexto = LocalContext.current
+    // El WebView lo crea y lo destruye el propio AndroidView (factory / onRelease).
+    // Antes se creaba en un remember y se destruía en un DisposableEffect aparte,
+    // así que podía quedar destruido o sin conectar a la vista que está en pantalla.
     val control = remember(archivo) { ControlEscena() }
-    val vista = remember(archivo) {
-        WebView(contexto).apply {
-            setBackgroundColor(android.graphics.Color.rgb(6, 7, 13))
-            settings.javaScriptEnabled = true
-            settings.allowFileAccess = true
-            settings.setSupportZoom(false)
-            isVerticalScrollBarEnabled = false
-            isHorizontalScrollBarEnabled = false
-            overScrollMode = View.OVER_SCROLL_NEVER
-            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
-            isFocusable = false
-            setOnTouchListener { _, _ -> true } // decorativa: no se desplaza ni se selecciona
-            webViewClient = object : WebViewClient() {
-                override fun onPageFinished(view: WebView, url: String?) {
-                    control.cargada = true
-                    control.estado?.let { view.evaluateJavascript(it, null) }
-                }
-            }
-            loadUrl("file:///android_asset/escenas/$archivo")
-        }
-    }
 
     LaunchedEffect(estado) {
         control.estado = "try{$estado}catch(e){}"
-        if (control.cargada) vista.evaluateJavascript(control.estado!!, null)
+        if (control.cargada) control.vista?.evaluateJavascript(control.estado!!, null)
     }
     LaunchedEffect(pulso?.id) {
         val p = pulso ?: return@LaunchedEffect
-        if (control.cargada) vista.evaluateJavascript("try{${p.script}}catch(e){}", null)
+        if (control.cargada) control.vista?.evaluateJavascript("try{${p.script}}catch(e){}", null)
     }
 
     InclinacionDispositivo(contexto) { x, y ->
-        vista.evaluateJavascript("window.odinInclinar&&odinInclinar(${"%.3f".format(java.util.Locale.US, x)},${"%.3f".format(java.util.Locale.US, y)})", null)
+        if (control.cargada) control.vista?.evaluateJavascript(
+            "window.odinInclinar&&odinInclinar(${"%.3f".format(java.util.Locale.US, x)},${"%.3f".format(java.util.Locale.US, y)})", null
+        )
     }
 
-    DisposableEffect(vista) {
-        vista.onResume()
-        onDispose { vista.stopLoading(); vista.destroy() }
-    }
+    key(archivo) {
+        AndroidView(
+            factory = { ctx ->
+                WebView(ctx).apply {
+                    // Sin MATCH_PARENT el WebView mide la página por su contenido: height:100% da 0 y la escena sale negra.
+                    layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                    setBackgroundColor(android.graphics.Color.rgb(6, 7, 13))
+                    settings.javaScriptEnabled = true
+                    settings.allowFileAccess = true
+                    settings.domStorageEnabled = true
+                    settings.setSupportZoom(false)
+                    isVerticalScrollBarEnabled = false
+                    isHorizontalScrollBarEnabled = false
+                    overScrollMode = View.OVER_SCROLL_NEVER
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+                    isFocusable = false
+                    setOnTouchListener { _, _ -> true } // decorativa: no se desplaza ni se selecciona
+                    webViewClient = object : WebViewClient() {
+                        override fun onPageFinished(view: WebView, url: String?) {
+                            control.cargada = true
+                            control.estado?.let { view.evaluateJavascript(it, null) }
+                        }
 
-    AndroidView(
-        factory = { vista },
-        modifier = modifier.semantics { contentDescription = descripcion }
-    )
+                        override fun onReceivedError(view: WebView, req: WebResourceRequest, error: WebResourceError) {
+                            Log.e("EscenaWeb", "$archivo · error ${error.errorCode}: ${error.description} en ${req.url}")
+                        }
+                    }
+                    control.vista = this
+                    loadUrl("file:///android_asset/escenas/$archivo")
+                }
+            },
+            onRelease = { vista ->
+                if (control.vista === vista) { control.vista = null; control.cargada = false }
+                vista.stopLoading()
+                vista.destroy()
+            },
+            modifier = modifier.semantics { contentDescription = descripcion }
+        )
+    }
 }
 
 private class ControlEscena {
+    var vista: WebView? = null
     var cargada = false
     var estado: String? = null
 }
