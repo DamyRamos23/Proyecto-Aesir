@@ -458,8 +458,8 @@ private fun PreparacionReto(
     onComenzar: () -> Unit,
     onSalir: () -> Unit
 ) {
-    // A2.1: con los 3 retos del día jugados no se puede iniciar otro (en modo admin la entrada es gratis)
-    val sinRetosHoy = costo > 0 && restantesHoy == 0
+    // A2.1: con los 3 retos del día jugados no se puede iniciar otro
+    val sinRetosHoy = restantesHoy == 0
     val alcanza = saldo >= costo && !sinRetosHoy
     Column(Modifier.fillMaxHeight().fillMaxWidth().padding(horizontal = 14.dp, vertical = 16.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -482,7 +482,7 @@ private fun PreparacionReto(
                         "El hidromiel acumulado se paga al terminar. Puedes jugar hasta ${PoliticaCosto.MAX_CONTRARRELOJ_DIA} retos por día" +
                             (restantesHoy?.let { " (te quedan $it hoy)." } ?: ".")
                     )
-                    ReglaReto(if (costo == 0) "Modo admin: entrar es gratis." else "Entrar cuesta $costo de hidromiel.")
+                    ReglaReto("Entrar cuesta $costo de hidromiel.")
                     ReglaReto("Si abandonas pierdes lo acumulado y se restan ${AbandonarRetoContrarrelojUseCase.PENALIZACION} de hidromiel.")
                     val nota = aviso ?: when {
                         sinRetosHoy -> "Ya jugaste los ${PoliticaCosto.MAX_CONTRARRELOJ_DIA} retos de hoy. Podrás volver a jugar mañana."

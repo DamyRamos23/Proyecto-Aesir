@@ -1,9 +1,11 @@
 package com.aesir.odin.domain.usecase.volva
 
+import com.aesir.odin.domain.usecase.leccion.FakeHistorialRepository
+import com.aesir.odin.domain.usecase.leccion.bitacoraInmediata
+import com.aesir.odin.domain.bitacora.OrigenError
 import com.aesir.odin.domain.hidromiel.ConsultaVolvaTerminada
 import com.aesir.odin.domain.hidromiel.FakeCatalogo
 import com.aesir.odin.domain.hidromiel.FakeHidromielRepository
-import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.hidromiel.NivelFinalizado
 import com.aesir.odin.domain.hidromiel.PagoValhalla
@@ -33,9 +35,6 @@ import kotlin.random.Random
 class VolvaTest {
 
     private val politica = PoliticaCosto()
-
-    @Before
-    fun sinModoAdmin() = ModoAdmin.cargar(false)
 
     // ---------------------------------------------------------------- Lectura y pago
 
@@ -105,30 +104,30 @@ class VolvaTest {
 
     @Test
     fun `una vision errada resta segun la fe y se avisa a la bitacora`() = runBlocking {
-        val historial = HistorialFalso()
+        val historial = FakeHistorialRepository()
         val consulta = ConsultaVolva("c1", 40, listOf(vision("v1", correcta = 1)), fecha = 0)
-        val respuesta = ResolverVisionUseCase(historial) { 0 }(consulta, Fe.TOTAL, 0)
+        val respuesta = ResolverVisionUseCase(bitacoraInmediata(historial)) { 0 }(consulta, Fe.TOTAL, 0)
         assertFalse(respuesta.cumplida)
         assertEquals(-4, respuesta.puntos)
-        assertEquals("v1", historial.errores.single().actividadId)
-        assertEquals(ResolverVisionUseCase.TIPO_RETAR_BRUJA, historial.errores.single().tipoDesafio)
+        assertEquals("v1", historial.errores.single().preguntaId)
+        assertEquals(OrigenError.RETAR_BRUJA, historial.errores.single().origen)
     }
 
     @Test
     fun `si se acaba el tiempo la vision cuenta como errada`() = runBlocking {
-        val historial = HistorialFalso()
+        val historial = FakeHistorialRepository()
         val consulta = ConsultaVolva("c1", 40, listOf(vision("v1", correcta = 1)), fecha = 0)
-        val respuesta = ResolverVisionUseCase(historial) { 0 }(consulta, Fe.FIRME, null)
+        val respuesta = ResolverVisionUseCase(bitacoraInmediata(historial)) { 0 }(consulta, Fe.FIRME, null)
         assertFalse(respuesta.cumplida)
         assertEquals(-2, respuesta.puntos)
-        assertEquals(1, historial.errores.size)
+        assertEquals(null, historial.errores.single().respuestaAlumno)
     }
 
     @Test
     fun `una vision cumplida suma segun la fe y no va a la bitacora`() = runBlocking {
-        val historial = HistorialFalso()
+        val historial = FakeHistorialRepository()
         val consulta = ConsultaVolva("c1", 40, listOf(vision("v1", correcta = 2)), fecha = 0)
-        val respuesta = ResolverVisionUseCase(historial) { 0 }(consulta, Fe.CAUTA, 2)
+        val respuesta = ResolverVisionUseCase(bitacoraInmediata(historial)) { 0 }(consulta, Fe.CAUTA, 2)
         assertTrue(respuesta.cumplida)
         assertEquals(1, respuesta.puntos)
         assertTrue(historial.errores.isEmpty())
@@ -197,11 +196,5 @@ class VolvaTest {
         id, "tema_uml_1", Norna.URD, "Caso", listOf("A", "B", "C"), correcta, "Pista", "Explicación"
     )
 
-    private class HistorialFalso : HistorialRepository {
-        val errores = mutableListOf<HistorialError>()
-        override suspend fun obtenerErrores() = errores.toList()
-        override suspend fun obtenerErroresParaRepaso() = errores.toList()
-        override suspend fun registrarError(error: HistorialError) { errores += error }
-    }
 
 }

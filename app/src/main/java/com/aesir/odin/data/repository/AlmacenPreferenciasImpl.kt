@@ -6,7 +6,7 @@ import com.aesir.odin.domain.heimdall.ModoLectura
 import com.aesir.odin.domain.heimdall.PreferenciaLectura
 import java.time.LocalDateTime
 
-/** MOD-03: la preferencia de lectura vive junto al modo admin en SharedPreferences. */
+/** MOD-03: la preferencia de lectura vive en SharedPreferences. */
 class AlmacenPreferenciasImpl(private val preferencias: SharedPreferences) : AlmacenPreferencias {
 
     override fun leer(): PreferenciaLectura? {

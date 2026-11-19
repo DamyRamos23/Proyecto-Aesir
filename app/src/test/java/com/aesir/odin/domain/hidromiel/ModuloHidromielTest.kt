@@ -267,6 +267,29 @@ class ModuloHidromielTest {
         assertEquals(80, repo.saldo())
     }
 
+    @Test
+    fun `E7 con la fecha hacia atras no se acredita la recompensa diaria`() = runBlocking {
+        assertNull(modulo.reclamarRecompensaDiaria(U)) // el primer día va en la cantidad inicial
+        hoy = hoy.plusDays(2)
+        assertEquals(40, modulo.reclamarRecompensaDiaria(U)?.cantidad)
+        hoy = hoy.minusDays(5)
+        assertNull(modulo.reclamarRecompensaDiaria(U))
+        assertEquals(80, repo.saldo())
+    }
+
+    @Test
+    fun `E8 si no se puede guardar el cobro no se completa y el saldo queda igual`() = runBlocking {
+        superar("m1-n1", puntaje = 60)
+        val antes = repo.saldo()
+        repo.fallarEscritura = true
+        val r = modulo.cobrarEntrada(U, "m1-n2")
+        assertFalse(r.autorizado)
+        assertEquals(ModuloHidromiel.NO_SE_PUDO_GUARDAR, r.motivo)
+        assertEquals(antes, repo.saldo())
+        assertFalse(modulo.cobrarApuestaDuelo(U).autorizado)
+        assertFalse(modulo.cobrarApuestaForja(20, U).cobrada)
+    }
+
     // ---------------------------------------------------------------- E5 ayudas
 
     @Test
@@ -324,21 +347,6 @@ class ModuloHidromielTest {
     fun `abandonar con saldo del reto positivo lo descarta y solo resta 20`() = runBlocking {
         modulo.alAbandonarContrarreloj(ContrarrelojAbandonado(U, saldoReto = 8))
         assertEquals(20, repo.saldo())
-    }
-
-    @Test
-    fun `modo admin puede fijar el hidromiel y fuera de el no`() = runBlocking {
-        ModoAdmin.alCambiar = null
-        assertNull(modulo.establecerSaldoAdmin(U, 500))
-        ModoAdmin.cargar(true)
-        try {
-            modulo.establecerSaldoAdmin(U, 500)
-            assertEquals(500, repo.saldo())
-            modulo.establecerSaldoAdmin(U, 3)
-            assertEquals(3, repo.saldo())
-        } finally {
-            ModoAdmin.cargar(false)
-        }
     }
 
     @Test

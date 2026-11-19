@@ -185,7 +185,7 @@ fun EvaluacionDiagnosticaScreen(
         AlertDialog(
             onDismissRequest = { viewModel.cancelarOmision() },
             title = { Text("¿Omitir la evaluación?") },
-            // RF-93
+            // RF-136
             text = {
                 Text("Si la omites, no tendrás otra oportunidad de presentar la evaluación diagnóstica de ${e.mundo?.nombre ?: "este mundo"} y comenzarás desde el primer nivel disponible.")
             },

@@ -5,7 +5,7 @@ import com.aesir.odin.domain.sonido.ModuloSonido
 import com.aesir.odin.domain.model.TarjetaMemorama
 
 /**
- * RF-10: dos tarjetas son pareja si pertenecen al mismo par y una es el
+ * RF-61: dos tarjetas son pareja si pertenecen al mismo par y una es el
  * concepto y la otra la definición.
  */
 class VerificarParejaUseCase {

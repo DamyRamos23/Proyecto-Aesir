@@ -290,7 +290,7 @@ private fun ContenidoLeccion(
 
                     AnimatedVisibility(visible = ultimoResultado != null, enter = fadeIn() + expandVertically()) {
                         if (resultadoVisual != null) {
-                            Retroalimentacion(resultadoVisual, ejercicio, permutacion)
+                            Retroalimentacion(resultadoVisual)
                         }
                     }
                 }
@@ -443,7 +443,7 @@ internal fun OpcionRunica(
 }
 
 @Composable
-private fun Retroalimentacion(resultado: ResultadoRespuesta, ejercicio: Ejercicio, permutacion: List<Int>) {
+private fun Retroalimentacion(resultado: ResultadoRespuesta) {
     val (titulo, color) = when (resultado.estado) {
         EstadoRespuesta.CORRECTA -> "¡Correcto!" to OdinPaleta.Correcto
         EstadoRespuesta.INCOMPLETA -> "Te faltó alguna" to OdinPaleta.Incompleto
@@ -476,13 +476,11 @@ private fun Retroalimentacion(resultado: ResultadoRespuesta, ejercicio: Ejercici
             Text(titulo, color = color, fontFamily = FuenteTitulo, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
             val explicacion = if (resultado.estado == EstadoRespuesta.CORRECTA) {
                 "Bien hecho, sigue así."
+            } else if (resultado.estado == EstadoRespuesta.INCOMPLETA) {
+                // RF-73 y RN-34: no se muestra la respuesta correcta
+                "Te faltó alguna opción. Repasa la introducción del tema."
             } else {
-                // resultado.opcionesCorrectas aquí son posiciones visuales;
-                // usamos la permutación para obtener el índice original y el texto.
-                val correctas = resultado.opcionesCorrectas.sorted().joinToString("\n") {
-                    posVisual -> "• ${ejercicio.opciones[permutacion[posVisual]]}"
-                }
-                if (resultado.opcionesCorrectas.size > 1) "Las respuestas correctas son:\n$correctas" else "La respuesta correcta es:\n$correctas"
+                "Esa no es. Repasa la introducción del tema."
             }
             Text(explicacion, color = Color(0xFFCFC6B5), fontFamily = FuenteTexto, fontSize = 14.sp, lineHeight = 18.sp)
         }

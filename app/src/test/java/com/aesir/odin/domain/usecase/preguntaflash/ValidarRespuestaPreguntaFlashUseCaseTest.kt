@@ -1,5 +1,7 @@
 package com.aesir.odin.domain.usecase.preguntaflash
 
+import com.aesir.odin.domain.usecase.leccion.bitacoraInmediata
+import com.aesir.odin.domain.bitacora.OrigenError
 import com.aesir.odin.domain.model.EstadoPreguntaFlash
 import com.aesir.odin.domain.usecase.leccion.FakeHistorialRepository
 import com.aesir.odin.domain.usecase.shared.ValidarRespuestaUseCase
@@ -15,7 +17,7 @@ class ValidarRespuestaPreguntaFlashUseCaseTest {
     private val historial = FakeHistorialRepository()
     private var n = 0
     private val useCase = ValidarRespuestaPreguntaFlashUseCase(
-        repo, hidromiel, historial, ValidarRespuestaUseCase(),
+        repo, hidromiel, bitacoraInmediata(historial), ValidarRespuestaUseCase(),
         reloj = { 1_000L }, generarId = { "id${n++}" }
     )
 
@@ -44,8 +46,8 @@ class ValidarRespuestaPreguntaFlashUseCaseTest {
         assertEquals(8, hidromiel.saldo.value)
         assertEquals(listOf(1), r.opcionesCorrectas)
         assertEquals(1, historial.errores.size)
-        assertEquals("PREGUNTA_FLASH", historial.errores[0].tipoDesafio)
-        assertEquals("p1", historial.errores[0].actividadId)
+        assertEquals(OrigenError.PREGUNTA_FLASH, historial.errores[0].origen)
+        assertEquals("p1", historial.errores[0].preguntaId)
         assertEquals(-2, repo.intentos[0].puntos)
     }
 

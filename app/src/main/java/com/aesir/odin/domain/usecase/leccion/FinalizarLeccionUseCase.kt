@@ -12,9 +12,9 @@ import com.aesir.odin.domain.model.ResultadoLeccion
 import com.aesir.odin.domain.repository.LeccionRepository
 
 /**
- * Calcula el puntaje (RF-21), guarda el resultado, registra la lección como
- * completada (RF-23) y avisa al MOD-01 Sistema de Hidromiel que el nivel
- * terminó (RF-24). El módulo marca el tema como superado, otorga la
+ * Calcula el puntaje (RF-77), guarda el resultado, registra la lección como
+ * completada (RF-79) y avisa al MOD-01 Sistema de Hidromiel que el nivel
+ * terminó (RF-77). El módulo marca el tema como superado, otorga la
  * recompensa y decide qué niveles se abren; ya no se desbloquea "el
  * siguiente tema" por orden.
  *

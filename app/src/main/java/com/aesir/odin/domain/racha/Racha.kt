@@ -1,5 +1,6 @@
 package com.aesir.odin.domain.racha
 
+import com.aesir.odin.domain.hidromiel.PoliticaCosto
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -178,19 +179,18 @@ class ReglasRacha(val hitos: List<Hito> = HITOS) {
     /** E4 antes que E3: con 2 ofrendas no se puede comprar aunque alcance el hidromiel. */
     fun validarCompra(racha: Racha, saldo: Int): MotivoRechazo? = when {
         racha.ofrendas >= MAX_OFRENDAS -> MotivoRechazo.LIMITE_OFRENDAS
-        saldo < COSTO_OFRENDA -> MotivoRechazo.HIDROMIEL_INSUFICIENTE
+        saldo < PoliticaCosto.COSTO_OFRENDA -> MotivoRechazo.HIDROMIEL_INSUFICIENTE
         else -> null
     }
 
     companion object {
-        const val COSTO_OFRENDA = 40
         const val MAX_OFRENDAS = 2
         val HITOS = listOf(
-            Hito(3, 10),
-            Hito(7, 20),
-            Hito(14, 40),
-            Hito(30, 60, "Hijo de Sól"),
-            Hito(100, 100, "Corredor del cielo")
+            Hito(3, PoliticaCosto.BONO_RACHA_3),
+            Hito(7, PoliticaCosto.BONO_RACHA_7),
+            Hito(14, PoliticaCosto.BONO_RACHA_14),
+            Hito(30, PoliticaCosto.BONO_RACHA_30, "Hijo de Sól"),
+            Hito(100, PoliticaCosto.BONO_RACHA_100, "Corredor del cielo")
         )
     }
 }

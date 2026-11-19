@@ -2,7 +2,6 @@ package com.aesir.odin.domain.racha
 
 import com.aesir.odin.domain.hidromiel.FakeCatalogo
 import com.aesir.odin.domain.hidromiel.FakeHidromielRepository
-import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.hidromiel.TipoMovimiento
 import com.aesir.odin.domain.hidromiel.U
@@ -46,9 +45,6 @@ class RachaTest {
     private val hidromielRepo = FakeHidromielRepository()
     private val hidromiel = ModuloHidromiel(FakeCatalogo(mapOf("m1" to 4)), hidromielRepo)
     private val modulo = ModuloCarreraSol(almacen, hidromiel, sonido)
-
-    @After
-    fun apagarAdmin() = ModoAdmin.cargar(false)
 
     private suspend fun terminar(fecha: LocalDate, tipo: TipoActividad = TipoActividad.NIVEL_ROADMAP, abandonada: Boolean = false) =
         modulo.alTerminarActividad(ActividadTerminada(U, tipo, abandonada, fecha))

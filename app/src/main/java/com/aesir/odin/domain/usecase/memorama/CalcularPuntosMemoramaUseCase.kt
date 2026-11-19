@@ -1,7 +1,7 @@
 package com.aesir.odin.domain.usecase.memorama
 
 /**
- * RF-15: puntos de 0 a 100 según el tiempo empleado.
+ * RF-65: puntos de 0 a 100 según el tiempo empleado.
  *
  * - Hasta [TIEMPO_MAX_PUNTAJE_SEG] segundos: 100 puntos.
  * - Desde [TIEMPO_LIMITE_SEG] segundos: 0 puntos.

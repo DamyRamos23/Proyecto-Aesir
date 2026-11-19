@@ -7,7 +7,7 @@ import com.aesir.odin.domain.model.PalabraCrucigrama
 import java.text.Normalizer
 
 /**
- * Valida la respuesta de una palabra (RF-50).
+ * Valida la respuesta de una palabra (RF-96).
  * - CORRECTA: coincide con la palabra (sin importar acentos ni mayúsculas).
  * - INCOMPLETA: lo escrito coincide con el inicio de la palabra, pero faltan letras.
  * - INCORRECTA: cualquier otro caso.

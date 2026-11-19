@@ -16,7 +16,7 @@ data class ResultadoFlashcardsEntity(
     val fecha: Long
 )
 
-/** Intento del reto de fin de mundo (CU-08, RF-66). */
+/** Intento del reto de fin de mundo (CU-08, RF-116). */
 @Entity(tableName = "intentos_reto_fin_mundo", indices = [Index("mundoId")])
 data class ResultadoRetoFinMundoEntity(
     @PrimaryKey val id: String,

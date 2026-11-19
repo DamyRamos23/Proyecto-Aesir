@@ -172,7 +172,7 @@ class RagnarokViewModel(
         seleccionadas = opciones
         respuestas += pregunta to resultado.estado
         if (resultado.estado != EstadoRespuesta.CORRECTA) {
-            viewModelScope.launch { runCatching { registrarErrorUseCase(pregunta, resultado.estado) } }
+            registrarErrorUseCase(pregunta, opciones)
         }
         publicarBatalla()
     }

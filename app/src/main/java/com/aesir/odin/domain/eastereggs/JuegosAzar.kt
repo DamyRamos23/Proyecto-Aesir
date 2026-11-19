@@ -1,5 +1,6 @@
 package com.aesir.odin.domain.eastereggs
 
+import com.aesir.odin.domain.hidromiel.PoliticaCosto
 import kotlin.random.Random
 
 // Pagos: «premio» es lo que se recibe en total (ya incluye la apuesta); 0 si se pierde.
@@ -8,10 +9,10 @@ enum class ColorRuleta { VERDE, BEIGE }
 
 /** Ruleta de dos colores. Paga el doble menos el diezmo de Odín (10 %): retorno 90 %. */
 object Ruleta {
-    const val MINIMA = 5
-    const val MAXIMA = 50
-    const val PASO = 5
-    const val DIEZMO_PORCIENTO = 10
+    const val MINIMA = PoliticaCosto.RULETA_MIN
+    const val MAXIMA = PoliticaCosto.RULETA_MAX
+    const val PASO = PoliticaCosto.RULETA_PASO
+    const val DIEZMO_PORCIENTO = PoliticaCosto.DIEZMO_ODIN_PORCIENTO
 
     fun girar(azar: Random): ColorRuleta = ColorRuleta.entries[azar.nextInt(ColorRuleta.entries.size)]
 
@@ -24,17 +25,17 @@ object Ruleta {
 
 /** Símbolos de la tragamonedas: cuántos hay en cada rodillo de 20 y cuánto paga el triple. */
 enum class Simbolo(val glifo: String, val enRodillo: Int, val premioTriple: Int) {
-    RUNA("ᛟ", 7, 20),
-    CUERNO("ᚠ", 6, 45),   // fehu, la riqueza
-    MJOLNIR("ᚦ", 4, 120), // thurisaz, la runa de Thor
-    CUERVO("ᛉ", 2, 400),  // algiz, como la pata de un cuervo
-    OJO("ᚨ", 1, 1500)     // ansuz, la runa de Odín
+    RUNA("ᛟ", 7, PoliticaCosto.TRIPLE_RUNA),
+    CUERNO("ᚠ", 6, PoliticaCosto.TRIPLE_CUERNO),   // fehu, la riqueza
+    MJOLNIR("ᚦ", 4, PoliticaCosto.TRIPLE_MJOLNIR), // thurisaz, la runa de Thor
+    CUERVO("ᛉ", 2, PoliticaCosto.TRIPLE_CUERVO),   // algiz, como la pata de un cuervo
+    OJO("ᚨ", 1, PoliticaCosto.TRIPLE_OJO)          // ansuz, la runa de Odín
 }
 
 /** Tres rodillos de 20 símbolos. Tiro de 5; retorno ≈ 91 %. */
 object Tragamonedas {
-    const val COSTO = 5
-    const val PREMIO_DOS_CUERNOS = 5
+    const val COSTO = PoliticaCosto.TRAGAMONEDAS_COSTO
+    const val PREMIO_DOS_CUERNOS = PoliticaCosto.TRAGAMONEDAS_DOS_CUERNOS
 
     val rodillo: List<Simbolo> = Simbolo.entries.flatMap { s -> List(s.enRodillo) { s } }
 
@@ -51,14 +52,14 @@ enum class ApuestaDados(val texto: String) { MENOR("Menor que 7"), SIETE("Exacta
 
 /** Dos dados de seis caras. Apuesta fija de 10; retorno 83 %. */
 object Dados {
-    const val APUESTA = 10
+    const val APUESTA = PoliticaCosto.DADOS_APUESTA
 
     fun tirar(azar: Random): Pair<Int, Int> = azar.nextInt(1, 7) to azar.nextInt(1, 7)
 
     fun premio(eleccion: ApuestaDados, suma: Int): Int = when {
-        eleccion == ApuestaDados.MENOR && suma < 7 -> 20
-        eleccion == ApuestaDados.SIETE && suma == 7 -> 50
-        eleccion == ApuestaDados.MAYOR && suma > 7 -> 20
+        eleccion == ApuestaDados.MENOR && suma < 7 -> PoliticaCosto.DADOS_MENOR_MAYOR
+        eleccion == ApuestaDados.SIETE && suma == 7 -> PoliticaCosto.DADOS_SIETE
+        eleccion == ApuestaDados.MAYOR && suma > 7 -> PoliticaCosto.DADOS_MENOR_MAYOR
         else -> 0
     }
 }

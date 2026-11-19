@@ -5,7 +5,7 @@ import com.aesir.odin.domain.sonido.ModuloSonido
 import com.aesir.odin.domain.model.RetoArrastrar
 
 /**
- * Paso 6 del CU-09 (RF-74): compara cada colocación con la posición correcta.
+ * Paso 6 del CU-09 (RF-122): compara cada colocación con la posición correcta.
  * Regresa los ids de los elementos mal colocados (o sin colocar); si la lista
  * está vacía, el reto está resuelto.
  *

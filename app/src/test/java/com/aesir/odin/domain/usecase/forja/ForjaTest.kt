@@ -1,10 +1,12 @@
 package com.aesir.odin.domain.usecase.forja
 
+import com.aesir.odin.domain.usecase.leccion.FakeHistorialRepository
+import com.aesir.odin.domain.usecase.leccion.bitacoraInmediata
+import com.aesir.odin.domain.bitacora.OrigenError
 import com.aesir.odin.domain.bitacora.ModuloBitacora
 import com.aesir.odin.domain.hidromiel.CatalogoNiveles
 import com.aesir.odin.domain.hidromiel.FakeCatalogo
 import com.aesir.odin.domain.hidromiel.FakeHidromielRepository
-import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.hidromiel.NivelSuperado
 import com.aesir.odin.domain.hidromiel.OrigenSuperado
@@ -101,14 +103,6 @@ class ForjaTest {
         override suspend fun obtenerRetoOrdenar(mundoId: String) = reto(mundoId)
     }
 
-    private class FakeHistorial : HistorialRepository {
-        val errores = mutableListOf<HistorialError>()
-        override suspend fun obtenerErrores() = errores
-        override suspend fun obtenerErroresParaRepaso() = errores
-        override suspend fun registrarError(error: HistorialError) {
-            errores += error
-        }
-    }
 
     // ------------------------------------------------------------- Escenario
 
@@ -124,8 +118,8 @@ class ForjaTest {
     private val modulo = ModuloHidromiel(catalogo, hidromielRepo)
     private val forjaRepo = FakeForjaRepository(listOf(mjolnir, gungnir))
     private val roadmap = FakeRoadmap(listOf("m1"))
-    private val historial = FakeHistorial()
-    private val bitacora = ModuloBitacora(historial)
+    private val historial = FakeHistorialRepository()
+    private val bitacora = bitacoraInmediata(historial)
 
     private val validarAcceso = ValidarAccesoForjaUseCase(forjaRepo, roadmap, modulo) { ahora }
     private val asignar = AsignarArtefactoUseCase(forjaRepo, roadmap, Random(1))
@@ -136,9 +130,6 @@ class ForjaTest {
     private val enfriar = EnfriarMetalUseCase(bitacora) { ahora }
     private val finalizar = FinalizarForjaUseCase(forjaRepo, modulo, null) { ahora }
     private val abandonar = AbandonarForjaUseCase(forjaRepo) { ahora }
-
-    @After
-    fun apagarAdmin() = ModoAdmin.cargar(false)
 
     private suspend fun forjaApostada(apuesta: Int = 20): Forja {
         val asignacion = asignar(forjaRepo.obtenerVitrina())
@@ -275,9 +266,9 @@ class ForjaTest {
         assertEquals(30, resultado.hidromielPerdido)
         assertEquals(70, modulo.saldo())
         assertTrue(forjaRepo.vitrina.isEmpty())
-        assertEquals("FORJA", historial.errores.single().tipoDesafio)
+        assertEquals(OrigenError.FORJA, historial.errores.single().origen)
         // RF-39: la bitácora no guarda la respuesta correcta
-        assertFalse(historial.errores.single().descripcion.contains("e1, e2, e3"))
+        assertFalse(historial.errores.single().enunciado.contains("e1, e2, e3"))
     }
 
     @Test

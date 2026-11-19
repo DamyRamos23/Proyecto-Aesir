@@ -1,5 +1,6 @@
 package com.aesir.odin.ui.racha
 
+import com.aesir.odin.domain.hidromiel.PoliticaCosto
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -159,7 +160,7 @@ private fun ContenidoRacha(
             TextoClaro("Cada ofrenda protege un día sin actividad. Puedes guardar hasta ${ReglasRacha.MAX_OFRENDAS}.", 13, OdinPaleta.HuesoTenue)
             Spacer(Modifier.height(10.dp))
             BotonOdin(
-                "Ofrenda a Sól · ${ReglasRacha.COSTO_OFRENDA}",
+                "Ofrenda a Sól · ${PoliticaCosto.COSTO_OFRENDA}",
                 onOfrenda,
                 ColorSol,
                 Modifier.fillMaxWidth(),

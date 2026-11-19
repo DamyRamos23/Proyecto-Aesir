@@ -15,9 +15,8 @@ class JuegosOcultosTest {
     // ------------------------------------------------------------ Combinaciones
 
     @Test
-    fun `las combinaciones no chocan entre si ni con la del modo admin`() {
-        val admin = listOf(0, 1, 3, 2, 0, 1, 3, 2)
-        val todas = JuegoOculto.entries.map { it.combinacion } + listOf(admin)
+    fun `las combinaciones no chocan entre si`() {
+        val todas = JuegoOculto.entries.map { it.combinacion }
         for (a in todas) for (b in todas) {
             if (a === b) continue
             // Ninguna termina con otra completa (se dispararían las dos)

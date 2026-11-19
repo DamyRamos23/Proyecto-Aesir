@@ -7,7 +7,6 @@ import com.aesir.odin.domain.racha.ModuloCarreraSol
 import com.aesir.odin.domain.sonido.EventoSonido
 import com.aesir.odin.domain.sonido.ModuloSonido
 import com.aesir.odin.domain.hidromiel.ConsultaVolvaTerminada
-import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.hidromiel.PoliticaCosto
 import com.aesir.odin.domain.hidromiel.ResultadoAcceso
@@ -15,7 +14,6 @@ import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
 import com.aesir.odin.domain.model.AccesoVolva
 import com.aesir.odin.domain.model.ConsultaVolva
 import com.aesir.odin.domain.model.Fe
-import com.aesir.odin.domain.model.HistorialError
 import com.aesir.odin.domain.model.Lectura
 import com.aesir.odin.domain.model.MotivoBloqueoVolva
 import com.aesir.odin.domain.model.Norna
@@ -23,7 +21,9 @@ import com.aesir.odin.domain.model.ResultadoConsulta
 import com.aesir.odin.domain.model.Tema
 import com.aesir.odin.domain.model.Vision
 import com.aesir.odin.domain.model.VisionRespondida
-import com.aesir.odin.domain.repository.HistorialRepository
+import com.aesir.odin.domain.bitacora.FalloBitacora
+import com.aesir.odin.domain.bitacora.ModuloBitacora
+import com.aesir.odin.domain.bitacora.OrigenError
 import com.aesir.odin.domain.repository.RoadmapRepository
 import com.aesir.odin.domain.repository.VolvaRepository
 import java.time.Instant
@@ -36,10 +36,9 @@ import kotlin.random.Random
  * ajustados al SRS v3.2 (RF-160 a RF-180).
  */
 
-/** Temas que el alumno ya superó (lecciones completadas). En modo admin cuentan todas las lecciones. */
+/** Temas que el alumno ya superó (lecciones completadas). */
 internal fun temasSuperados(temas: List<Tema>): List<String> =
-    (if (ModoAdmin.estaActivo) temas.filter { !it.esRagnarok && !it.esMinijuego }
-    else temas.filter { it.completado && !it.esRagnarok && !it.esMinijuego }).map { it.id }
+    temas.filter { it.completado && !it.esRagnarok && !it.esMinijuego }.map { it.id }
 
 /** Inicio y fin (en milisegundos) del día real que contiene [momento]. */
 internal fun limitesDelDia(momento: Long, zona: ZoneId): Pair<Long, Long> {
@@ -48,7 +47,7 @@ internal fun limitesDelDia(momento: Long, zona: ZoneId): Pair<Long, Long> {
 }
 
 internal suspend fun mundosDesbloqueados(roadmap: RoadmapRepository): List<String> =
-    roadmap.obtenerMundos().filter { ModoAdmin.estaActivo || it.desbloqueado }.map { it.id }
+    roadmap.obtenerMundos().filter { it.desbloqueado }.map { it.id }
 
 /**
  * Pasos 1 y 2, E2.1 a E2.4: decide si el alumno puede apostar y arma lo que
@@ -72,10 +71,10 @@ class ValidarAccesoVolvaUseCase(
         val rango = moduloHidromiel.rangoApuestaVolva(idUsuario, mundosDesbloqueados(roadmapRepository))
         val (inicio, fin) = limitesDelDia(reloj(), zona)
 
-        val ragnarokSuperado = ModoAdmin.estaActivo || temas.any { it.esRagnarok && it.completado }
+        val ragnarokSuperado = temas.any { it.esRagnarok && it.completado }
         val motivo = when {
             !ragnarokSuperado -> MotivoBloqueoVolva.VALHALLA_CERRADO                                    // E2.2
-            !ModoAdmin.estaActivo && volvaRepository.consultoEnElDia(inicio, fin) -> MotivoBloqueoVolva.CALDERO_APAGADO // E2.1
+            volvaRepository.consultoEnElDia(inicio, fin) -> MotivoBloqueoVolva.CALDERO_APAGADO // E2.1
             !rango.alcanza -> MotivoBloqueoVolva.HIDROMIEL_INSUFICIENTE                                 // E2.3
             !hayVisionesSuficientes(temasSuperados(temas)) -> MotivoBloqueoVolva.VISIONES_INSUFICIENTES  // E2.4
             else -> null
@@ -105,7 +104,7 @@ class ApostarVolvaUseCase(
         val acceso = moduloHidromiel.cobrarApuestaVolva(idUsuario, apuesta, mundosDesbloqueados(roadmapRepository))
         if (!acceso.autorizado) return ApuestaVolva(acceso, null, reloj())
         val fecha = reloj()
-        val consulta = ConsultaVolva(UUID.randomUUID().toString(), if (ModoAdmin.estaActivo) 0 else apuesta, emptyList(), fecha = fecha)
+        val consulta = ConsultaVolva(UUID.randomUUID().toString(), apuesta, emptyList(), fecha = fecha)
         volvaRepository.registrarConsultaIniciada(consulta)
         return ApuestaVolva(acceso, consulta.id, fecha)
     }
@@ -145,7 +144,7 @@ class ArmarConsultaVolvaUseCase(
  * errores. [opcion] es null cuando se acabaron los 15 segundos.
  */
 class ResolverVisionUseCase(
-    private val historialRepository: HistorialRepository,
+    private val moduloBitacora: ModuloBitacora,
     private val reloj: () -> Long = System::currentTimeMillis
 ) {
     suspend operator fun invoke(consulta: ConsultaVolva, fe: Fe, opcion: Int?): VisionRespondida {
@@ -163,27 +162,21 @@ class ResolverVisionUseCase(
         )
     }
 
-    /** MOD-06, E2: si no se puede guardar, la consulta continúa sin interrupción. */
-    private suspend fun registrarEnBitacora(vision: Vision, opcion: Int?) {
-        val elegida = opcion?.let { vision.opciones.getOrNull(it) } ?: "sin respuesta (se acabó el tiempo)"
-        runCatching {
-            historialRepository.registrarError(
-                HistorialError(
-                    id = UUID.randomUUID().toString(),
-                    tipoDesafio = TIPO_RETAR_BRUJA,
-                    actividadId = vision.id,
-                    descripcion = "La Völva (${vision.norna.nombre}): ${vision.caso} " +
-                        "Opciones: ${vision.opciones.joinToString(" | ")}. " +
-                        "Correcta: ${vision.opcionCorrecta()}. Elegida: $elegida.",
-                    fecha = reloj()
-                )
-            )
-        }
-    }
-
-    companion object {
-        const val TIPO_RETAR_BRUJA = "RETAR_BRUJA"
-    }
+    /** MOD-06: [opcion] es null si se acabaron los 15 s; la consulta no espera a que se guarde. */
+    private fun registrarEnBitacora(vision: Vision, opcion: Int?) = moduloBitacora.registrarFallo(
+        FalloBitacora(
+            origen = OrigenError.RETAR_BRUJA,
+            preguntaId = vision.id,
+            temaId = vision.temaId,
+            enunciado = vision.caso,
+            opciones = vision.opciones,
+            respuestaCorrecta = vision.opcionCorrecta(),
+            respuestaAlumno = opcion?.let { vision.opciones.getOrNull(it) },
+            pista = vision.pista,
+            explicacion = vision.explicacion,
+            fecha = reloj()
+        )
+    )
 }
 
 /**

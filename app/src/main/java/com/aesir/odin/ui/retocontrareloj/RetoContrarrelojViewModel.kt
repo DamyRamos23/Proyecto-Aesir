@@ -7,7 +7,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.aesir.odin.di.AppContainer
-import com.aesir.odin.domain.hidromiel.ModoAdmin
+import com.aesir.odin.domain.bitacora.ModuloBitacora
+import com.aesir.odin.domain.bitacora.OrigenError
+import com.aesir.odin.domain.bitacora.comoFallo
 import com.aesir.odin.domain.hidromiel.PoliticaCosto
 import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
 import com.aesir.odin.domain.model.EstadoRespuesta
@@ -48,6 +50,7 @@ class RetoContrarrelojViewModel(
     private val validadorUseCase: ValidarRespuestaUseCase,
     private val finalizarRetoUseCase: FinalizarRetoContrarrelojUseCase,
     private val abandonarRetoUseCase: AbandonarRetoContrarrelojUseCase,
+    private val moduloBitacora: ModuloBitacora,
     saldoHidromiel: Flow<Int>
 ) : ViewModel() {
 
@@ -87,8 +90,7 @@ class RetoContrarrelojViewModel(
     val hidromiel: StateFlow<Int> = _hidromiel.asStateFlow()
     val resultado: StateFlow<ResultadoContrarreloj?> = _resultado.asStateFlow()
     val saldo: StateFlow<Int> = saldoHidromiel.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
-    /** En modo admin la entrada es gratis, así que se puede entrar sin hidromiel. */
-    val costoEntrada: Int get() = if (ModoAdmin.estaActivo) 0 else PoliticaCosto.ENTRADA_CONTRARRELOJ
+    val costoEntrada: Int = PoliticaCosto.ENTRADA_CONTRARRELOJ
 
     /** Duración total del reto, para dibujar la barra de tiempo. */
     var duracionSegundos: Int = RetoContrareloj.DURACION_SEGUNDOS
@@ -190,10 +192,13 @@ class RetoContrarrelojViewModel(
         val actual = reto ?: return
         if (!enCurso() || _seleccionadas.value.isEmpty()) return
 
-        val validacion = validadorUseCase(_seleccionadas.value.sorted(), pregunta.respuestasCorrectas)
+        val elegidas = _seleccionadas.value.sorted()
+        val validacion = validadorUseCase(elegidas, pregunta.respuestasCorrectas)
         respondidas++
         val correcta = validacion.estado == EstadoRespuesta.CORRECTA
         if (correcta) aciertos++
+        // RF-158: la incorrecta o incompleta se avisa a la bitácora (MOD-06)
+        else moduloBitacora.registrarFallo(pregunta.comoFallo(OrigenError.RETO_CONTRARRELOJ, elegidas, System.currentTimeMillis()))
         // RF-154: +10 puntos y +2 de hidromiel, o −5 y −1, sin bajar de 0
         val (puntos, hidromiel) = RetoContrareloj.acumular(_puntaje.value, _hidromiel.value, correcta)
         _puntaje.value = puntos
@@ -282,6 +287,7 @@ class RetoContrarrelojViewModel(
                     RetoContrarrelojViewModel(
                         armarRetoUseCase = container.armarRetoContrarrelojUseCase,
                         pagarEntradaUseCase = container.pagarEntradaRetoContrarrelojUseCase,
+                        moduloBitacora = container.moduloBitacora,
                         validadorUseCase = container.validarRespuestaUseCase,
                         finalizarRetoUseCase = container.finalizarRetoContrarrelojUseCase,
                         abandonarRetoUseCase = container.abandonarRetoContrarrelojUseCase,

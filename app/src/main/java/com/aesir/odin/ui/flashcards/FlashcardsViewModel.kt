@@ -167,7 +167,7 @@ class FlashcardsViewModel(
         respuestaActual = respuesta
         ModuloSonido.avisar(if (respuesta.correcta) EventoSonido.ACIERTO else EventoSonido.ERROR) // MOD-02
         if (!respuesta.correcta) {
-            viewModelScope.launch { runCatching { registrarErrorUseCase(tarjeta, tarjeta.opciones[indice]) } }
+            registrarErrorUseCase(tarjeta, tarjeta.opciones[indice])
             if (respuesta.sugerirRepaso) _sugerenciaRepaso.value = tarjeta
         }
         publicar()

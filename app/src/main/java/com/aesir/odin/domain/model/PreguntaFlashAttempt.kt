@@ -1,6 +1,6 @@
 package com.aesir.odin.domain.model
 
-/** Registro en el historial del alumno de cada pregunta flash (RF-38). */
+/** Registro en el historial del alumno de cada pregunta flash (RF-90). */
 data class PreguntaFlashAttempt(
     val id: String,
     val preguntaId: String,

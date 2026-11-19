@@ -8,7 +8,7 @@ import com.aesir.odin.domain.model.ResultadoDiagnostico
 import com.aesir.odin.domain.usecase.shared.ValidarRespuestaUseCase
 
 /**
- * RF-85, RF-86, RF-87 y RF-89: valida cada respuesta y determina qué temas
+ * RF-131 a RF-133 y RF-135: valida cada respuesta y determina qué temas
  * del mundo domina el alumno.
  *
  * - Solo cuenta como acierto una respuesta CORRECTA; INCORRECTA o INCOMPLETA

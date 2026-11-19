@@ -5,7 +5,7 @@ package com.aesir.odin.domain.model
  * CU-09, capa Negocio · Models).
  */
 
-/** Modalidad del reto registrada para el tema (RF-69). */
+/** Modalidad del reto registrada para el tema (RF-118). */
 enum class ModalidadReto {
     /** Ordenar las etapas de un proceso en las posiciones numeradas. */
     ORDENAR_PROCESO,

@@ -1,5 +1,8 @@
 package com.aesir.odin.domain.usecase.leccion
 
+import com.aesir.odin.domain.bitacora.ModuloBitacora
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import com.aesir.odin.domain.model.HistorialError
 import com.aesir.odin.domain.model.Leccion
 import com.aesir.odin.domain.model.Mundo
@@ -23,15 +26,25 @@ class FakeLeccionRepository(lecciones: List<Leccion>) : LeccionRepository {
     }
 }
 
+/** Bitácora en memoria (MOD-06). [fallarEscritura] simula la base sin espacio (E2). */
 class FakeHistorialRepository : HistorialRepository {
     val errores = mutableListOf<HistorialError>()
+    var fallarEscritura = false
 
-    override suspend fun obtenerErrores() = errores.toList()
-    override suspend fun obtenerErroresParaRepaso() = errores.toList()
-    override suspend fun registrarError(error: HistorialError) {
+    override suspend fun buscarPorPregunta(preguntaId: String) = errores.firstOrNull { it.preguntaId == preguntaId }
+    override suspend fun registrar(error: HistorialError) {
+        if (fallarEscritura) throw IllegalStateException("sin espacio")
         errores += error
     }
+    override suspend fun actualizar(error: HistorialError) {
+        if (fallarEscritura) throw IllegalStateException("sin espacio")
+        errores.replaceAll { if (it.id == error.id) error else it }
+    }
+    override suspend fun obtenerErroresParaRepaso() = errores.toList()
 }
+
+/** La bitácora guarda en el acto (sin otro hilo), para revisar el resultado en la prueba. */
+fun bitacoraInmediata(historial: HistorialRepository) = ModuloBitacora(historial, CoroutineScope(Dispatchers.Unconfined))
 
 class FakeRoadmapRepository(
     temas: List<Tema> = emptyList(),

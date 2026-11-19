@@ -1,12 +1,12 @@
 package com.aesir.odin.domain.usecase.forja
 
+import com.aesir.odin.domain.hidromiel.PoliticaCosto
 import com.aesir.odin.domain.sonido.EventoSonido
 import com.aesir.odin.domain.sonido.ModuloSonido
 import com.aesir.odin.domain.bitacora.FalloBitacora
 import com.aesir.odin.domain.bitacora.ModuloBitacora
-import com.aesir.odin.domain.bitacora.OrigenFallo
+import com.aesir.odin.domain.bitacora.OrigenError
 import com.aesir.odin.domain.hidromiel.ForjaFinalizada
-import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.hidromiel.ResultadoApuestaForja
 import com.aesir.odin.domain.model.ArtefactoVitrina
@@ -20,6 +20,8 @@ import com.aesir.odin.domain.model.RespuestaEtapa
 import com.aesir.odin.domain.model.ResultadoAccesoForja
 import com.aesir.odin.domain.model.ResultadoEtapa
 import com.aesir.odin.domain.model.ResultadoForja
+import com.aesir.odin.domain.model.EtapaForja
+import com.aesir.odin.domain.model.EtapaMartillar
 import com.aesir.odin.domain.model.TipoEtapa
 import com.aesir.odin.domain.racha.ActividadTerminada
 import com.aesir.odin.domain.racha.ModuloCarreraSol
@@ -47,10 +49,9 @@ internal fun limitesDelDia(ahora: Long, zona: ZoneId = ZoneId.systemDefault()): 
     return inicio to fin
 }
 
-/** Mundos con Ragnarök superado. En modo admin cuentan todos los mundos, para poder probar la forja. */
+/** Mundos con Ragnarök superado. */
 internal suspend fun mundosParaForja(roadmap: RoadmapRepository): List<String> =
-    if (ModoAdmin.estaActivo) roadmap.obtenerMundos().sortedBy { it.orden }.map { it.id }
-    else roadmap.obtenerMundosSuperados()
+    roadmap.obtenerMundosSuperados()
 
 /**
  * Precondiciones (pasos 1.2 a 1.7): Ragnarök superado, menos de 2 forjas en
@@ -66,7 +67,7 @@ class ValidarAccesoForjaUseCase(
     suspend operator fun invoke(): ResultadoAccesoForja {
         val (inicio, fin) = limitesDelDia(reloj())
         val forjasHoy = forjaRepository.contarForjasDelDia(inicio, fin)
-        val restantes = if (ModoAdmin.estaActivo) FORJAS_POR_DIA else (FORJAS_POR_DIA - forjasHoy).coerceAtLeast(0)
+        val restantes = (PoliticaCosto.FORJAS_POR_DIA - forjasHoy).coerceAtLeast(0)
 
         if (mundosParaForja(roadmapRepository).isEmpty()) {
             return ResultadoAccesoForja(false, MotivoBloqueoForja.SIN_RAGNAROK_SUPERADO, forjasRestantes = restantes)
@@ -85,8 +86,7 @@ class ValidarAccesoForjaUseCase(
     }
 
     companion object {
-        const val FORJAS_POR_DIA = 2
-        const val APUESTA_MINIMA = RangoApuestaForja.MINIMO
+        const val APUESTA_MINIMA = PoliticaCosto.APUESTA_FORJA_MIN
     }
 }
 
@@ -122,7 +122,7 @@ class AsignarArtefactoUseCase(
 class CalcularRangoApuestaUseCase(private val moduloHidromiel: ModuloHidromiel) {
     suspend operator fun invoke(saldo: Int): RangoApuestaForja {
         val piso = moduloHidromiel.calcularPisoApuesta()
-        return RangoApuestaForja(pisoApuesta = piso, maximoPermitido = minOf(RangoApuestaForja.MAXIMO, saldo - piso))
+        return RangoApuestaForja(pisoApuesta = piso, maximoPermitido = minOf(PoliticaCosto.APUESTA_FORJA_MAX, saldo - piso))
     }
 }
 
@@ -158,13 +158,21 @@ class ApostarForjaUseCase(
     }
 }
 
-/** Anota un error de la forja en la bitácora (MOD-06), sin la respuesta correcta. */
-private suspend fun ModuloBitacora.anotarErrorForja(forja: Forja, tipo: TipoEtapa, detalle: String, fecha: Long) =
+/**
+ * Avisa a la bitácora (MOD-06) la etapa fallada. Solo el martillado es de opción
+ * múltiple; las otras etapas guardan una descripción (E1).
+ */
+private fun ModuloBitacora.anotarErrorForja(etapa: EtapaForja, detalle: String, fecha: Long) =
     registrarFallo(
         FalloBitacora(
-            origen = OrigenFallo.FORJA,
-            actividadId = forja.id,
-            descripcion = "Forja de Brokkr · «${tipo.nombre}»: $detalle",
+            origen = OrigenError.FORJA,
+            // shortcut: los problemas de la forja no tienen id en el banco; se usa el enunciado, que es único por mundo y etapa.
+            preguntaId = "forja:${etapa.mundoId}:${etapa.tipo}:${etapa.enunciado.hashCode()}",
+            temaId = etapa.mundoId,
+            enunciado = "Forja de Brokkr · «${etapa.tipo.nombre}»: $detalle",
+            opciones = (etapa as? EtapaMartillar)?.piezas?.map { it.texto }.orEmpty(),
+            respuestaAlumno = null,
+            pista = etapa.tipo.nombre,
             fecha = fecha
         )
     )
@@ -186,7 +194,7 @@ class ValidarEtapaForjaUseCase(
         ModuloSonido.avisar(if (correcta) EventoSonido.MARTILLO_FORJA else EventoSonido.MOSCA_LOKI)
         if (!correcta) {
             forja.registrarError()
-            moduloBitacora.anotarErrorForja(forja, etapa.tipo, "respuesta incorrecta. ${etapa.enunciado}", reloj())
+            moduloBitacora.anotarErrorForja(etapa, "respuesta incorrecta. ${etapa.enunciado}", reloj())
         }
         forja.avanzar()
         return ResultadoEtapa(etapa.tipo, correcta, forja.errores, forja.terminada())
@@ -204,7 +212,7 @@ class EnfriarMetalUseCase(
         check(etapa.tipo == TipoEtapa.TEMPLAR) { "Solo el temple tiene límite de tiempo." }
         ModuloSonido.avisar(EventoSonido.ESCUDO_ROTO) // el metal se agrieta al enfriarse
         forja.registrarError()
-        moduloBitacora.anotarErrorForja(forja, etapa.tipo, "el metal se enfrió sin respuesta. ${etapa.enunciado}", reloj())
+        moduloBitacora.anotarErrorForja(etapa, "el metal se enfrió sin respuesta. ${etapa.enunciado}", reloj())
         forja.avanzar()
         return ResultadoEtapa(etapa.tipo, correcta = false, erroresAcumulados = forja.errores, forjaTerminada = forja.terminada(), metalFrio = true)
     }

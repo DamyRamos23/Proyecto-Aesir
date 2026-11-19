@@ -22,7 +22,7 @@ internal data class EtiquetaDiagrama(
 )
 
 /**
- * Diagramas incompletos de la modalidad COMPLETAR_DIAGRAMA (RF-71). Cada
+ * Diagramas incompletos de la modalidad COMPLETAR_DIAGRAMA (RF-120). Cada
  * diagrama se dibuja en un lienzo cuadrado con coordenadas de 0 a 1; los
  * huecos vienen de PosicionDestino.x / y en la base de datos.
  */

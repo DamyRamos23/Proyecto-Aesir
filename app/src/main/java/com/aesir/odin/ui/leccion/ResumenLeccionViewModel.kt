@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * Resumen de una lección completada (RF-21, RF-22). Los números (puntaje,
+ * Resumen de una lección completada (RF-77, RF-78). Los números (puntaje,
  * errores, total) llegan por navegación; este ViewModel solo carga el tema,
  * el mundo y los temas del mundo para la animación de la piedra rúnica, y
  * pide al MOD-01 el estado de los niveles para ofrecer el siguiente nivel

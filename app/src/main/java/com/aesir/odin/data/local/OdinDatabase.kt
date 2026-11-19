@@ -141,7 +141,8 @@ import com.aesir.odin.data.local.entity.VisionEntity
     // v14: roadmap de cuatro anillos del SRS v3.2 (18 niveles y 10 temas por
     //      mundo). Con migración: agrega la columna temas.temaBaseId; los
     //      temas nuevos y el contenido se siembran en onOpen sin tocar el progreso.
-    version = 14,
+    // v15: MOD-06 completo y sin modo administrador
+    version = 15,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -242,6 +243,38 @@ abstract class OdinDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * v14 → v15: historial_errores pasa a la forma del MOD-06 (una fila por
+         * pregunta del banco, RN-32) y se borran los ajustes de saldo de las versiones de prueba.
+         */
+        val MIGRACION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                SQL_MIGRACION_14_15.forEach(db::execSQL)
+            }
+        }
+
+        /** Separado en sentencias para poder probarlo sin Android. */
+        val SQL_MIGRACION_14_15: List<String> = listOf(
+            "CREATE TABLE `historial_errores_nueva` (`id` TEXT NOT NULL, `preguntaId` TEXT NOT NULL, " +
+                "`origen` TEXT NOT NULL, `temaId` TEXT NOT NULL, `enunciado` TEXT NOT NULL, `opciones` TEXT NOT NULL, " +
+                "`respuestaCorrecta` TEXT NOT NULL, `respuestaAlumno` TEXT, `pista` TEXT NOT NULL, `explicacion` TEXT, " +
+                "`estado` TEXT NOT NULL, `fallos` INTEGER NOT NULL, `fecha` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+            // Los tipos viejos se pasan al OrigenError equivalente.
+            "INSERT INTO `historial_errores_nueva` (`id`, `preguntaId`, `origen`, `temaId`, `enunciado`, `opciones`, " +
+                "`respuestaCorrecta`, `respuestaAlumno`, `pista`, `explicacion`, `estado`, `fallos`, `fecha`) " +
+                "SELECT `id`, `actividadId` || ':' || `id`, CASE `tipoDesafio` " +
+                "WHEN 'FLASHCARD' THEN 'FLASHCARDS' WHEN 'EJERCICIO_LECCION' THEN 'LECCION' " +
+                "WHEN 'LECCION_FALLIDA' THEN 'LECCION' WHEN 'ARRASTRAR' THEN 'ARRASTRAR_SOLTAR' " +
+                "WHEN 'HASTA_EL_ALBA' THEN 'HASTA_EL_ALBA' WHEN 'FORJA' THEN 'FORJA' " +
+                "WHEN 'PREGUNTA_FLASH' THEN 'PREGUNTA_FLASH' WHEN 'RETO_FIN_MUNDO' THEN 'RETO_FIN_MUNDO' " +
+                "WHEN 'RETAR_BRUJA' THEN 'RETAR_BRUJA' WHEN 'DUELO_ENIGMAS' THEN 'DUELO_ENIGMAS' ELSE 'LECCION' END, " +
+                "'', `descripcion`, '', '', NULL, '', NULL, 'PENDIENTE', 1, `fecha` FROM `historial_errores`",
+            "DROP TABLE `historial_errores`",
+            "ALTER TABLE `historial_errores_nueva` RENAME TO `historial_errores`",
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_historial_errores_preguntaId` ON `historial_errores` (`preguntaId`)",
+            "DELETE FROM `movimientos_hidromiel` WHERE `tipo` = 'AJUSTE_ADMIN'"
+        )
+
         @Volatile
         private var INSTANCE: OdinDatabase? = null
 
@@ -284,7 +317,7 @@ abstract class OdinDatabase : RoomDatabase() {
                             }
                         }
                     )
-                    .addMigrations(MIGRACION_9_10, MIGRACION_10_11, MIGRACION_11_12, MIGRACION_12_13, MIGRACION_13_14)
+                    .addMigrations(MIGRACION_9_10, MIGRACION_10_11, MIGRACION_11_12, MIGRACION_12_13, MIGRACION_13_14, MIGRACION_14_15)
                     .fallbackToDestructiveMigration()
                     .build()
                     .also {

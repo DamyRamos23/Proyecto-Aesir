@@ -1,5 +1,6 @@
 package com.aesir.odin.domain.model
 
+import com.aesir.odin.domain.hidromiel.PoliticaCosto
 /**
  * Modelos del CU-01 Sobrevivir oleadas (Hasta el Alba), según la versión 3.2
  * del SRS (RF-01 a RF-29).
@@ -14,16 +15,17 @@ enum class Enemigo(
     val nombre: String,
     val hora: String,
     val golpes: Int,
-    val segundosPorPregunta: Int,
-    val multiplicador: Int
+    val segundosPorPregunta: Int
 ) {
-    DRAUGR(1, "Draugr", "Primera hora", 2, 20, 120),
-    LOBO_DE_FENRIR(2, "Lobo de Fenrir", "Segunda hora", 2, 18, 140),
-    JOTUN_DE_HIELO(3, "Jotun de hielo", "Tercera hora", 3, 16, 170),
-    TROLL_DE_MONTANA(4, "Troll de montaña", "Cuarta hora", 3, 14, 200),
-    VALQUIRIA_CAIDA(5, "Valquiria caída", "Quinta hora", 3, 12, 250),
-    HIJO_DE_MUSPEL(6, "Hijo de Muspel", "Sexta hora", 4, 10, 300),
-    EL_ALBA(7, "El alba", "Séptima hora", 4, 8, 400);
+    DRAUGR(1, "Draugr", "Primera hora", 2, 20),
+    LOBO_DE_FENRIR(2, "Lobo de Fenrir", "Segunda hora", 2, 18),
+    JOTUN_DE_HIELO(3, "Jotun de hielo", "Tercera hora", 3, 16),
+    TROLL_DE_MONTANA(4, "Troll de montaña", "Cuarta hora", 3, 14),
+    VALQUIRIA_CAIDA(5, "Valquiria caída", "Quinta hora", 3, 12),
+    HIJO_DE_MUSPEL(6, "Hijo de Muspel", "Sexta hora", 4, 10),
+    EL_ALBA(7, "El alba", "Séptima hora", 4, 8);
+
+    val multiplicador: Int get() = PoliticaCosto.MULTIPLICADORES_OLEADA[ordinal]
 
     val ultimo: Boolean get() = this == EL_ALBA
 
@@ -182,7 +184,6 @@ data class NocheAlba(
         const val ESCUDOS_POR_NOCHE = 3
         const val OLEADAS = 7
         /** A9.4: Skíðblaðnir con defecto detiene el contador este tiempo. */
-        const val BONO_DRAUPNIR_PERFECTO = 50
     }
 }
 

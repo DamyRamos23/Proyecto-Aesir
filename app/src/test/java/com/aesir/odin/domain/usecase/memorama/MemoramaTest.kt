@@ -78,6 +78,9 @@ class CalcularPuntosMemoramaUseCaseTest {
 
     @Test
     fun `rapido obtiene 100`() {
+        // RF-65: 100 puntos con 45 s o menos y 0 con 240 s o más
+        assertEquals(45L, CalcularPuntosMemoramaUseCase.TIEMPO_MAX_PUNTAJE_SEG.toLong())
+        assertEquals(240L, CalcularPuntosMemoramaUseCase.TIEMPO_LIMITE_SEG.toLong())
         assertEquals(100, calcular(10))
         assertEquals(100, calcular(CalcularPuntosMemoramaUseCase.TIEMPO_MAX_PUNTAJE_SEG))
     }

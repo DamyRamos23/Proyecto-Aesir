@@ -32,7 +32,7 @@ class MundosViewModel(
     }
 
     /**
-     * CU-10, RF-81: true si al entrar al mundo se debe presentar la evaluación
+     * CU-10, RF-128: true si al entrar al mundo se debe presentar la evaluación
      * diagnóstica (mundo desbloqueado y evaluación pendiente). Si es false se
      * entra directo al roadmap.
      */

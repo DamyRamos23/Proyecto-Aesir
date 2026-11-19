@@ -1,18 +1,19 @@
 package com.aesir.odin.domain.usecase.retoarrastrar
 
-import com.aesir.odin.domain.model.HistorialError
-import com.aesir.odin.domain.repository.HistorialRepository
-import java.util.UUID
+import com.aesir.odin.domain.bitacora.FalloBitacora
+import com.aesir.odin.domain.bitacora.ModuloBitacora
+import com.aesir.odin.domain.bitacora.OrigenError
+import com.aesir.odin.domain.model.RetoArrastrar
 
 /**
- * A7.1 y A7.2 del CU-09 (RF-78): registra la confirmación incorrecta en el
- * historial de errores y avisa si ya se llegó al límite de intentos.
+ * A7.1 y A7.2 del CU-09: avisa a la bitácora (MOD-06, E1: sin opciones, con una
+ * descripción) la confirmación incorrecta y dice si ya se llegó al límite.
  *
  * No confundir con el RegistrarErrorRetoUseCase del reto de fin de mundo
  * (CU-08), que vive en otro paquete.
  */
 class RegistrarErrorRetoArrastrarUseCase(
-    private val repository: HistorialRepository,
+    private val moduloBitacora: ModuloBitacora,
     private val reloj: () -> Long = System::currentTimeMillis
 ) {
     /**
@@ -20,26 +21,21 @@ class RegistrarErrorRetoArrastrarUseCase(
      * @param intentosActuales confirmaciones incorrectas contando esta.
      * @return true si se alcanzó el límite de intentos.
      */
-    suspend operator fun invoke(retoId: String, elementosIncorrectos: List<String>, intentosActuales: Int): Boolean {
-        val limite = intentosActuales >= LIMITE_INTENTOS
-        repository.registrarError(
-            HistorialError(
-                id = UUID.randomUUID().toString(),
-                tipoDesafio = TIPO_ARRASTRAR,
-                actividadId = retoId,
-                descripcion = buildString {
-                    append(if (limite) "Reto no superado (intento $intentosActuales de $LIMITE_INTENTOS)" else "Intento $intentosActuales de $LIMITE_INTENTOS")
-                    append(": mal colocados ")
-                    append(elementosIncorrectos.joinToString(", ") { "«$it»" })
-                },
+    operator fun invoke(reto: RetoArrastrar, elementosIncorrectos: List<String>, intentosActuales: Int): Boolean {
+        moduloBitacora.registrarFallo(
+            FalloBitacora(
+                origen = OrigenError.ARRASTRAR_SOLTAR,
+                preguntaId = reto.id,
+                temaId = reto.temaId,
+                enunciado = "${reto.instrucciones} Mal colocados: " + elementosIncorrectos.joinToString(", ") { "«$it»" },
+                respuestaAlumno = elementosIncorrectos.joinToString(", "),
                 fecha = reloj()
             )
         )
-        return limite
+        return intentosActuales >= LIMITE_INTENTOS
     }
 
     companion object {
         const val LIMITE_INTENTOS = 3
-        const val TIPO_ARRASTRAR = "ARRASTRAR"
     }
 }

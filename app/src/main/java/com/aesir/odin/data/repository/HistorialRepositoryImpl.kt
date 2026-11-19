@@ -2,6 +2,8 @@ package com.aesir.odin.data.repository
 
 import com.aesir.odin.data.local.dao.HistorialErrorDao
 import com.aesir.odin.data.local.entity.HistorialErrorEntity
+import com.aesir.odin.domain.bitacora.OrigenError
+import com.aesir.odin.domain.model.EstadoError
 import com.aesir.odin.domain.model.HistorialError
 import com.aesir.odin.domain.repository.HistorialRepository
 import java.util.concurrent.TimeUnit
@@ -11,34 +13,39 @@ class HistorialRepositoryImpl(
     private val reloj: () -> Long = System::currentTimeMillis
 ) : HistorialRepository {
 
-    override suspend fun obtenerErrores(): List<HistorialError> =
-        dao.getAll().map { it.toDomain() }
+    override suspend fun buscarPorPregunta(preguntaId: String): HistorialError? =
+        dao.getPorPregunta(preguntaId)?.toDomain()
+
+    override suspend fun registrar(error: HistorialError) = dao.insertar(error.toEntity())
+
+    override suspend fun actualizar(error: HistorialError) = dao.actualizar(error.toEntity())
 
     /** Errores de los últimos [DIAS_REPASO] días, para las actividades de refuerzo. */
     override suspend fun obtenerErroresParaRepaso(): List<HistorialError> =
         dao.getDesde(reloj() - TimeUnit.DAYS.toMillis(DIAS_REPASO)).map { it.toDomain() }
-
-    override suspend fun registrarError(error: HistorialError) {
-        dao.insertar(
-            HistorialErrorEntity(
-                id = error.id,
-                tipoDesafio = error.tipoDesafio,
-                actividadId = error.actividadId,
-                descripcion = error.descripcion,
-                fecha = error.fecha
-            )
-        )
-    }
 
     private companion object {
         const val DIAS_REPASO = 7L
     }
 }
 
+private fun HistorialError.toEntity() = HistorialErrorEntity(
+    id, preguntaId, origen.name, temaId, enunciado, opciones, respuestaCorrecta,
+    respuestaAlumno, pista, explicacion, estado.name, fallos, fecha
+)
+
 private fun HistorialErrorEntity.toDomain() = HistorialError(
     id = id,
-    tipoDesafio = tipoDesafio,
-    actividadId = actividadId,
-    descripcion = descripcion,
+    preguntaId = preguntaId,
+    origen = OrigenError.valueOf(origen),
+    temaId = temaId,
+    enunciado = enunciado,
+    opciones = opciones,
+    respuestaCorrecta = respuestaCorrecta,
+    respuestaAlumno = respuestaAlumno,
+    pista = pista,
+    explicacion = explicacion,
+    estado = EstadoError.valueOf(estado),
+    fallos = fallos,
     fecha = fecha
 )

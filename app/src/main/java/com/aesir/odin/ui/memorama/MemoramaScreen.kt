@@ -405,7 +405,7 @@ private fun EncabezadoMemoramaMundo(viewModel: MemoramaViewModel, orden: Int, es
     val totalPares = tarjetas.size / 2
     var segundos by remember { mutableLongStateOf(0L) }
 
-    // Cronómetro visible: se calcula desde el inicio registrado (RF-07)
+    // Cronómetro visible: se calcula desde el inicio registrado (RF-59)
     LaunchedEffect(resultado) {
         while (resultado == null) {
             if (viewModel.tiempoInicio > 0) segundos = (System.currentTimeMillis() - viewModel.tiempoInicio) / 1_000

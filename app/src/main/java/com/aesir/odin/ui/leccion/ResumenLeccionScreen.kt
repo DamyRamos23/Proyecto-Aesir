@@ -84,7 +84,7 @@ import kotlin.math.min
 import kotlin.random.Random
 
 /**
- * Resumen de resultados de una lección completada (RF-21, RF-22).
+ * Resumen de resultados de una lección completada (RF-77, RF-78).
  *
  * Animación de ~4.5 s: la runa del tema, tallada en una piedra ancestral, se
  * llena de luz; luego se enciende la inscripción del borde, hay un destello,

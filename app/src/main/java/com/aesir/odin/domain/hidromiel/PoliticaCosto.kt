@@ -104,5 +104,43 @@ class PoliticaCosto {
         const val APUESTA_FORJA_MAX = 80
         const val MULTIPLICADOR_FORJA = 3
         const val DIEZMO_ODIN = 0.10
+        /** RF-34: forjas por día real. */
+        const val FORJAS_POR_DIA = 2
+
+        // CU-01 Hasta el Alba y CU-12 La Völva: una vez por día real
+        const val NOCHES_ALBA_DIA = 1
+        const val CONSULTAS_VOLVA_DIA = 1
+        /** RF-07: multiplicador de cada oleada, en centésimas (×1.2 = 120), en orden. */
+        val MULTIPLICADORES_OLEADA = listOf(120, 140, 170, 200, 250, 300, 400)
+        /** Draupnir suma +0.5 al multiplicador con el que se cobra. */
+        const val BONO_DRAUPNIR = 50
+
+        // MOD-05 La carrera de Sól
+        const val COSTO_OFRENDA = 2 * C
+        const val BONO_RACHA_3 = 10
+        const val BONO_RACHA_7 = 20
+        const val BONO_RACHA_14 = 40
+        const val BONO_RACHA_30 = 60
+        const val BONO_RACHA_100 = 100
+
+        // MOD-07 Juegos ocultos: apuestas y pagos («premio» ya incluye la apuesta)
+        const val RULETA_MIN = 5
+        const val RULETA_MAX = 50
+        const val RULETA_PASO = 5
+        const val TRAGAMONEDAS_COSTO = 5
+        const val TRAGAMONEDAS_DOS_CUERNOS = 5
+        const val TRIPLE_RUNA = 20
+        const val TRIPLE_CUERNO = 45
+        const val TRIPLE_MJOLNIR = 120
+        const val TRIPLE_CUERVO = 400
+        const val TRIPLE_OJO = 1500
+        const val DADOS_APUESTA = 10
+        const val DADOS_MENOR_MAYOR = 20
+        const val DADOS_SIETE = 50
+        /** Blackjack y Mayor o menor: de 10 a 50, de 5 en 5. */
+        const val CARTAS_MIN = 10
+        const val CARTAS_MAX = 50
+        const val CARTAS_PASO = 5
+        const val MAYOR_MENOR_TOPE_VECES = 10
     }
 }

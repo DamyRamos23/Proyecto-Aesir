@@ -41,7 +41,11 @@ class FakeHidromielRepository : HidromielRepository {
     override suspend fun obtenerReserva(idUsuario: String): ReservaHidromiel? =
         saldos.value[idUsuario]?.let { ReservaHidromiel(idUsuario, it, fechasDiaria[idUsuario]) }
 
+    /** E8: simula que la base no puede escribir. */
+    var fallarEscritura = false
+
     override suspend fun guardarReserva(reserva: ReservaHidromiel) {
+        if (fallarEscritura) throw IllegalStateException("sin espacio")
         saldos.value = saldos.value + (reserva.idUsuario to reserva.saldo)
         fechasDiaria[reserva.idUsuario] = reserva.fechaUltimaDiaria
         historial += reserva.movimientosNuevos

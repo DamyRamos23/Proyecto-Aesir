@@ -13,7 +13,7 @@ data class ParConceptoEntity(
     val definicion: String
 )
 
-/** Resultado de un memorama terminado (RF-17). */
+/** Resultado de un memorama terminado (RF-66). */
 @Entity(tableName = "resultados_memorama", indices = [Index("mundoId")])
 data class ResultadoMemoramaEntity(
     @PrimaryKey val id: String,

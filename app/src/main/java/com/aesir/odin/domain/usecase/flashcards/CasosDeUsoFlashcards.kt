@@ -9,15 +9,15 @@ import com.aesir.odin.domain.hidromiel.NivelFinalizado
 import com.aesir.odin.domain.hidromiel.ResultadoNivel
 import com.aesir.odin.domain.hidromiel.USUARIO_LOCAL
 import com.aesir.odin.domain.model.ConceptoCrucigrama
-import com.aesir.odin.domain.model.HistorialError
 import com.aesir.odin.domain.model.PilaFlashcards
 import com.aesir.odin.domain.model.ResultadoFlashcards
 import com.aesir.odin.domain.model.TarjetaFlashcard
 import com.aesir.odin.domain.repository.FlashcardsRepository
-import com.aesir.odin.domain.repository.HistorialRepository
+import com.aesir.odin.domain.bitacora.FalloBitacora
+import com.aesir.odin.domain.bitacora.ModuloBitacora
+import com.aesir.odin.domain.bitacora.OrigenError
 import com.aesir.odin.domain.repository.RoadmapRepository
 import com.aesir.odin.domain.usecase.leccion.RegistrarLeccionCompletadaUseCase
-import java.util.UUID
 import kotlin.random.Random
 
 /**
@@ -68,26 +68,24 @@ class GenerarFlashcardsUseCase(
         }
 }
 
-/** A5.1: registra en el historial de errores la tarjeta que el alumno falló. */
+/** A5.1: avisa a la bitácora (MOD-06) la tarjeta que el alumno falló. */
 class RegistrarErrorFlashcardUseCase(
-    private val repository: HistorialRepository,
+    private val moduloBitacora: ModuloBitacora,
     private val reloj: () -> Long = System::currentTimeMillis
 ) {
-    companion object {
-        const val TIPO_FLASHCARD = "FLASHCARD"
-    }
-
-    suspend operator fun invoke(tarjeta: TarjetaFlashcard, opcionElegida: String) {
-        repository.registrarError(
-            HistorialError(
-                id = UUID.randomUUID().toString(),
-                tipoDesafio = TIPO_FLASHCARD,
-                actividadId = tarjeta.id,
-                descripcion = "Flashcard: «${tarjeta.concepto}» confundido con «$opcionElegida»",
-                fecha = reloj()
-            )
+    operator fun invoke(tarjeta: TarjetaFlashcard, opcionElegida: String) = moduloBitacora.registrarFallo(
+        FalloBitacora(
+            origen = OrigenError.FLASHCARDS,
+            preguntaId = tarjeta.id,
+            temaId = tarjeta.temaId,
+            enunciado = tarjeta.descripcion,
+            opciones = tarjeta.opciones,
+            respuestaCorrecta = tarjeta.concepto,
+            respuestaAlumno = opcionElegida,
+            pista = tarjeta.temaId,
+            fecha = reloj()
         )
-    }
+    )
 }
 
 /**

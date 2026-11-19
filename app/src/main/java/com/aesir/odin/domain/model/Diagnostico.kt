@@ -18,7 +18,7 @@ data class PreguntaDiagnostica(
     val esSeleccionMultiple: Boolean get() = respuestasCorrectas.size > 1
 }
 
-/** Lo que el alumno eligió en una pregunta (RF-83, RF-84). */
+/** Lo que el alumno eligió en una pregunta (RF-131). */
 data class RespuestaDiagnostica(
     val preguntaId: String,
     val seleccionadas: List<Int>
@@ -27,8 +27,8 @@ data class RespuestaDiagnostica(
 enum class EstadoDiagnostico { PENDIENTE, COMPLETADA, OMITIDA }
 
 /**
- * Resultado de la evaluación (RF-89, RF-90). [temasConocidos] son los ids de
- * los temas que el alumno demostró dominar. No incluye puntos (RF-99).
+ * Resultado de la evaluación (RF-135). [temasConocidos] son los ids de
+ * los temas que el alumno demostró dominar. No incluye puntos (RF-139).
  */
 data class ResultadoDiagnostico(
     val mundoId: String,

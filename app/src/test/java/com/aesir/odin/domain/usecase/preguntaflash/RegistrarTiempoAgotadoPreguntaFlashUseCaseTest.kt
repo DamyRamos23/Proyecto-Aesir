@@ -1,5 +1,7 @@
 package com.aesir.odin.domain.usecase.preguntaflash
 
+import com.aesir.odin.domain.usecase.leccion.FakeHistorialRepository
+import com.aesir.odin.domain.usecase.leccion.bitacoraInmediata
 import com.aesir.odin.domain.model.EstadoPreguntaFlash
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -9,9 +11,10 @@ import org.junit.Test
 class RegistrarTiempoAgotadoPreguntaFlashUseCaseTest {
 
     private val repo = FakePreguntaFlashRepository()
+    private val historial = FakeHistorialRepository()
 
     private fun useCase(hidromiel: FakeHidromielFlashRepository) =
-        RegistrarTiempoAgotadoPreguntaFlashUseCase(repo, hidromiel, reloj = { 5L }, generarId = { "x" })
+        RegistrarTiempoAgotadoPreguntaFlashUseCase(repo, hidromiel, bitacoraInmediata(historial), reloj = { 5L }, generarId = { "x" })
 
     @Test
     fun resta2DeHidromiel_yRegistraSinRespuesta() = runBlocking {
@@ -27,6 +30,8 @@ class RegistrarTiempoAgotadoPreguntaFlashUseCaseTest {
         assertEquals(1, repo.intentos.size)
         assertEquals(EstadoPreguntaFlash.SIN_RESPUESTA, repo.intentos[0].estado)
         assertTrue(repo.intentos[0].respuestasElegidas.isEmpty())
+        // MOD-06, disparador 2: se avisa a la bitácora sin respuesta del alumno
+        assertEquals(null, historial.errores.single().respuestaAlumno)
     }
 
     @Test

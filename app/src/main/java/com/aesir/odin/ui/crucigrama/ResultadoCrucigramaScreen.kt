@@ -109,7 +109,7 @@ private fun Dato(estilo: EstiloMundo, valor: String, etiqueta: String) {
     }
 }
 
-/** RF-67 / RF-101: el resumen dice si el nivel fue superado (MOD-01, RN-07: 60 puntos o más). */
+/** RF-101: el resumen dice si el nivel fue superado (MOD-01, RN-07: 60 puntos o más). */
 @Composable
 private fun LineaSuperado(puntaje: Int, estilo: EstiloMundo) {
     val superado = puntaje >= PoliticaCosto.PUNTAJE_MINIMO

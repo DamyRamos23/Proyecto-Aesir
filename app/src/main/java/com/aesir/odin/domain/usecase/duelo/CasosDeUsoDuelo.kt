@@ -7,7 +7,6 @@ import com.aesir.odin.domain.racha.ModuloCarreraSol
 import com.aesir.odin.domain.sonido.EventoSonido
 import com.aesir.odin.domain.sonido.ModuloSonido
 import com.aesir.odin.domain.hidromiel.DueloFinalizado
-import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.hidromiel.PoliticaCosto
 import com.aesir.odin.domain.hidromiel.ResultadoApuesta
@@ -16,14 +15,15 @@ import com.aesir.odin.domain.model.AccesoDuelo
 import com.aesir.odin.domain.model.CierreDuelo
 import com.aesir.odin.domain.model.DueloEnigmas
 import com.aesir.odin.domain.model.EstadoFinalDuelo
-import com.aesir.odin.domain.model.HistorialError
 import com.aesir.odin.domain.model.MotivoSinAcceso
 import com.aesir.odin.domain.model.RespuestaGigante
 import com.aesir.odin.domain.model.ResultadoAdivinanza
 import com.aesir.odin.domain.model.ResultadoDuelo
 import com.aesir.odin.domain.model.TarjetaConcepto
 import com.aesir.odin.domain.repository.DueloRepository
-import com.aesir.odin.domain.repository.HistorialRepository
+import com.aesir.odin.domain.bitacora.FalloBitacora
+import com.aesir.odin.domain.bitacora.ModuloBitacora
+import com.aesir.odin.domain.bitacora.OrigenError
 import com.aesir.odin.domain.repository.RoadmapRepository
 import kotlinx.coroutines.flow.first
 import java.time.Instant
@@ -48,8 +48,7 @@ class ValidarAccesoDueloUseCase(
 ) {
     suspend operator fun invoke(): AccesoDuelo {
         val apuesta = PoliticaCosto.APUESTA_DUELO
-        // Modo admin: todo abierto, también el duelo (la apuesta se cobra igual).
-        val ragnarok = ModoAdmin.estaActivo || roadmapRepository.haSuperadoAlgunRagnarok()
+        val ragnarok = roadmapRepository.haSuperadoAlgunRagnarok()
         val jugados = dueloRepository.contarDuelosDelDia(inicioDelDia(reloj()))
         val restantes = (PoliticaCosto.MAX_DUELOS_DIA - jugados).coerceAtLeast(0)
         val piso = moduloHidromiel.calcularPisoApuesta(idUsuario)
@@ -172,7 +171,7 @@ class RevelarConceptoUseCase {
 class FinalizarDueloUseCase(
     private val repository: DueloRepository,
     private val moduloHidromiel: ModuloHidromiel,
-    private val historialRepository: HistorialRepository,
+    private val moduloBitacora: ModuloBitacora,
     private val reloj: () -> Long = System::currentTimeMillis,
     private val idUsuario: String = USUARIO_LOCAL,
     private val moduloCarreraSol: ModuloCarreraSol? = null
@@ -203,26 +202,23 @@ class FinalizarDueloUseCase(
         return CierreDuelo(resultado, concepto, aviso)
     }
 
-    /** MOD-06 E1: error sin opciones, guardado con una descripción. E2: si falla, el duelo sigue. */
-    private suspend fun registrarEnBitacora(duelo: DueloEnigmas, tarjetaElegida: String?) {
+    /** MOD-06, disparador 3 y E1: el concepto del duelo perdido, sin opciones. */
+    private fun registrarEnBitacora(duelo: DueloEnigmas, tarjetaElegida: String?) {
         val concepto = duelo.conceptoVerdadero()
         val elegida = tarjetaElegida?.let { id -> duelo.tarjetas.firstOrNull { it.concepto.id == id }?.concepto?.nombre }
-        runCatching {
-            historialRepository.registrarError(
-                HistorialError(
-                    id = UUID.randomUUID().toString(),
-                    tipoDesafio = TIPO_BITACORA,
-                    actividadId = concepto.id,
-                    descripcion = "Duelo de enigmas: el gigante escondía «${concepto.nombre}»" +
-                        (elegida?.let { " y elegiste «$it»" } ?: "") + ". ${concepto.explicacion}",
-                    fecha = reloj()
-                )
+        moduloBitacora.registrarFallo(
+            FalloBitacora(
+                origen = OrigenError.DUELO_ENIGMAS,
+                preguntaId = concepto.id,
+                temaId = concepto.temaId,
+                enunciado = "Duelo de enigmas: el gigante escondía un concepto que no adivinaste.",
+                respuestaCorrecta = concepto.nombre,
+                respuestaAlumno = elegida,
+                pista = concepto.temaId,
+                explicacion = concepto.explicacion,
+                fecha = reloj()
             )
-        }
-    }
-
-    companion object {
-        const val TIPO_BITACORA = "DUELO_ENIGMAS"
+        )
     }
 }
 

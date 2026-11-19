@@ -1,7 +1,6 @@
 package com.aesir.odin.domain.usecase.reto
 
 import com.aesir.odin.domain.hidromiel.EstadoNivel
-import com.aesir.odin.domain.hidromiel.ModoAdmin
 import com.aesir.odin.domain.hidromiel.ModuloHidromiel
 import com.aesir.odin.domain.hidromiel.PoliticaCosto
 import com.aesir.odin.domain.hidromiel.ResultadoAcceso
@@ -27,7 +26,7 @@ class PagarEntradaRetoContrarrelojUseCase(
     }
 
     suspend operator fun invoke(idReto: String? = null): ResultadoAcceso {
-        if (!ModoAdmin.estaActivo && restantesHoy() == 0) {
+        if (restantesHoy() == 0) {
             return ResultadoAcceso(
                 ModuloHidromiel.ID_CONTRARRELOJ, EstadoNivel.BLOQUEADO, autorizado = false,
                 costo = PoliticaCosto.ENTRADA_CONTRARRELOJ, faltante = 0,
